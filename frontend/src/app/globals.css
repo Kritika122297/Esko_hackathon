@@ -3,72 +3,203 @@
 @tailwind utilities;
 
 @layer base {
-  :root {
-    --background: 210 40% 98%;
-    --foreground: 222.2 84% 4.9%;
-
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-
-    --primary: 221.2 83.2% 53.3%;
-    --primary-foreground: 210 40% 98%;
-
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 221.2 83.2% 53.3%;
-
-    --radius: 0.5rem;
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-rendering: optimizeLegibility;
+  }
+  body {
+    @apply bg-ground text-ink font-sans antialiased;
+    font-size: 14px;
+    line-height: 1.45;
+    font-stretch: 100%;
+  }
+  ::selection {
+    background: #ffd23f;
+    color: #121514;
+  }
+  :focus-visible {
+    outline: 2px solid #121514;
+    outline-offset: 2px;
+  }
+  /* On the green shell the focus ring switches to talker yellow */
+  .on-rail :focus-visible {
+    outline-color: #ffd23f;
+  }
+  input,
+  textarea,
+  select {
+    caret-color: #0f3d2e;
+  }
+  input::placeholder,
+  textarea::placeholder {
+    color: #757c77;
+  }
+  a {
+    text-underline-offset: 3px;
+  }
+  table {
+    font-variant-numeric: tabular-nums;
+  }
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #aeb4a9 transparent;
+  }
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #aeb4a9;
+    border-radius: 2px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
   }
 }
 
-/* Custom modern scrollbar */
-::-webkit-scrollbar {
-  width: 7px;
-  height: 7px;
+@layer components {
+  /* Condensed heavy figures, set like a shelf price */
+  .figure {
+    font-stretch: 62.5%;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+    line-height: 0.88;
+  }
+  .condensed {
+    font-stretch: 75%;
+  }
+  /* Notched talker flag: always a shape plus a word, never colour alone */
+  .flag {
+    @apply inline-flex items-center whitespace-nowrap font-sans text-[11px] font-extrabold uppercase leading-none;
+    letter-spacing: 0.08em;
+    font-stretch: 87.5%;
+    padding: 4px 10px 4px 14px;
+    clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%, 7px 50%);
+  }
+  .flag-right {
+    padding: 4px 14px 4px 10px;
+    clip-path: polygon(0 0, 100% 0, calc(100% - 7px) 50%, 100% 100%, 0 100%);
+  }
+  /* Ticket stock */
+  .ticket {
+    @apply relative rounded border border-line bg-stock shadow-ticket;
+    transition: border-color 160ms, box-shadow 200ms;
+  }
+  .meta {
+    @apply font-sans text-[11px] font-semibold uppercase tabular-nums;
+    letter-spacing: 0.06em;
+  }
+  .code-line {
+    @apply border-t border-dashed border-line px-4 py-1.5 font-mono text-code uppercase text-ink-muted;
+  }
+  .section-rule {
+    @apply flex items-baseline justify-between border-b-[3px] border-rail pb-1;
+  }
+  /* Disclosure: animates height via grid rows */
+  .disclosure {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 240ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .disclosure[data-open="true"] {
+    grid-template-rows: 1fr;
+  }
+  .disclosure > * {
+    overflow: hidden;
+    min-height: 0;
+  }
 }
 
-::-webkit-scrollbar-track {
-  background: transparent;
+/* ---------------------------------------------------------------- motion */
+
+@keyframes bf-rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+/* A ticket re-prints when its value or state changes */
+@keyframes bf-print {
+  from {
+    clip-path: inset(0 0 0 100%);
+    opacity: 0.4;
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+    opacity: 1;
+  }
+}
+@keyframes bf-flag-in {
+  from {
+    transform: translateX(10px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+@keyframes bf-scan {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(400%);
+  }
+}
+@keyframes bf-toast {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
-::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 9999px;
+.anim-rise {
+  animation: bf-rise 320ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.anim-print {
+  animation: bf-print 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.anim-flag {
+  animation: bf-flag-in 360ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.anim-toast {
+  animation: bf-toast 260ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.scan-bar {
+  animation: bf-scan 1.6s cubic-bezier(0.45, 0, 0.55, 1) infinite;
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
-}
-
-body {
-  color: rgb(15, 23, 42);
-  background: #f8fafc;
-  font-feature-settings: "rlig" 1, "calt" 1;
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    scroll-behavior: auto !important;
+  }
+  .scan-bar {
+    animation: none;
+    transform: none;
+    width: 100% !important;
+    opacity: 0.35;
+  }
 }
 
 @media print {
-  aside,
-  nav,
   .no-print {
     display: none !important;
   }
-  main {
-    margin-left: 0 !important;
-    padding: 0 !important;
+  body {
+    background: #fff;
   }
 }

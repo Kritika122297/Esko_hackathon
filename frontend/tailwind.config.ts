@@ -1,75 +1,35 @@
 import type { Config } from "tailwindcss";
 
+// Shelf Edge: the shelf-strip green owns the shell, white ticket stock carries values,
+// talker yellow and stop red carry review and blocking states.
 const config: Config = {
-  darkMode: ["class"],
-  content: [
-    "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
-    "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
-    "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
-  ],
+  content: ["./src/**/*.{ts,tsx}"],
   theme: {
-    container: {
-      center: true,
-      padding: "2rem",
-      screens: {
-        "2xl": "1400px",
-      },
-    },
     extend: {
       colors: {
-        border: "hsl(var(--border))",
-        input: "hsl(var(--input))",
-        ring: "hsl(var(--ring))",
-        background: "hsl(var(--background))",
-        foreground: "hsl(var(--foreground))",
-        primary: {
-          DEFAULT: "hsl(var(--primary))",
-          foreground: "hsl(var(--primary-foreground))",
-        },
-        secondary: {
-          DEFAULT: "hsl(var(--secondary))",
-          foreground: "hsl(var(--secondary-foreground))",
-        },
-        destructive: {
-          DEFAULT: "hsl(var(--destructive))",
-          foreground: "hsl(var(--destructive-foreground))",
-        },
-        muted: {
-          DEFAULT: "hsl(var(--muted))",
-          foreground: "hsl(var(--muted-foreground))",
-        },
-        accent: {
-          DEFAULT: "hsl(var(--accent))",
-          foreground: "hsl(var(--accent-foreground))",
-        },
-        popover: {
-          DEFAULT: "hsl(var(--popover))",
-          foreground: "hsl(var(--popover-foreground))",
-        },
-        card: {
-          DEFAULT: "hsl(var(--card))",
-          foreground: "hsl(var(--card-foreground))",
-        },
+        rail: { DEFAULT: "#0F3D2E", 2: "#174D3B", 3: "#1F5C47", ink: "#C9D8D1" },
+        ground: "#F1F2EC",
+        stock: "#FFFFFF",
+        ink: { DEFAULT: "#121514", 2: "#2C322F", muted: "#5A615C", faint: "#757C77" },
+        line: { DEFAULT: "#D6D9CF", strong: "#AEB4A9" },
+        talker: { DEFAULT: "#FFD23F", soft: "#FFF4CC", deep: "#8A6A00" },
+        stop: { DEFAULT: "#D92B2B", soft: "#FBE8E6", deep: "#A11D1D" },
+        ok: { DEFAULT: "#0F3D2E", soft: "#E3EDE8", deep: "#1C6B4F" },
       },
-      borderRadius: {
-        lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
+      fontFamily: {
+        sans: ["var(--font-archivo)", "system-ui", "sans-serif"],
+        mono: ["var(--font-mono)", "ui-monospace", "monospace"],
       },
-      keyframes: {
-        "accordion-down": {
-          from: { height: "0" },
-          to: { height: "var(--radix-accordion-content-height)" },
-        },
-        "accordion-up": {
-          from: { height: "var(--radix-accordion-content-height)" },
-          to: { height: "0" },
-        },
+      borderRadius: { DEFAULT: "2px", sm: "2px", md: "3px", lg: "4px" },
+      fontSize: {
+        code: ["11px", { lineHeight: "16px", letterSpacing: "0.05em" }],
+        label: ["12px", { lineHeight: "16px", letterSpacing: "0.06em" }],
       },
-      animation: {
-        "accordion-down": "accordion-down 0.2s ease-out",
-        "accordion-up": "accordion-up 0.2s ease-out",
+      boxShadow: {
+        ticket: "0 1px 0 rgba(18,21,20,0.04), 0 2px 6px -2px rgba(18,21,20,0.08)",
+        lift: "0 2px 4px rgba(18,21,20,0.06), 0 12px 28px -12px rgba(18,21,20,0.22)",
       },
+      transitionTimingFunction: { out: "cubic-bezier(0.16, 1, 0.3, 1)" },
     },
   },
   plugins: [],

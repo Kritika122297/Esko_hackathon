@@ -1,95 +1,85 @@
-"""In-memory session storage for BriefForge."""
+"""Session persistence: one folder per session with the files, renders and JSON state."""
 
-from typing import Dict, Any, Optional, List
-from threading import Lock
+from __future__ import annotations
 
-from app.models.brief import PackagingBrief
-from app.models.extraction import ExtractedData
-from app.models.issues import ValidationResult
+import json
+import re
+import shutil
+import uuid
+from pathlib import Path
+from threading import RLock
+from typing import Dict, Optional, Tuple
+
+from app.config import settings
+from app.models.brief import BriefState
+from app.models.extraction import Extraction
+from app.services.checks import CheckContext
+
+_SAFE_ID = re.compile(r"^[a-f0-9]{12}$")
 
 
 class SessionStore:
-    """Manages in-memory storage of uploaded file extractions, briefs, and validation results."""
+    def __init__(self, root: Path):
+        self.root = root
+        self._lock = RLock()
+        self._cache: Dict[str, Tuple[BriefState, CheckContext, Extraction]] = {}
 
-    def __init__(self) -> None:
-        self._sessions: Dict[str, Dict[str, Any]] = {}
-        self._lock = Lock()
+    def new_id(self) -> str:
+        return uuid.uuid4().hex[:12]
 
-    def create_session(self, session_id: str) -> Dict[str, Any]:
-        """Initializes a new session entry."""
+    def dir(self, sid: str) -> Path:
+        if not _SAFE_ID.match(sid):
+            raise KeyError(sid)
+        return self.root / sid
+
+    def save(self, state: BriefState, ctx: CheckContext, ex: Extraction) -> None:
         with self._lock:
-            session_data = {
-                "session_id": session_id,
-                "extracted_data": ExtractedData(session_id=session_id),
-                "brief": None,
-                "validation": None,
-                "uploaded_files": [],
-            }
-            self._sessions[session_id] = session_data
-            return session_data
+            d = self.dir(state.session_id)
+            d.mkdir(parents=True, exist_ok=True)
+            (d / "state.json").write_text(state.model_dump_json(indent=1), encoding="utf-8")
+            (d / "context.json").write_text(ctx.model_dump_json(), encoding="utf-8")
+            (d / "extraction.json").write_text(ex.model_dump_json(), encoding="utf-8")
+            self._cache[state.session_id] = (state, ctx, ex)
 
-    def get_session(self, session_id: str) -> Optional[Dict[str, Any]]:
-        """Retrieves raw session dictionary by session_id."""
+    def load(self, sid: str) -> Optional[Tuple[BriefState, CheckContext, Extraction]]:
         with self._lock:
-            return self._sessions.get(session_id)
+            if sid in self._cache:
+                return self._cache[sid]
+            try:
+                d = self.dir(sid)
+            except KeyError:
+                return None
+            if not (d / "state.json").exists():
+                return None
+            state = BriefState.model_validate(json.loads((d / "state.json").read_text(encoding="utf-8")))
+            ctx = CheckContext.model_validate(json.loads((d / "context.json").read_text(encoding="utf-8")))
+            ex = Extraction.model_validate(json.loads((d / "extraction.json").read_text(encoding="utf-8")))
+            self._cache[sid] = (state, ctx, ex)
+            return self._cache[sid]
 
-    def set_extracted_data(self, session_id: str, data: ExtractedData) -> None:
-        """Stores extracted data for a session."""
+
+    def load_chat(self, sid: str) -> list:
+        path = self.dir(sid) / "chat.json"
+        if not path.exists():
+            return []
+        try:
+            return json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return []
+
+    def save_chat(self, sid: str, messages: list) -> None:
         with self._lock:
-            if session_id not in self._sessions:
-                self._sessions[session_id] = {"session_id": session_id}
-            self._sessions[session_id]["extracted_data"] = data
+            (self.dir(sid) / "chat.json").write_text(json.dumps(messages, ensure_ascii=False), encoding="utf-8")
 
-    def get_extracted_data(self, session_id: str) -> Optional[ExtractedData]:
-        """Retrieves extracted data for a session."""
+    def list_ids(self) -> list[str]:
+        if not self.root.exists():
+            return []
+        return [d.name for d in self.root.iterdir() if d.is_dir() and _SAFE_ID.match(d.name) and (d / "state.json").exists()]
+
+    def delete(self, sid: str) -> None:
         with self._lock:
-            sess = self._sessions.get(session_id)
-            return sess.get("extracted_data") if sess else None
-
-    def set_brief(self, session_id: str, brief: PackagingBrief) -> None:
-        """Stores or updates the packaging brief for a session."""
-        with self._lock:
-            if session_id not in self._sessions:
-                self._sessions[session_id] = {"session_id": session_id}
-            self._sessions[session_id]["brief"] = brief
-
-    def get_brief(self, session_id: str) -> Optional[PackagingBrief]:
-        """Retrieves current packaging brief for a session."""
-        with self._lock:
-            sess = self._sessions.get(session_id)
-            return sess.get("brief") if sess else None
-
-    def set_validation(self, session_id: str, validation: ValidationResult) -> None:
-        """Stores validation result."""
-        with self._lock:
-            if session_id not in self._sessions:
-                self._sessions[session_id] = {"session_id": session_id}
-            self._sessions[session_id]["validation"] = validation
-
-    def get_validation(self, session_id: str) -> Optional[ValidationResult]:
-        """Retrieves validation result."""
-        with self._lock:
-            sess = self._sessions.get(session_id)
-            return sess.get("validation") if sess else None
-
-    def add_uploaded_file(self, session_id: str, file_info: Dict[str, Any]) -> None:
-        """Appends uploaded file metadata."""
-        with self._lock:
-            if session_id not in self._sessions:
-                self._sessions[session_id] = {
-                    "session_id": session_id,
-                    "extracted_data": ExtractedData(session_id=session_id),
-                    "uploaded_files": [],
-                }
-            if "uploaded_files" not in self._sessions[session_id]:
-                self._sessions[session_id]["uploaded_files"] = []
-            self._sessions[session_id]["uploaded_files"].append(file_info)
-
-    def list_sessions(self) -> List[str]:
-        """Lists all active session IDs."""
-        with self._lock:
-            return list(self._sessions.keys())
+            self._cache.pop(sid, None)
+            shutil.rmtree(self.dir(sid), ignore_errors=True)
 
 
-# Singleton session store
-session_store = SessionStore()
+store = SessionStore(settings.UPLOAD_DIR)

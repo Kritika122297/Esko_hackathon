@@ -1,187 +1,117 @@
 import { create } from "zustand";
-import {
-  BriefField,
-  ExtractionData,
-  Issue,
-  PackagingBrief,
-  SmartQuestion,
-  UploadResponse,
-  WorkflowStep,
-} from "@/lib/types";
+import { persist } from "zustand/middleware";
+import { api, ApiError } from "@/lib/api";
+import { ChatCitation, SessionView, SourceRef } from "@/lib/types";
+
+interface Highlight {
+  label: string;
+  sources: SourceRef[];
+}
+
+export interface ChatMessage {
+  role: "user" | "assistant";
+  text: string;
+  citations?: ChatCitation[];
+  suggestions?: string[];
+}
 
 interface BriefStore {
-  // Workflow
-  currentStep: WorkflowStep;
-  completedSteps: WorkflowStep[];
-  setStep: (step: WorkflowStep) => void;
-  completeStep: (step: WorkflowStep) => void;
-
-  // Session
   sessionId: string | null;
-  setSessionId: (id: string) => void;
+  view: SessionView | null;
+  highlight: Highlight | null;
+  busy: string | null;
+  busySince: number | null;
+  notice: string | null;
+  error: string | null;
+  errorDetail: unknown;
 
-  // Upload
-  uploadedFiles: File[];
-  setUploadedFiles: (files: File[]) => void;
-  addUploadedFiles: (files: File[]) => void;
-  removeUploadedFile: (index: number) => void;
-  uploadResponse: UploadResponse | null;
-  setUploadResponse: (r: UploadResponse) => void;
+  chatOpen: boolean;
+  chats: Record<string, ChatMessage[]>;
+  setChatOpen: (open: boolean) => void;
+  addChat: (sid: string, m: ChatMessage) => void;
+  setChat: (sid: string, messages: ChatMessage[]) => void;
 
-  // Extraction
-  extractionData: ExtractionData | null;
-  setExtractionData: (data: ExtractionData) => void;
-
-  // Brief
-  brief: PackagingBrief | null;
-  setBrief: (b: PackagingBrief) => void;
-  updateBriefField: (
-    sectionName: string,
-    fieldName: string,
-    newValue: any
-  ) => void;
-
-  // Issues
-  issues: Issue[];
-  setIssues: (issues: Issue[]) => void;
-  resolveIssue: (issueId: string) => void;
-
-  // Questions
-  questions: SmartQuestion[];
-  setQuestions: (q: SmartQuestion[]) => void;
-  answers: Record<string, string>;
-  setAnswer: (id: string, answer: string) => void;
-
-  // Loading states
-  isUploading: boolean;
-  isAnalyzing: boolean;
-  isExporting: boolean;
-  setLoading: (key: "isUploading" | "isAnalyzing" | "isExporting" | string, value: boolean) => void;
-
-  // Reset
+  setHighlight: (h: Highlight | null) => void;
+  clearError: () => void;
+  clearNotice: () => void;
+  load: (sid?: string) => Promise<void>;
+  run: (label: string, fn: (sid: string) => Promise<SessionView>, done?: string) => Promise<boolean>;
+  start: (fn: () => Promise<SessionView>, label: string) => Promise<boolean>;
   reset: () => void;
 }
 
-const initialStep: WorkflowStep = "upload";
-
-export const useBriefStore = create<BriefStore>((set, get) => ({
-  // Workflow
-  currentStep: initialStep,
-  completedSteps: [],
-  setStep: (step) => set({ currentStep: step }),
-  completeStep: (step) => {
-    const currentCompleted = get().completedSteps;
-    if (!currentCompleted.includes(step)) {
-      set({ completedSteps: [...currentCompleted, step] });
-    }
-  },
-
-  // Session
-  sessionId: null,
-  setSessionId: (id) => set({ sessionId: id }),
-
-  // Upload
-  uploadedFiles: [],
-  setUploadedFiles: (files) => set({ uploadedFiles: files }),
-  addUploadedFiles: (files) =>
-    set((state) => ({ uploadedFiles: [...state.uploadedFiles, ...files] })),
-  removeUploadedFile: (index) =>
-    set((state) => ({
-      uploadedFiles: state.uploadedFiles.filter((_, i) => i !== index),
-    })),
-  uploadResponse: null,
-  setUploadResponse: (r) => set({ uploadResponse: r }),
-
-  // Extraction
-  extractionData: null,
-  setExtractionData: (data) => set({ extractionData: data }),
-
-  // Brief
-  brief: null,
-  setBrief: (brief) => set({ brief }),
-  updateBriefField: (sectionName, fieldName, newValue) => {
-    const currentBrief = get().brief;
-    if (!currentBrief) return;
-
-    const newSections = currentBrief.sections.map((sec) => {
-      if (sec.section_name !== sectionName) return sec;
-      return {
-        ...sec,
-        fields: sec.fields.map((fld) => {
-          if (fld.field_name !== fieldName) return fld;
-          return {
-            ...fld,
-            value: newValue,
-            user_override: newValue,
-            status: "confirmed" as const,
-            issues: [],
-          };
-        }),
-      };
-    });
-
-    // Recount remaining issues from fields
-    let crit = 0;
-    let warn = 0;
-    let inf = 0;
-    newSections.forEach((s) => {
-      s.fields.forEach((f) => {
-        if (f.status === "conflicting") crit++;
-        else if (f.status === "flagged") warn++;
-      });
-    });
-
-    set({
-      brief: {
-        ...currentBrief,
-        sections: newSections,
-        issues_summary: {
-          critical: crit,
-          warning: warn,
-          info: inf,
-        },
-      },
-    });
-  },
-
-  // Issues
-  issues: [],
-  setIssues: (issues) => set({ issues }),
-  resolveIssue: (issueId) =>
-    set((state) => ({
-      issues: state.issues.filter((i) => i.id !== issueId),
-    })),
-
-  // Questions
-  questions: [],
-  setQuestions: (questions) => set({ questions }),
-  answers: {},
-  setAnswer: (id, answer) =>
-    set((state) => ({
-      answers: { ...state.answers, [id]: answer },
-    })),
-
-  // Loading states
-  isUploading: false,
-  isAnalyzing: false,
-  isExporting: false,
-  setLoading: (key, value) => set({ [key]: value }),
-
-  // Reset
-  reset: () =>
-    set({
-      currentStep: "upload",
-      completedSteps: [],
+export const useBriefStore = create<BriefStore>()(
+  persist(
+    (set, get) => ({
       sessionId: null,
-      uploadedFiles: [],
-      uploadResponse: null,
-      extractionData: null,
-      brief: null,
-      issues: [],
-      questions: [],
-      answers: {},
-      isUploading: false,
-      isAnalyzing: false,
-      isExporting: false,
+      view: null,
+      highlight: null,
+      busy: null,
+      busySince: null,
+      notice: null,
+      error: null,
+      errorDetail: null,
+
+      chatOpen: false,
+      chats: {},
+      setChatOpen: (chatOpen) => set({ chatOpen }),
+      addChat: (sid, m) => set((st) => ({ chats: { ...st.chats, [sid]: [...(st.chats[sid] ?? []), m] } })),
+      setChat: (sid, messages) => set((st) => ({ chats: { ...st.chats, [sid]: messages } })),
+
+      setHighlight: (highlight) => set({ highlight }),
+      clearError: () => set({ error: null, errorDetail: null }),
+      clearNotice: () => set({ notice: null }),
+
+      load: async (sid) => {
+        const id = sid ?? get().sessionId;
+        if (!id) return;
+        // Switching to another brief drops the previous brief's artwork highlight.
+        if (id !== get().view?.state.session_id) set({ highlight: null });
+        set({ busy: "Loading brief", busySince: Date.now(), error: null });
+        try {
+          const view = await api.get(id);
+          set({ view, sessionId: id, busy: null, busySince: null });
+        } catch (e) {
+          const err = e as ApiError;
+          set({
+            busy: null,
+            busySince: null,
+            error: err.message,
+            ...(err.status === 404 ? { sessionId: null, view: null } : {}),
+          });
+        }
+      },
+
+      start: async (fn, label) => {
+        set({ busy: label, busySince: Date.now(), error: null, highlight: null, notice: null });
+        try {
+          const view = await fn();
+          set({ view, sessionId: view.state.session_id, busy: null, busySince: null, notice: "Brief ready" });
+          return true;
+        } catch (e) {
+          const err = e as ApiError;
+          set({ busy: null, busySince: null, error: err.message, errorDetail: err.detail });
+          return false;
+        }
+      },
+
+      run: async (label, fn, done = "Saved and re-checked") => {
+        const sid = get().sessionId;
+        if (!sid) return false;
+        set({ busy: label, busySince: Date.now(), error: null, notice: null });
+        try {
+          const view = await fn(sid);
+          set({ view, busy: null, busySince: null, notice: done });
+          return true;
+        } catch (e) {
+          const err = e as ApiError;
+          set({ busy: null, busySince: null, error: err.message, errorDetail: err.detail });
+          return false;
+        }
+      },
+
+      reset: () => set({ sessionId: null, view: null, highlight: null, error: null, busy: null, notice: null, chatOpen: false }),
     }),
-}));
+    { name: "briefforge-session", partialize: (s) => ({ sessionId: s.sessionId }) }
+  )
+);

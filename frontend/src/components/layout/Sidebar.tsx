@@ -1,206 +1,174 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  Upload,
-  Search,
-  HelpCircle,
-  FileEdit,
-  Download,
-  CheckCircle2,
-  Box,
-  RotateCcw,
-  Sparkles,
-} from "lucide-react";
+import { FolderOpen, Menu, Plus, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useBriefStore } from "@/store/briefStore";
-import { WorkflowStep } from "@/lib/types";
 
-interface NavItem {
-  id: WorkflowStep;
-  label: string;
-  sublabel: string;
-  href: string;
-  icon: React.ElementType;
-}
-
-const NAV_ITEMS: NavItem[] = [
-  {
-    id: "upload",
-    label: "Upload",
-    sublabel: "Documents & Specs",
-    href: "/upload",
-    icon: Upload,
-  },
-  {
-    id: "analysis",
-    label: "Analysis",
-    sublabel: "Extraction & Issues",
-    href: "/analysis",
-    icon: Search,
-  },
-  {
-    id: "questions",
-    label: "Questions",
-    sublabel: "Clarify & Resolve",
-    href: "/questions",
-    icon: HelpCircle,
-  },
-  {
-    id: "review",
-    label: "Review",
-    sublabel: "Edit & Audit Brief",
-    href: "/review",
-    icon: FileEdit,
-  },
-  {
-    id: "export",
-    label: "Export",
-    sublabel: "DOCX & PDF Brief",
-    href: "/export",
-    icon: Download,
-  },
+const STEPS = [
+  { href: "/analysis", label: "Findings", hint: "Read, filled, checked" },
+  { href: "/questions", label: "Questions", hint: "Decisions to make" },
+  { href: "/review", label: "Workbench", hint: "Review and finalize" },
+  { href: "/export", label: "Designer brief", hint: "Agency handoff" },
 ];
 
-export function Sidebar() {
-  const pathname = usePathname();
-  const { completedSteps, sessionId, reset } = useBriefStore();
-
-  const isStepAccessible = (itemIndex: number) => {
-    if (itemIndex === 0) return true;
-    const prevItem = NAV_ITEMS[itemIndex - 1];
-    return completedSteps.includes(prevItem.id) || Boolean(sessionId);
-  };
-
+function Wordmark({ className }: { className?: string }) {
   return (
-    <aside className="fixed left-0 top-0 h-screen w-64 bg-slate-950 text-white flex flex-col border-r border-slate-800 z-40 select-none shadow-xl">
-      {/* Brand Header */}
-      <div className="p-6 border-b border-slate-800/80">
-        <Link href="/upload" className="flex items-center gap-3 group">
-          <div className="h-10 w-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center text-white shadow-md shadow-blue-500/20 group-hover:scale-105 transition-transform">
-            <Box className="h-5 w-5 stroke-[2.2]" />
-          </div>
-          <div>
-            <div className="flex items-center gap-1.5">
-              <span className="font-bold text-lg tracking-tight text-white">
-                BriefForge
-              </span>
-              <span className="px-1.5 py-0.5 text-[10px] font-semibold bg-blue-500/20 text-blue-400 rounded border border-blue-500/30">
-                AI
-              </span>
-            </div>
-            <p className="text-xs text-slate-400 font-medium">
-              Packaging Brief Assistant
-            </p>
-          </div>
+    <Link href="/projects" className={cn("block text-[22px] font-extrabold leading-none tracking-[0.01em] text-white [font-stretch:75%]", className)}>
+      BriefForge
+    </Link>
+  );
+}
+
+function NavRow({
+  href,
+  label,
+  hint,
+  mark,
+  count,
+  enabled = true,
+  onNavigate,
+}: {
+  href: string;
+  label: string;
+  hint: string;
+  mark: React.ReactNode;
+  count?: number;
+  enabled?: boolean;
+  onNavigate?: () => void;
+}) {
+  const pathname = usePathname();
+  const active = pathname === href;
+  const inner = (
+    <span
+      className={cn(
+        "group flex h-11 items-center gap-3 rounded px-2 transition-colors duration-150",
+        active ? "bg-stock text-ink" : enabled ? "text-white/85 hover:bg-white/10 hover:text-white" : "cursor-not-allowed text-white/40"
+      )}
+    >
+      <span className={cn("grid h-6 w-6 shrink-0 place-items-center rounded text-[11px] font-semibold tabular-nums", active ? "border border-ink" : "border border-white/35")}>
+        {mark}
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className={cn("block text-[14px] leading-tight", active ? "font-bold" : "font-medium")}>{label}</span>
+        <span className={cn("block truncate text-[11px] leading-tight", active ? "text-ink-muted" : "text-white/55")}>{hint}</span>
+      </span>
+      {count ? (
+        <span className="figure rounded bg-talker px-1.5 py-1 text-[14px] text-ink" aria-label={`${count} open`}>
+          {count}
+        </span>
+      ) : null}
+    </span>
+  );
+  return (
+    <li>
+      {enabled ? (
+        <Link href={href} aria-current={active ? "page" : undefined} onClick={onNavigate}>
+          {inner}
         </Link>
-      </div>
+      ) : (
+        <span aria-disabled="true">{inner}</span>
+      )}
+    </li>
+  );
+}
 
-      {/* Navigation Links */}
-      <div className="flex-1 py-6 px-3 space-y-1.5 overflow-y-auto">
-        <div className="px-3 pb-2 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
-          Workflow Pipeline
-        </div>
-        {NAV_ITEMS.map((item, index) => {
-          const Icon = item.icon;
-          const isActive = pathname === item.href;
-          const isCompleted = completedSteps.includes(item.id);
-          const accessible = isStepAccessible(index);
-
-          const content = (
-            <div
-              className={cn(
-                "group flex items-center gap-3.5 px-3.5 py-3 rounded-lg text-sm font-medium transition-all relative",
-                isActive
-                  ? "bg-blue-600 text-white shadow-md shadow-blue-600/30"
-                  : accessible
-                  ? "text-slate-300 hover:bg-slate-900 hover:text-white"
-                  : "text-slate-500 cursor-not-allowed opacity-50"
-              )}
-            >
-              <div
-                className={cn(
-                  "p-1.5 rounded-md transition-colors",
-                  isActive
-                    ? "bg-blue-700 text-white"
-                    : isCompleted
-                    ? "bg-emerald-950/80 text-emerald-400 border border-emerald-800/50"
-                    : "bg-slate-800 text-slate-400 group-hover:text-slate-200"
-                )}
-              >
-                <Icon className="h-4 w-4" />
-              </div>
-
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between">
-                  <span className="truncate">{item.label}</span>
-                  {isCompleted && !isActive && (
-                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
-                  )}
-                </div>
-                <p
-                  className={cn(
-                    "text-[11px] truncate",
-                    isActive ? "text-blue-100" : "text-slate-400"
-                  )}
-                >
-                  {item.sublabel}
-                </p>
-              </div>
-
-              {isActive && (
-                <div className="absolute right-2 h-2 w-2 rounded-full bg-white shadow" />
-              )}
-            </div>
-          );
-
-          if (!accessible) {
-            return (
-              <div key={item.id} className="cursor-not-allowed">
-                {content}
-              </div>
-            );
-          }
-
-          return (
-            <Link key={item.id} href={item.href}>
-              {content}
-            </Link>
-          );
-        })}
-      </div>
-
-      {/* Footer Info & Session status */}
-      <div className="p-4 border-t border-slate-800 bg-slate-950/60">
-        <div className="p-3 rounded-lg bg-slate-900/90 border border-slate-800/80 mb-3">
-          <div className="flex items-center justify-between text-xs mb-1">
-            <span className="text-slate-400 flex items-center gap-1">
-              <Sparkles className="h-3 w-3 text-amber-400" />
-              Session
-            </span>
-            <span className="text-slate-300 font-mono text-[11px]">
-              {sessionId ? sessionId.substring(0, 10) : "Not started"}
-            </span>
-          </div>
-          <p className="text-[11px] text-slate-400 leading-tight">
-            Deterministic check + AI rule validation enabled.
-          </p>
-        </div>
-
-        <button
-          onClick={() => {
-            if (confirm("Reset current session and start over?")) {
-              reset();
-              window.location.href = "/upload";
-            }
+function NavList({ onNavigate }: { onNavigate?: () => void }) {
+  const { sessionId, view, reset } = useBriefStore();
+  const s = view?.state;
+  const counts: Record<string, number | undefined> = {
+    "/analysis": s?.readiness?.blocking_open || undefined,
+    "/questions": s?.questions.length || undefined,
+  };
+  return (
+    <div className="space-y-6">
+      <ul className="space-y-1">
+        <NavRow href="/projects" label="Projects" hint="All briefs" mark={<FolderOpen className="h-3.5 w-3.5" />} onNavigate={onNavigate} />
+        <NavRow
+          href="/upload"
+          label="New brief"
+          hint="Upload product files"
+          mark={<Plus className="h-3.5 w-3.5" />}
+          onNavigate={() => {
+            reset();
+            onNavigate?.();
           }}
-          className="w-full flex items-center justify-center gap-2 py-2 px-3 text-xs font-medium text-slate-400 hover:text-white hover:bg-slate-900 rounded-md transition-colors"
+        />
+      </ul>
+      <div>
+        <p className="mb-2 px-2 text-[11px] font-semibold uppercase tracking-[0.06em] text-white/55">Open brief</p>
+        {s ? (
+          <p className="mb-2 truncate px-2 text-[14px] font-bold text-white" title={s.product_name}>
+            {s.product_name}
+          </p>
+        ) : (
+          <p className="mb-2 px-2 text-[12px] leading-snug text-white/60">Open one from Projects, or start a new brief.</p>
+        )}
+        <ol className="space-y-1">
+          {STEPS.map((item, i) => (
+            <NavRow key={item.href} {...item} mark={i + 1} count={counts[item.href]} enabled={Boolean(sessionId)} onNavigate={onNavigate} />
+          ))}
+        </ol>
+      </div>
+    </div>
+  );
+}
+
+function RailFooter() {
+  const s = useBriefStore((st) => st.view?.state);
+  return (
+    <div className="border-t border-white/15 pt-4">
+      {s ? (
+        <p className="meta leading-relaxed text-white/70">
+          Market {s.market} · {s.status === "finalized" ? "Finalized" : "Draft"}
+        </p>
+      ) : (
+        <p className="text-[12px] leading-snug text-white/65">Product files to a checked design brief.</p>
+      )}
+    </div>
+  );
+}
+
+export function Sidebar() {
+  return (
+    <nav aria-label="Main" className="on-rail no-print fixed inset-y-0 left-0 z-40 hidden w-60 flex-col bg-rail px-4 py-6 text-white lg:flex">
+      <Wordmark className="px-2" />
+      <div className="mt-8 flex-1 overflow-y-auto">
+        <NavList />
+      </div>
+      <RailFooter />
+    </nav>
+  );
+}
+
+export function MobileBar() {
+  const [open, setOpen] = useState(false);
+  const pathname = usePathname();
+  useEffect(() => setOpen(false), [pathname]);
+  return (
+    <div className="on-rail no-print sticky top-0 z-40 bg-rail text-white lg:hidden">
+      <div className="flex h-14 items-center justify-between px-4">
+        <Wordmark />
+        <button
+          onClick={() => setOpen((v) => !v)}
+          aria-expanded={open}
+          aria-controls="mobile-nav"
+          className="grid h-10 w-10 place-items-center rounded hover:bg-white/10"
+          aria-label={open ? "Close menu" : "Open menu"}
         >
-          <RotateCcw className="h-3.5 w-3.5" />
-          Reset Workflow
+          {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </button>
       </div>
-    </aside>
+      <div id="mobile-nav" className="disclosure" data-open={open}>
+        <div>
+          <div className="space-y-4 px-4 pb-5">
+            <NavList onNavigate={() => setOpen(false)} />
+            <RailFooter />
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }

@@ -1,197 +1,179 @@
 "use client";
 
-import React, { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Sparkles, Loader2, CheckCircle2, ShieldCheck, AlertCircle } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FileDropzone } from "@/components/upload/FileDropzone";
-import { useBriefStore } from "@/store/briefStore";
+import { ErrorBanner, PageHead, fmtElapsed } from "@/components/shared/Notice";
 import { api } from "@/lib/api";
+import { CaseType } from "@/lib/types";
+import { cn } from "@/lib/utils";
+import { useBriefStore } from "@/store/briefStore";
+
+const CASES: { id: CaseType; title: string; text: string }[] = [
+  { id: "update", title: "Refresh an existing pack", text: "Current artwork plus content sheet. Compare them and update." },
+  { id: "new_market", title: "Adapt to a new market", text: "An existing pack from another country, made ready for this one." },
+  { id: "new_product", title: "New product", text: "Spec sheet or notes only; there is no artwork yet." },
+];
+
+const STAGES = [
+  ["Read", "Text with positions, panel grid, hidden layers, sheet cells and notes"],
+  ["Fill", "Every brief field from a real source; nothing invented"],
+  ["Check", "Math, claims, allergens and US label rules"],
+  ["Ask", "Only the decisions that matter, routed by owner"],
+];
+
+const BUSY_LABEL = "Reading files and running checks";
+
+function Processing() {
+  const busySince = useBriefStore((s) => s.busySince);
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, []);
+  const elapsed = busySince ? Math.round((now - busySince) / 1000) : 0;
+  return (
+    <section role="status" aria-live="polite" className="on-rail anim-rise overflow-hidden rounded bg-rail text-white shadow-lift">
+      <div className="flex items-center justify-between gap-4 px-5 pt-5">
+        <div>
+          <h2 className="text-[19px] font-bold">Building the brief</h2>
+          <p className="mt-0.5 text-[13px] text-white/75">Large artwork files can take a minute or two.</p>
+        </div>
+        <p className="figure text-[44px]" aria-label={`${elapsed} seconds elapsed`}>
+          {fmtElapsed(elapsed)}
+        </p>
+      </div>
+      <div className="relative mx-5 mt-4 h-1 overflow-hidden rounded-sm bg-white/15">
+        <div className="scan-bar absolute inset-y-0 left-0 w-1/4 bg-talker" />
+      </div>
+      <ol className="grid grid-cols-1 gap-px bg-white/10 sm:grid-cols-4">
+        {STAGES.map(([name, text]) => (
+          <li key={name} className="bg-rail px-5 py-4">
+            <p className="text-[13px] font-bold">{name}</p>
+            <p className="mt-0.5 text-xs leading-snug text-white/70">{text}</p>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
 
 export default function UploadPage() {
   const router = useRouter();
-  const {
-    uploadedFiles,
-    setUploadedFiles,
-    removeUploadedFile,
-    setSessionId,
-    setUploadResponse,
-    setBrief,
-    setIssues,
-    setExtractionData,
-    completeStep,
-    setStep,
-  } = useBriefStore();
+  const { start, busy, errorDetail, clearError, load } = useBriefStore();
+  const duplicate = (errorDetail as { existing?: string; product_name?: string } | null)?.existing
+    ? (errorDetail as { existing: string; product_name: string })
+    : null;
+  const [files, setFiles] = useState<File[]>([]);
+  const [caseType, setCaseType] = useState<CaseType>("update");
+  const [market, setMarket] = useState("US");
+  const analyzing = busy === BUSY_LABEL;
 
-  const [isLoading, setIsLoading] = useState(false);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
-
-  const handleFilesSelected = (newFiles: File[]) => {
-    setUploadedFiles([...uploadedFiles, ...newFiles]);
-    setErrorMsg(null);
+  const analyze = async (allowDuplicate = false) => {
+    const ok = await start(() => api.upload(files, caseType, market, allowDuplicate), BUSY_LABEL);
+    if (ok) router.push("/analysis");
   };
-
-  const handleLoadSampleFiles = () => {
-    // Create mock Files for immediate testability
-    const sample1 = new File(
-      ["Mock PDF content with packaging die cut lines and nutritional front panel"],
-      "Granola_Packaging_Spec_v2.pdf",
-      { type: "application/pdf" }
-    );
-    const sample2 = new File(
-      ["Nutrient,Per 100g,Per 30g\nEnergy,400kcal,120kcal\nCarbs,50g,15g\nSugars,60g,18g"],
-      "Nutrition_Formula_Rev3.xlsx",
-      {
-        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      }
-    );
-    const sample3 = new File(
-      ["Brand claims: 100% Vegan, High Fiber, Non-GMO Certified"],
-      "Brand_Styleguide_Claims.docx",
-      {
-        type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-      }
-    );
-    setUploadedFiles([sample1, sample2, sample3]);
-    setErrorMsg(null);
-  };
-
-  const handleAnalyze = async () => {
-    if (uploadedFiles.length === 0) return;
-
-    setIsLoading(true);
-    setErrorMsg(null);
-
-    try {
-      // 1. Upload files
-      const uploadRes = await api.uploadFiles(uploadedFiles);
-      setSessionId(uploadRes.session_id);
-      setUploadResponse(uploadRes);
-
-      // 2. Trigger analysis
-      const analysisRes = await api.analyze(uploadRes.session_id);
-      setBrief(analysisRes.brief);
-      setIssues(analysisRes.issues);
-      if (analysisRes.extraction) {
-        setExtractionData(analysisRes.extraction);
-      }
-
-      // 3. Mark upload step complete
-      completeStep("upload");
-      setStep("analysis");
-
-      // 4. Navigate to Analysis
-      router.push("/analysis");
-    } catch (err: any) {
-      console.error("Analysis pipeline error:", err);
-      setErrorMsg(err?.message || "Failed to analyze files. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
+  const openExisting = async (sid: string) => {
+    clearError();
+    await load(sid);
+    router.push("/review");
   };
 
   return (
-    <div className="space-y-8 max-w-4xl mx-auto py-4">
-      {/* Page Header */}
-      <div className="border-b border-slate-200 pb-5">
-        <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-blue-600 mb-1">
-          <span>Step 1 of 5</span>
-          <span>•</span>
-          <span>Data Ingestion</span>
+    <div className="mx-auto max-w-4xl space-y-6">
+      <PageHead
+        title="New brief"
+        lead="Add the files for one product: the current packaging PDF, the content sheet, a brief or notes. BriefForge reads them, fills the brief with proof for each value, checks it, and asks only what needs a decision. Each upload becomes its own brief under Projects."
+      />
+      {duplicate ? (
+        <div role="alert" className="ticket anim-rise flex flex-wrap items-center justify-between gap-3 border-talker-deep/40 bg-talker-soft p-4">
+          <p className="text-[14px] text-ink">
+            These exact files already have a brief: <b>{duplicate.product_name}</b>. Open it to keep working, or use Add files there for new
+            versions.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" onClick={() => { clearError(); analyze(true); }}>
+              Create a separate brief anyway
+            </Button>
+            <Button onClick={() => openExisting(duplicate.existing)}>Open the existing brief</Button>
+          </div>
         </div>
-        <h1 className="text-3xl font-bold tracking-tight text-slate-900">
-          Upload Product Files
-        </h1>
-        <p className="text-slate-500 mt-1 text-base">
-          Upload packaging PDFs, Excel formula sheets, Word brand guides, or artwork images.
-          BriefForge will extract text, understand panels, cross-validate math, and detect inconsistencies.
-        </p>
-      </div>
-
-      {errorMsg && (
-        <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 flex items-center gap-3 text-sm">
-          <AlertCircle className="h-5 w-5 shrink-0" />
-          <span>{errorMsg}</span>
-        </div>
+      ) : (
+        <ErrorBanner />
       )}
 
-      {/* Dropzone Container */}
-      <FileDropzone
-        files={uploadedFiles}
-        onFilesSelected={handleFilesSelected}
-        onFileRemoved={removeUploadedFile}
-        onLoadSampleFiles={handleLoadSampleFiles}
-      />
+      {analyzing && <Processing />}
 
-      {/* Feature Highlights */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
-        <div className="p-4 rounded-xl bg-white border border-slate-200 shadow-xs">
-          <div className="h-8 w-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center mb-2.5">
-            <Sparkles className="h-4 w-4" />
+      <div className={cn("space-y-6", analyzing && "pointer-events-none opacity-50")}>
+        <fieldset className="min-w-0">
+          <legend className="section-rule mb-3 w-full text-[16px] font-bold text-ink">Situation</legend>
+          <div className="grid grid-cols-1 gap-2 md:grid-cols-3">
+            {CASES.map((c) => (
+              <label
+                key={c.id}
+                className={cn(
+                  "ticket flex cursor-pointer flex-col gap-1 p-4 pr-3 transition-colors duration-150",
+                  caseType === c.id ? "border-ink shadow-[inset_0_0_0_1px_#121514]" : "hover:border-line-strong"
+                )}
+              >
+                <input type="radio" name="case" value={c.id} checked={caseType === c.id} onChange={() => setCaseType(c.id)} className="sr-only" />
+                <span className="flex items-start justify-between gap-2">
+                  <span className="text-[15px] font-bold leading-snug text-ink">{c.title}</span>
+                  <span aria-hidden className={cn("mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded-full border-2", caseType === c.id ? "border-rail" : "border-line-strong")}>
+                    {caseType === c.id && <span className="h-2 w-2 rounded-full bg-rail" />}
+                  </span>
+                </span>
+                <span className="text-[13px] leading-snug text-ink-muted">{c.text}</span>
+              </label>
+            ))}
           </div>
-          <h4 className="text-sm font-semibold text-slate-900 mb-1">
-            Panel Understanding
-          </h4>
-          <p className="text-xs text-slate-500 leading-relaxed">
-            Distinguishes Front, Back, and Side panels while filtering out technical printer trim marks.
-          </p>
-        </div>
-
-        <div className="p-4 rounded-xl bg-white border border-slate-200 shadow-xs">
-          <div className="h-8 w-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center mb-2.5">
-            <ShieldCheck className="h-4 w-4" />
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            <label htmlFor="market" className="text-sm font-semibold text-ink">
+              Target market
+            </label>
+            <select id="market" value={market} onChange={(e) => setMarket(e.target.value)} className="h-9 w-full rounded border border-line-strong bg-stock px-2 text-sm font-medium sm:w-auto">
+              <option value="US">United States (FDA label rules)</option>
+              <option value="EU">European Union (label rules not loaded yet)</option>
+            </select>
+            {market !== "US" && <span className="text-xs text-ink-muted">Only US label rules are checked today; every other check still runs.</span>}
           </div>
-          <h4 className="text-sm font-semibold text-slate-900 mb-1">
-            Deterministic Math Check
-          </h4>
-          <p className="text-xs text-slate-500 leading-relaxed">
-            Strict code-level checks: Sugar ≤ Carbs, calorie Atwater factors, and serving weight math.
-          </p>
-        </div>
+        </fieldset>
 
-        <div className="p-4 rounded-xl bg-white border border-slate-200 shadow-xs">
-          <div className="h-8 w-8 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center mb-2.5">
-            <CheckCircle2 className="h-4 w-4" />
+        <section aria-labelledby="files-h" className="min-w-0">
+          <h2 id="files-h" className="section-rule mb-3 text-[16px] font-bold text-ink">
+            Product files
+          </h2>
+          <FileDropzone
+            files={files}
+            disabled={analyzing}
+            onFilesSelected={(f) => setFiles((prev) => [...prev, ...f.filter((n) => !prev.some((p) => p.name === n.name && p.size === n.size))])}
+            onFileRemoved={(i) => setFiles((prev) => prev.filter((_, k) => k !== i))}
+          />
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+            <p className="text-xs text-ink-muted">{files.length ? `${files.length} file${files.length === 1 ? "" : "s"} ready.` : "Add at least one file."}</p>
+            <Button size="lg" disabled={!files.length || !!busy} onClick={() => analyze()}>
+              Build the brief <ArrowRight className="h-4 w-4" />
+            </Button>
           </div>
-          <h4 className="text-sm font-semibold text-slate-900 mb-1">
-            Source Provenance
-          </h4>
-          <p className="text-xs text-slate-500 leading-relaxed">
-            Every single field is linked back to the exact PDF page, cell coordinate, or AI inference.
-          </p>
-        </div>
-      </div>
+        </section>
 
-      {/* Action Footer */}
-      <div className="flex items-center justify-between pt-6 border-t border-slate-200">
-        <div className="text-sm text-slate-500">
-          {uploadedFiles.length === 0 ? (
-            <span>Please select or drop at least one file to proceed.</span>
-          ) : (
-            <span className="text-slate-900 font-medium">
-              {uploadedFiles.length} file{uploadedFiles.length > 1 ? "s" : ""} ready for analysis
-            </span>
-          )}
-        </div>
-
-        <Button
-          size="lg"
-          onClick={handleAnalyze}
-          disabled={uploadedFiles.length === 0 || isLoading}
-          className="gap-2 px-6"
-        >
-          {isLoading ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Parsing & Checking Rules...
-            </>
-          ) : (
-            <>
-              Analyze Files
-              <ArrowRight className="h-4 w-4" />
-            </>
-          )}
-        </Button>
+        <section aria-labelledby="how-h" className="rounded border border-line p-4">
+          <h2 id="how-h" className="text-sm font-bold text-ink">
+            What happens next
+          </h2>
+          <ol className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
+            {STAGES.map(([name, text], i) => (
+              <li key={name} className="grid grid-cols-[22px_1fr] gap-2 text-[13px]">
+                <span className="grid h-5 w-5 place-items-center rounded border border-ink text-[11px] font-semibold tabular-nums">{i + 1}</span>
+                <span>
+                  <b className="text-ink">{name}.</b> <span className="text-ink-muted">{text}</span>
+                </span>
+              </li>
+            ))}
+          </ol>
+        </section>
       </div>
     </div>
   );
