@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { IssuesList } from "@/components/analysis/IssuesList";
 import { BriefEditor } from "@/components/review/BriefEditor";
 import { ReadinessCard } from "@/components/review/ReadinessCard";
+import { PackInspectorCard } from "@/components/review/PackInspectorCard";
 import { ArtworkViewer } from "@/components/shared/ArtworkViewer";
 import { ErrorBanner, NoSession, PageHead, SessionPending } from "@/components/shared/Notice";
 import { useSession } from "@/components/shared/useSession";
@@ -18,6 +19,18 @@ export default function ReviewPage() {
   const [showLog, setShowLog] = useState(false);
   const [pane, setPane] = useState<"fields" | "findings">("fields");
   const { highlight, setHighlight } = useBriefStore();
+  const [inspectKey, setInspectKey] = useState<string | null>(null);
+
+  // Talk to the Pack: a click on the artwork selects that element, shows it, and brings its ticket into view.
+  const inspect = (key: string) => {
+    setInspectKey(key);
+    const f = view?.state.fields.find((x) => x.key === key);
+    if (f) {
+      const located = [...f.sources, ...f.candidates.map((c) => c.source)].filter((x) => x.bbox);
+      setHighlight({ label: f.label, sources: located.length ? located : f.sources });
+    }
+    document.querySelector(`[data-field="${key}"]`)?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  };
 
   // At rest, the first ticket needing review is selected and shown on the pack.
   useEffect(() => {
@@ -71,13 +84,33 @@ export default function ReviewPage() {
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(280px,340px)] xl:grid-cols-[minmax(300px,0.85fr)_minmax(0,1.2fr)_minmax(290px,0.8fr)]">
         <div className="hidden xl:block">
           <div className="sticky top-[84px]">
-            <ArtworkViewer pages={view.pages} panels={view.panels} height="max-h-[calc(100vh-250px)]" />
+            <ArtworkViewer
+              pages={view.pages}
+              panels={view.panels}
+              height={inspectKey ? "max-h-[42vh]" : "max-h-[calc(100vh-250px)]"}
+              inspectable={s.fields}
+              inspected={inspectKey}
+              onInspect={inspect}
+            />
+            {inspectKey && (
+              <div className="mt-3 max-h-[calc(58vh-150px)] overflow-y-auto">
+                <PackInspectorCard fieldKey={inspectKey} onClose={() => setInspectKey(null)} />
+              </div>
+            )}
           </div>
         </div>
 
         <div className={cn("min-w-0 space-y-4", pane === "findings" && "hidden lg:block")}>
-          <div className="xl:hidden">
-            <ArtworkViewer pages={view.pages} panels={view.panels} height="max-h-[420px]" />
+          <div className="space-y-3 xl:hidden">
+            <ArtworkViewer
+              pages={view.pages}
+              panels={view.panels}
+              height="max-h-[420px]"
+              inspectable={s.fields}
+              inspected={inspectKey}
+              onInspect={inspect}
+            />
+            {inspectKey && <PackInspectorCard fieldKey={inspectKey} onClose={() => setInspectKey(null)} />}
           </div>
           <BriefEditor fields={s.fields} />
 

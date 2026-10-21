@@ -34,6 +34,7 @@ SECTIONS: List[str] = [
     "Quantity",
     "Nutrition",
     "Other Pack Copy",
+    "Production specs",
 ]
 
 # FDA 21 CFR 101.9 reference daily values (adults and children 4+)
@@ -124,6 +125,16 @@ _FIELDS += [
              mandatory=True, on_artwork=True, owner="Supply Chain"),
     FieldDef("storage", "Storage instructions", "Other Pack Copy", ("storage instructions", "storage"), on_artwork=True),
     FieldDef("other_marks", "Other marks and text", "Other Pack Copy", ("other text",), on_artwork=True, owner="Agency"),
+    # Production specs: what the studio needs to lay out and print the pack. Not printed on it.
+    FieldDef("pdp_dimensions", "Front panel (PDP) size", "Production specs",
+             ("pdp size", "pdp dimensions", "front panel size", "front panel dimensions", "principal display panel size",
+              "panel dimensions", "carton dimensions", "pack dimensions", "dieline dimensions"), owner="Supply Chain"),
+    FieldDef("barcode_spec", "Barcode symbology and size", "Production specs",
+             ("barcode symbology", "barcode type", "barcode specification", "barcode spec", "barcode size"),
+             owner="Supply Chain"),
+    FieldDef("print_spec", "Print process and colours", "Production specs",
+             ("print process", "print colours", "print colors", "colour specification", "color specification",
+              "pantone", "print specification", "inks"), owner="Agency"),
 ]
 
 # Fields used by the non-food categories (cosmetics, medicines, devices, household, pet food, India).

@@ -2,11 +2,20 @@
 
 import { useState } from "react";
 import { ChevronDown } from "lucide-react";
+import { AgencySimulatorButton } from "@/components/export/AgencySimulator";
+import { DielineBlueprint } from "@/components/export/DielineBlueprint";
 import { BriefState, DesignAction, DesignerBrief, OpenQuestion, PageView, Panel } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { ArtworkViewer } from "@/components/shared/ArtworkViewer";
 import { ACTION_META, ActionFlag, OwnerTag, StatusFlag } from "@/components/shared/badges";
 import { SearchBox, matchesQuery } from "@/components/shared/SearchBox";
+import { useBriefStore } from "@/store/briefStore";
+
+type Tab = "blueprint" | "copy";
+const TABS: { id: Tab; label: string }[] = [
+  { id: "blueprint", label: "Visual Blueprint" },
+  { id: "copy", label: "Copy Deck & Proofs" },
+];
 
 const ORDER: DesignAction[] = ["change", "add", "remove", "unknown", "keep"];
 
@@ -133,6 +142,8 @@ function QuestionGroup({ id, title, lead, questions }: { id: string; title: stri
 export function DesignerBriefView({ brief, state, pages, panels }: { brief: DesignerBrief; state: BriefState; pages: PageView[]; panels: Panel[] }) {
   const [action, setAction] = useState<DesignAction | "all">("all");
   const [query, setQuery] = useState("");
+  const [tab, setTab] = useState<Tab>("blueprint");
+  const sessionId = useBriefStore((s) => s.sessionId);
   const panelActions: Record<string, DesignAction[]> = {};
   brief.panels.forEach((p) => (panelActions[p.panel] = p.items.map((i) => i.action)));
   const inFilter = brief.items.filter((i) => action === "all" || i.action === action);
@@ -171,6 +182,34 @@ export function DesignerBriefView({ brief, state, pages, panels }: { brief: Desi
           <dd className="figure text-[24px] text-ink">{brief.readiness?.score ?? 0}%</dd>
         </dl>
       </header>
+
+      <div className="no-print flex flex-wrap items-center justify-between gap-3">
+        <div role="tablist" aria-label="Designer brief view" className="inline-flex gap-1 rounded border border-line bg-stock p-1">
+          {TABS.map((t) => (
+            <button
+              key={t.id}
+              id={`dbv-tab-${t.id}`}
+              role="tab"
+              aria-selected={tab === t.id}
+              aria-controls={`dbv-panel-${t.id}`}
+              onClick={() => setTab(t.id)}
+              className={cn("h-9 rounded px-4 text-[13px] font-semibold transition-colors", tab === t.id ? "bg-ink text-white" : "text-ink-muted hover:text-ink")}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+        {sessionId && <AgencySimulatorButton sessionId={sessionId} />}
+      </div>
+
+      {tab === "blueprint" && sessionId && (
+        <div id="dbv-panel-blueprint" role="tabpanel" aria-labelledby="dbv-tab-blueprint" className="no-print">
+          <DielineBlueprint sessionId={sessionId} version={brief.updated_at} />
+        </div>
+      )}
+
+      {/* The copy deck always prints, whichever tab is on screen. */}
+      <div id="dbv-panel-copy" role="tabpanel" aria-labelledby="dbv-tab-copy" hidden={tab !== "copy"} className="space-y-10 print:!block">
 
       <Section id="todo-h" title="What to do on the pack" aside="Filter by action; the layout shows each panel’s count">
         <div role="tablist" aria-label="Filter by action" className="mb-4 flex flex-wrap gap-2">
@@ -391,6 +430,7 @@ export function DesignerBriefView({ brief, state, pages, panels }: { brief: Desi
             ))}
           </ol>
         </Fold>
+      </div>
       </div>
 
       <footer className="flex flex-wrap items-center justify-between gap-2 border-t border-line pt-4 text-xs text-ink-muted">

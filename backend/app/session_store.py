@@ -30,6 +30,18 @@ def _write_atomic(path: Path, text: str) -> None:
     os.replace(tmp, path)
 
 
+def _add_new_fields(state: BriefState) -> None:
+    """A brief saved before a field was added to the catalog gets it, empty, so it can be filled in."""
+    from app.models.brief import BriefField
+    from app.services.catalog import FIELDS
+
+    have = {f.key for f in state.fields}
+    for fd in FIELDS:
+        if fd.key not in have:
+            state.fields.append(BriefField(key=fd.key, label=fd.label, section=fd.section, mandatory=fd.mandatory,
+                                           on_artwork=fd.on_artwork))
+
+
 class SessionStore:
     def __init__(self, root: Path):
         self.root = root
@@ -83,6 +95,7 @@ class SessionStore:
                 logger.warning("Session %s could not be read: %s", sid, str(err)[:200])
                 self.broken[sid] = "The saved brief is damaged or from an older version and cannot be opened."
                 return None
+            _add_new_fields(state)
             self._cache[sid] = (state, ctx, ex)
             return self._cache[sid]
 

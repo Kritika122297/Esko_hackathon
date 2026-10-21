@@ -155,6 +155,20 @@ class AnsweredQuestion(BaseModel):
                         custom_field=self.custom_field, ai_worded=self.ai_worded)
 
 
+class TraceEvent(BaseModel):
+    """One step of the Autopilot trace, recorded by the pipeline as it runs (never scripted)."""
+
+    id: str = Field(..., description="Stable per step, so a 'running' event can be replaced by its result")
+    timestamp: str
+    step: str
+    tool: str
+    status: Literal["running", "ok", "warning", "info"]
+    message: str
+    detail: Optional[str] = None
+    citation: Optional[str] = Field(None, description="Clause id the step's finding rests on")
+    duration_ms: int = 0
+
+
 class ChangeLogEntry(BaseModel):
     at: str
     by: str
@@ -218,6 +232,7 @@ class BriefState(BaseModel):
     answered_questions: List[AnsweredQuestion] = Field(default_factory=list, description="Closed questions with their answers, oldest first")
     acknowledgements: Dict[str, str] = Field(default_factory=dict)
     change_log: List[ChangeLogEntry] = Field(default_factory=list)
+    autopilot_trace: List[TraceEvent] = Field(default_factory=list, description="What the pipeline did when the brief was built")
     extraction_notes: List[str] = Field(default_factory=list)
     ai: AIStatus = Field(default_factory=AIStatus)
     readiness: Optional[Readiness] = None

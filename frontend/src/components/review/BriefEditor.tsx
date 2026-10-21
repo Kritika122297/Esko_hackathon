@@ -12,11 +12,15 @@ import { SearchBox, matchesQuery } from "@/components/shared/SearchBox";
 import { SourceLine, sourceLabel } from "@/components/shared/SourceChip";
 import { ImpactPanel } from "./ImpactPanel";
 
-const SECTION_ORDER = ["Product", "Legal & Identity", "Ingredients & Allergens", "Claims & Certifications", "Quantity", "Nutrition", "Other Pack Copy", "Project"];
+const SECTION_ORDER = ["Product", "Legal & Identity", "Ingredients & Allergens", "Claims & Certifications", "Quantity", "Nutrition", "Other Pack Copy", "Production specs", "Project"];
 type Filter = "needs_review" | "missing" | "confirmed" | "all";
 
 export function BriefEditor({ fields }: { fields: BriefField[] }) {
-  const relevant = useMemo(() => fields.filter((f) => f.value || f.mandatory || f.not_applicable), [fields]);
+  // Production specs are always listed, even when empty: the agency simulator asks for them.
+  const relevant = useMemo(
+    () => fields.filter((f) => f.value || f.mandatory || f.not_applicable || f.section === "Production specs"),
+    [fields]
+  );
   const counts = useMemo(
     () => ({
       needs_review: relevant.filter((f) => f.status === "needs_review").length,
@@ -244,6 +248,7 @@ function Ticket({ f }: { f: BriefField }) {
   return (
     <article
       aria-label={f.label}
+      data-field={f.key}
       className={cn(
         "ticket",
         selected && "border-ink shadow-[inset_0_0_0_1px_#121514]",

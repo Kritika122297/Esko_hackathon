@@ -1,5 +1,6 @@
 import {
-  CaseType, ChatActionResult, ChatAnswer, ChatMessageOut, ChecklistField, DesignerBrief, ImpactPreview, ProjectSummary, RulesSummary, SessionView,
+  Blueprint, CaseType, ChatActionResult, ChatAnswer, ChatMessageOut, MarketGap, PackAudit, PackFix, PackInspection,
+  SimulatorReport, TraceView, ChecklistField, DesignerBrief, ImpactPreview, ProjectSummary, RulesSummary, SessionView,
   StandardsOptions, RulebookProposal,
 } from "./types";
 
@@ -102,6 +103,43 @@ export const api = {
     form.append("allow_duplicate", String(allowDuplicate));
     return request<SessionView>("/sessions", { method: "POST", body: form });
   },
+
+  /** The flat plan with the layout rules that apply to this pack. */
+  blueprint: (sid: string) => request<Blueprint>(`/sessions/${sid}/blueprint`),
+
+  /** Would a studio accept this brief? Code checks score it; the AI lists what it still cannot tell. */
+  runAgencySimulator: (sid: string) => request<SimulatorReport>(`/sessions/${sid}/agency-simulator`, json({})),
+
+  /** What changes when this brief moves to another market (from the rule packs; nothing is created). */
+  marketGap: (sid: string, target: string, category?: string) =>
+    request<MarketGap>(`/sessions/${sid}/market-gap?target=${encodeURIComponent(target)}${category ? `&category=${encodeURIComponent(category)}` : ""}`),
+
+  /** Starts building a brief in the background; follow it with the trace. Same form as `upload`. */
+  uploadStart: (files: File[], caseType: CaseType, market: string, allowDuplicate = false, category = "food",
+                standards: string[] = [], company?: { filename: string; rules: object[] }, sourceMarket = "") => {
+    const form = new FormData();
+    files.forEach((f) => form.append("files", f));
+    form.append("case", caseType);
+    form.append("market", market);
+    if (caseType === "new_market" && sourceMarket) form.append("source_market", sourceMarket);
+    form.append("category", category);
+    form.append("standards", standards.join(","));
+    if (company && company.rules.length) {
+      form.append("company_rules", JSON.stringify(company.rules));
+      form.append("company_file", company.filename);
+    }
+    form.append("allow_duplicate", String(allowDuplicate));
+    form.append("background", "true");
+    return request<{ session_id: string; status: string }>("/sessions", { method: "POST", body: form });
+  },
+  trace: (sid: string) => request<TraceView>(`/sessions/${sid}/trace`),
+  traceStreamUrl: (sid: string) => `${API}/sessions/${sid}/trace/stream`,
+
+  inspectField: (sid: string, key: string) => request<PackInspection>(`/sessions/${sid}/fields/${key}/inspect`),
+  auditField: (sid: string, key: string) => request<PackAudit>(`/sessions/${sid}/fields/${key}/audit`, json({})),
+  suggestFix: (sid: string, key: string) => request<PackFix>(`/sessions/${sid}/fields/${key}/suggest-fix`, json({})),
+  applyFix: (sid: string, key: string, value: string, source: "code" | "ai", reason?: string) =>
+    request<SessionView>(`/sessions/${sid}/fields/${key}/apply-fix`, json({ value, source, reason })),
 
   /** A new brief for another market from this brief's files, checked against that market's rules. */
   duplicateMarket: (sid: string, targetMarket: string, category?: string, productNameOverride?: string) =>

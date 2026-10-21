@@ -163,6 +163,8 @@ export interface BriefState {
   category?: string;
   status: "draft" | "finalized";
   product_name: string;
+  /** What the pipeline did when the brief was built (empty for older briefs). */
+  autopilot_trace?: TraceEvent[];
   files: { name: string; kind: string; size: number; pages?: number | null }[];
   fields: BriefField[];
   issues: Issue[];
@@ -315,6 +317,27 @@ export interface ChatCitation {
 
 export type ChatScope = "brief" | "general" | "both";
 
+/** One element of the Market Jump matrix: how the current market and the target market treat it. */
+export interface MarketGapRow {
+  element: string;
+  key: string;
+  current: { text: string; clause_id?: string | null } | null;
+  target: { text: string; clause_id?: string | null } | null;
+  severity: "none" | "warn" | "blocking";
+  action_needed: string;
+  verified: boolean;
+}
+
+export interface MarketGap {
+  source_market: string;
+  target_market: string;
+  category: string;
+  rules_available: boolean;
+  rows: MarketGapRow[];
+  summary: { blocking: number; warn: number; none: number };
+  note: string;
+}
+
 /** What a prepared change would do, computed by code on a copy of the brief. */
 export interface ChatActionImpact {
   resolved: string[];
@@ -423,4 +446,142 @@ export interface RulebookProposal {
   characters: number;
   rules: RulebookRule[];
   ai_used: boolean;
+}
+
+/** Designer blueprint: the flat plan with the layout rules that apply (values from layout_rules.json, with citations). */
+export interface BlueprintPanel {
+  id: string;
+  label: string;
+  role: "pdp" | "info" | "back" | "side" | "flap" | "barcode" | "other";
+  bbox: number[];
+  items: string[];
+}
+
+export interface BlueprintTypeSpec {
+  element: string;
+  min_height?: string | null;
+  basis: string;
+  citation: string;
+  clause_id?: string | null;
+  verified: boolean;
+  note?: string | null;
+}
+
+export interface BlueprintOverlay {
+  kind: "zone" | "group" | "quiet_zone" | "emphasis";
+  panel?: string | null;
+  label: string;
+  text: string;
+  citation: string;
+  clause_id?: string | null;
+  verified: boolean;
+  fraction?: number | null;
+  exempt: boolean;
+  ok?: boolean | null;
+}
+
+export interface Blueprint {
+  generic: boolean;
+  page_width: number;
+  page_height: number;
+  panels: BlueprintPanel[];
+  pdp_panel?: string | null;
+  info_panel?: string | null;
+  barcode_panel?: string | null;
+  dimensions?: { width_in: number; height_in: number; area_sq_in: number; area_cm2: number; source: "brief" | "dieline"; text: string } | null;
+  dimensions_needed: boolean;
+  symbology?: string | null;
+  type_specs: BlueprintTypeSpec[];
+  overlays: BlueprintOverlay[];
+  copy_blocks: { key: string; label: string; text: string }[];
+  general_only: boolean;
+  layout_rules: boolean;
+  notes: string[];
+}
+
+/** Agency Simulator: score and status are computed by code from the checks; the AI only adds open questions. */
+export interface SimulatorCheck {
+  id: string;
+  name: string;
+  passed: boolean;
+  severity: "blocking" | "warning" | "info";
+  detail: string;
+  suggestion?: string | null;
+  clause_id?: string | null;
+}
+
+export interface SimulatorReport {
+  product: string;
+  market: string;
+  category: string;
+  score: number;
+  status: "READY_FOR_STUDIO" | "CHANGES_REQUIRED" | "BLOCKED";
+  checks: SimulatorCheck[];
+  ambiguities: { topic: string; question: string; panel?: string | null }[];
+  designer_summary: string;
+  llm_unavailable: boolean;
+  model?: string | null;
+}
+
+/** One step of the Autopilot trace, recorded by the pipeline as it ran. */
+export interface TraceEvent {
+  id: string;
+  timestamp: string;
+  step: string;
+  tool: string;
+  status: "running" | "ok" | "warning" | "info";
+  message: string;
+  detail?: string | null;
+  citation?: string | null;
+  duration_ms: number;
+}
+
+export interface TraceView {
+  session_id: string;
+  status: "running" | "done" | "error";
+  error?: string | null;
+  events: TraceEvent[];
+}
+
+/** Talk to the Pack: one element of the artwork, what governs it, and the AI's audit and fix. */
+export interface PackClause {
+  id: string;
+  standard: string;
+  text: string;
+}
+
+export interface PackInspection {
+  key: string;
+  label: string;
+  value: string | null;
+  status: FieldStatus;
+  sources: SourceRef[];
+  candidates: SourceRef[];
+  issues: { id: string; title: string; severity: Severity; description: string; clauses: PackClause[] }[];
+  clauses: PackClause[];
+}
+
+export interface PackAudit {
+  key: string;
+  label: string;
+  value: string | null;
+  verdict: "compliant" | "issue" | "unclear" | "no_rule";
+  answer: string;
+  quotes: { clause_id: string; standard: string; text: string; exact: boolean }[];
+  open_issues: string[];
+  ai: boolean;
+  model?: string | null;
+}
+
+export interface PackFix {
+  key: string;
+  label: string;
+  current: string | null;
+  suggested?: string | null;
+  source?: "code" | "ai" | null;
+  reason?: string | null;
+  clause_id?: string | null;
+  impact?: ChatActionImpact | null;
+  message?: string | null;
+  model?: string | null;
 }

@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Layers, Minus, Plus, X } from "lucide-react";
+import { Layers, Minus, MousePointerClick, Plus, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { DesignAction, PageView, Panel } from "@/lib/types";
+import { BriefField, DesignAction, PageView, Panel } from "@/lib/types";
 import { useBriefStore } from "@/store/briefStore";
 import { ACTION_META } from "./badges";
 import { sourceLabel } from "./SourceChip";
@@ -14,12 +14,17 @@ interface Props {
   panelActions?: Record<string, DesignAction[]>;
   className?: string;
   height?: string;
+  /** Talk to the Pack: fields whose text sits on the artwork become boxes that can be clicked to inspect them. */
+  inspectable?: BriefField[];
+  inspected?: string | null;
+  onInspect?: (key: string) => void;
 }
 
-export function ArtworkViewer({ pages, panels, panelActions, className, height = "max-h-[560px]" }: Props) {
+export function ArtworkViewer({ pages, panels, panelActions, className, height = "max-h-[560px]", inspectable, inspected, onInspect }: Props) {
   const { highlight, setHighlight } = useBriefStore();
   const [zoom, setZoom] = useState(1);
   const [showPanels, setShowPanels] = useState(true);
+  const [talk, setTalk] = useState(true);
   const [loaded, setLoaded] = useState(false);
   const firstBox = useRef<HTMLDivElement | null>(null);
   const scroller = useRef<HTMLDivElement | null>(null);
@@ -99,6 +104,15 @@ export function ArtworkViewer({ pages, panels, panelActions, className, height =
     return [cx - w / 2, cy - h / 2, cx + w / 2, cy + h / 2];
   };
   const boxes = (highlight?.sources ?? []).filter((s) => s.bbox && (s.page ?? 1) === page.page && s.file === page.file);
+  // One box per field printed on this page: where its current value sits, else where the artwork shows it.
+  const onPage = (s: { bbox?: number[] | null; page?: number | null; file: string; kind: string }) =>
+    s.kind === "pdf" && !!s.bbox && (s.page ?? 1) === page.page && s.file === page.file;
+  const fieldBoxes = onInspect && talk
+    ? (inspectable ?? []).flatMap((f) => {
+        const src = f.sources.find(onPage) ?? f.candidates.map((c) => c.source).find(onPage);
+        return src?.bbox ? [{ key: f.key, label: f.label, status: f.status, bbox: src.bbox }] : [];
+      })
+    : [];
   const shownPanels = panels.filter((p) => p.page === page.page && p.file === page.file && !p.id.startsWith("tuck"));
 
   return (
@@ -106,6 +120,17 @@ export function ArtworkViewer({ pages, panels, panelActions, className, height =
       <div className="flex items-center justify-between gap-2 border-b border-line px-3 py-2">
         <h2 className="text-label font-bold uppercase text-ink">Artwork</h2>
         <div className="flex items-center gap-0.5">
+          {onInspect && (
+            <button
+              className={cn("grid h-8 w-8 place-items-center rounded hover:bg-ink/5", talk ? "text-rail" : "text-ink-faint")}
+              aria-pressed={talk}
+              aria-label="Talk to the Pack: click elements on the artwork"
+              title="Talk to the Pack"
+              onClick={() => setTalk((v) => !v)}
+            >
+              <MousePointerClick className="h-4 w-4" />
+            </button>
+          )}
           <button
             className={cn("grid h-8 w-8 place-items-center rounded hover:bg-ink/5", showPanels ? "text-rail" : "text-ink-faint")}
             aria-pressed={showPanels}
@@ -162,11 +187,31 @@ export function ArtworkViewer({ pages, panels, panelActions, className, height =
                 </div>
               );
             })}
+          {fieldBoxes.map((b) => (
+            <button
+              key={`field-${b.key}`}
+              type="button"
+              onClick={() => onInspect?.(b.key)}
+              aria-label={`Inspect ${b.label}`}
+              aria-pressed={inspected === b.key}
+              title={b.label}
+              className={cn(
+                "absolute rounded-sm outline-none transition-[box-shadow,background-color] duration-150",
+                "hover:bg-talker/25 hover:shadow-[0_0_0_2px_#121514] focus-visible:shadow-[0_0_0_3px_#121514]",
+                inspected === b.key
+                  ? "bg-talker/30 shadow-[0_0_0_3px_#121514]"
+                  : b.status === "needs_review"
+                    ? "shadow-[0_0_0_1.5px_#FFD23F]"
+                    : "shadow-[0_0_0_1px_rgba(15,61,46,0.45)]"
+              )}
+              style={pct(minBox(b.bbox))}
+            />
+          ))}
           {boxes.map((s, i) => (
             <div
               key={`${highlight?.label}-${i}`}
               ref={i === 0 ? firstBox : undefined}
-              className="anim-rise absolute rounded-sm border-[3px] border-ink bg-talker/50 shadow-[0_0_0_3px_#FFFFFF,0_6px_18px_rgba(18,21,20,0.35)]"
+              className="anim-rise pointer-events-none absolute rounded-sm border-[3px] border-ink bg-talker/50 shadow-[0_0_0_3px_#FFFFFF,0_6px_18px_rgba(18,21,20,0.35)]"
               style={pct(minBox(s.bbox!))}
             />
           ))}
@@ -190,7 +235,7 @@ export function ArtworkViewer({ pages, panels, panelActions, className, height =
           </>
         ) : (
           <p className="truncate meta text-ink-muted">
-            {page.file} · {shownPanels.length} panels · click any source to locate it
+            {page.file} · {shownPanels.length} panels · {fieldBoxes.length ? "click an element on the pack to inspect it" : "click any source to locate it"}
           </p>
         )}
       </div>

@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { AutopilotTimeline } from "@/components/upload/AutopilotTimeline";
 import { FileDropzone } from "@/components/upload/FileDropzone";
 import { ErrorBanner, PageHead, fmtElapsed } from "@/components/shared/Notice";
-import { api } from "@/lib/api";
+import { ApiError, api } from "@/lib/api";
 import { CaseType, ChecklistField, PRODUCT_CATEGORIES, RulebookProposal, RulesSummary, StandardsOptions } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useBriefStore } from "@/store/briefStore";
@@ -245,7 +246,9 @@ export default function UploadPage() {
   const [accepted, setAccepted] = useState<Set<string>>(new Set());
   const [rbLoading, setRbLoading] = useState(false);
   const [rbError, setRbError] = useState<string | null>(null);
-  const analyzing = busy === BUSY_LABEL;
+  const [buildSid, setBuildSid] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const analyzing = busy === BUSY_LABEL || submitting || !!buildSid;
 
   useEffect(() => {
     api.standards().then(setOptions).catch(() => setOptions(null));
@@ -276,12 +279,28 @@ export default function UploadPage() {
   };
   const company = proposal ? { filename: proposal.filename, rules: proposal.rules.filter((r) => accepted.has(r.id)) } : undefined;
 
+  // The brief is built in the background; the Autopilot timeline follows it and opens the workbench when done.
   const analyze = async (allowDuplicate = false) => {
-    if (!files.length) return;
+    if (!files.length || buildSid) return;
     setAttempted(true);
-    const ok = await start(() => api.upload(files, caseType, market, allowDuplicate, category, chosen, company, sourceMarket), BUSY_LABEL);
-    if (ok) router.push("/analysis");
+    clearError();
+    setSubmitting(true);
+    try {
+      const r = await api.uploadStart(files, caseType, market, allowDuplicate, category, chosen, company, sourceMarket);
+      setBuildSid(r.session_id);
+    } catch (e) {
+      const err = e as ApiError;
+      useBriefStore.setState({ error: err.message, errorDetail: err.detail, errorStatus: err.status ?? null });
+    } finally {
+      setSubmitting(false);
+    }
   };
+  const builtBrief = useCallback(
+    async (sid: string) => {
+      if ((await load(sid)) === "ok") router.push("/review");
+    },
+    [load, router]
+  );
   const openExisting = async (sid: string) => {
     clearError();
     await load(sid);
@@ -311,7 +330,11 @@ export default function UploadPage() {
         <ErrorBanner />
       )}
 
-      {analyzing && <Processing />}
+      {buildSid ? (
+        <AutopilotTimeline sessionId={buildSid} onDone={builtBrief} onRetry={() => setBuildSid(null)} />
+      ) : (
+        analyzing && <Processing />
+      )}
 
       <div className={cn("space-y-6", analyzing && "pointer-events-none opacity-50")}>
         <fieldset className="min-w-0">

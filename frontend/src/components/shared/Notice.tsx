@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { ArrowRight, Check, RotateCcw, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Flag } from "@/components/shared/badges";
@@ -56,12 +57,15 @@ export function fmtElapsed(s: number) {
 export function BusyToast() {
   const { busy, busySince, notice, clearNotice } = useBriefStore();
   const elapsed = useElapsed(busySince);
+  const pathname = usePathname();
   useEffect(() => {
     if (!notice) return;
     const t = setTimeout(clearNotice, 2400);
     return () => clearTimeout(t);
   }, [notice, clearNotice]);
 
+  // The upload page shows its own progress (the Autopilot timeline with its clock), so no second timer here.
+  if (pathname === "/upload") return null;
   if (!busy && !notice) return null;
   return (
     <div role="status" aria-live="polite" className="no-print fixed inset-x-4 bottom-[76px] z-50 sm:inset-x-auto sm:bottom-5 sm:right-5">

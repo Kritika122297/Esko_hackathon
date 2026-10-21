@@ -3,10 +3,13 @@
 from __future__ import annotations
 
 import re
+import time
 from typing import List, Tuple
 
 from app.models.brief import BriefState, Issue, PassedCheck
 from app.services.checks.base import CheckContext, Ctx
+from app.services import trace
+from app.services.guidelines import canonical_clause
 from app.services.checks.claims import check_claims, suggested_allergen_statement
 from app.services.checks.market import check_artwork_leftovers, check_barcode, check_us_rules, us_net_weight_text
 from app.services.checks.nutrition import check_nutrition, fda_round_calories, serving_grams
@@ -23,23 +26,39 @@ def _same_point(a: str, b: str) -> bool:
     return len(words(a) & words(b)) >= 2
 
 
+CHECK_STEPS = [
+    ("Source conflicts", check_conflicts), ("Required fields", check_missing), ("Nutrition maths", check_nutrition),
+    ("Claims and allergens", check_claims), ("Barcode", check_barcode), ("US label rules", check_us_rules),
+    ("Artwork leftovers", check_artwork_leftovers), ("Content sheet tables", check_sheet_table),
+    ("Assumed values", check_assumptions), ("New-market carry-over", check_carryover),
+]
+
+
 def run_checks(state: BriefState, saved: CheckContext) -> Tuple[List[Issue], List[PassedCheck]]:
     ctx = Ctx(state, saved)
-    check_conflicts(ctx)
-    check_missing(ctx)
-    if state.category == "food":  # Nutrition Facts maths applies to food only
-        check_nutrition(ctx)
-    check_claims(ctx)
-    check_barcode(ctx)
-    check_us_rules(ctx)
-    check_artwork_leftovers(ctx)
-    check_sheet_table(ctx)
-    check_assumptions(ctx)
-    check_carryover(ctx)
+    rec = trace.active()
+    traced = bool(rec and rec.once("checks"))  # the first check pass of a brief build is shown in the trace
+    for name, fn in CHECK_STEPS:
+        if fn is check_nutrition and state.category != "food":  # Nutrition Facts maths applies to food only
+            continue
+        start, before = time.perf_counter(), len(ctx.issues)
+        fn(ctx)
+        if traced:
+            new = ctx.issues[before:]
+            worst = next((i for i in sorted(new, key=lambda i: SEVERITY_ORDER[i.severity])), None)
+            cited = next((canonical_clause(c) for i in new for c in i.clauses), None)
+            trace.event("checks", name, "warning" if any(i.severity in ("blocking", "warning") for i in new) else
+                        "info" if new else "ok",
+                        (f"{len(new)} finding{'s' if len(new) != 1 else ''}"
+                         + (f", {n_block} blocking" if (n_block := sum(1 for i in new if i.severity == 'blocking')) else "")
+                         + (f": {worst.title}" if worst else "")) if new else "No findings",
+                        detail="; ".join(i.title for i in new[:8]) or None, citation=cited,
+                        duration_ms=(time.perf_counter() - start) * 1000)
     for ai_issue in saved.ai_issues:
         # An AI point that repeats a code finding (same field and same clause) is merged into it.
         duplicate = any(set(ai_issue.fields) & set(c.fields)
-                        and ((set(ai_issue.clauses) & set(c.clauses)) or _same_point(ai_issue.title, c.title))
+                        and (({canonical_clause(x) for x in ai_issue.clauses} & {canonical_clause(x) for x in c.clauses})
+                             or _same_point(ai_issue.title, c.title))
                         for c in ctx.issues if c.detected_by == "code")
         if not duplicate and all(state.field(k) and not state.field(k).user_confirmed for k in ai_issue.fields):
             ctx.issues.append(ai_issue.model_copy(deep=True))

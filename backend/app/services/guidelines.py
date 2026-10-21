@@ -1,6 +1,6 @@
 """The guideline library: label-law clauses stored as data, selected by market and product category.
 
-Each clause has an id (e.g. 'US-FDA/21CFR101.105'), its text, keywords, and the brief fields it requires.
+Each clause has an id (e.g. 'US-FDA/21CFR101.7'), its text, keywords, and the brief fields it requires.
 Clauses are curated excerpts, not live scraping. Code uses them to decide what must be present;
 every finding that comes from a clause cites its id.
 """
@@ -15,6 +15,13 @@ from typing import Dict, List, Optional, Tuple
 from pydantic import BaseModel, Field
 
 GUIDELINE_DIR = Path(__file__).resolve().parent.parent / "guidelines"
+# Clause ids that were renamed. Old briefs, saved AI findings and company rules may still cite the old id.
+# 21 CFR 101.105 covers net quantity when exempt; the general net-quantity rule is 101.7 (current eCFR).
+CLAUSE_ALIASES = {"US-FDA/21CFR101.105": "US-FDA/21CFR101.7"}
+
+
+def canonical_clause(cid: str) -> str:
+    return CLAUSE_ALIASES.get(cid, cid)
 DEFAULT_CATEGORY = "food"
 
 
@@ -47,11 +54,14 @@ class Standard(BaseModel):
     clauses: List[Clause]
 
 
+NOT_PACKS = {"categories.json", "market_profiles.json", "layout_rules.json"}  # data files in the folder that are not rule packs
+
+
 @lru_cache(maxsize=1)
 def load_standards() -> Dict[str, Standard]:
     out: Dict[str, Standard] = {}
     for path in sorted(GUIDELINE_DIR.glob("*.json")):
-        if path.name == "categories.json":
+        if path.name in NOT_PACKS:
             continue
         raw = json.loads(path.read_text(encoding="utf-8"))
         scope = raw.get("applies_to", {})

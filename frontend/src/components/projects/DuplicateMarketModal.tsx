@@ -4,12 +4,70 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Globe, Loader2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { CategoryChip, MarketChip } from "@/components/shared/badges";
+import { CategoryChip, Flag, MarketChip } from "@/components/shared/badges";
 import { api } from "@/lib/api";
-import { PRODUCT_CATEGORIES, ProjectSummary } from "@/lib/types";
+import { MarketGap, MarketGapRow, PRODUCT_CATEGORIES, ProjectSummary } from "@/lib/types";
+import { cn } from "@/lib/utils";
 import { useBriefStore } from "@/store/briefStore";
 
 type Market = { code: string; label: string };
+
+const SEVERITY: Record<MarketGapRow["severity"], { text: string; tone: "stop" | "review" | "muted" }> = {
+  blocking: { text: "Must change", tone: "stop" },
+  warn: { text: "Check", tone: "review" },
+  none: { text: "Same", tone: "muted" },
+};
+
+/** The Market Jump preview: what changes on the pack between the two markets, from the rule packs. */
+function GapPreview({ gap, loading, failed }: { gap: MarketGap | null; loading: boolean; failed: string | null }) {
+  if (failed) return <p className="text-[13px] text-stop-deep">The comparison could not be loaded: {failed}</p>;
+  if (!gap) return loading ? <p className="flex items-center gap-2 text-[13px] text-ink-muted"><Loader2 className="h-4 w-4 animate-spin" /> Comparing the rules…</p> : null;
+  return (
+    <section aria-labelledby="gap-h" className={cn("space-y-2", loading && "opacity-60")}>
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <h3 id="gap-h" className="text-[14px] font-bold text-ink">
+          What changes from {gap.source_market} to {gap.target_market}
+        </h3>
+        <p className="meta text-ink-muted" aria-live="polite">
+          {gap.summary.blocking} must change · {gap.summary.warn} to check · {gap.summary.none} same
+        </p>
+      </div>
+      <div className="max-h-64 overflow-y-auto rounded border border-line">
+        <table className="w-full text-left text-[12px]">
+          <thead className="sticky top-0 bg-ground">
+            <tr className="border-b border-line">
+              <th scope="col" className="meta px-2 py-1.5 text-ink-muted">Element</th>
+              <th scope="col" className="meta px-2 py-1.5 text-ink-muted">{gap.target_market} needs</th>
+              <th scope="col" className="meta px-2 py-1.5 text-ink-muted">
+                <span className="sr-only">Severity</span>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {gap.rows.map((r) => (
+              <tr key={r.key} className="border-b border-line align-top last:border-0">
+                <th scope="row" className="px-2 py-1.5 font-semibold text-ink">
+                  {r.element}
+                  {r.current?.clause_id && <span className="block font-mono text-[10px] font-normal text-ink-faint">{r.current.clause_id}</span>}
+                </th>
+                <td className="px-2 py-1.5 text-ink-2">
+                  {r.target?.text ?? <i className="text-ink-faint">No rule loaded</i>}
+                  {r.target?.clause_id && <span className="block font-mono text-[10px] text-ink-faint">{r.target.clause_id}</span>}
+                </td>
+                <td className="px-2 py-1.5 text-right">
+                  <Flag tone={SEVERITY[r.severity].tone} side="right" className="-mr-2 whitespace-nowrap">
+                    {SEVERITY[r.severity].text}
+                  </Flag>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className="text-[11px] text-ink-faint">{gap.note}</p>
+    </section>
+  );
+}
 
 const EDITION = /\s*\([A-Z]{2,5} Edition\)$/;
 const defaultName = (name: string, market: string) => `${name.replace(EDITION, "")} (${market} Edition)`;
@@ -37,6 +95,31 @@ export function DuplicateMarketModal({
   const [nameEdited, setNameEdited] = useState(false);
   const [failed, setFailed] = useState(false);
   const [working, setWorking] = useState(false);
+  const [gap, setGap] = useState<MarketGap | null>(null);
+  const [gapLoading, setGapLoading] = useState(false);
+  const [gapError, setGapError] = useState<string | null>(null);
+
+  // The preview follows the chosen market and category; an answer for an earlier choice is ignored.
+  useEffect(() => {
+    if (!source || !market) {
+      setGap(null);
+      return;
+    }
+    let current = true;
+    setGapLoading(true);
+    setGapError(null);
+    const t = window.setTimeout(() => {
+      api
+        .marketGap(source.session_id, market, category)
+        .then((g) => current && setGap(g))
+        .catch((e) => current && setGapError(e instanceof Error ? e.message : "unknown error"))
+        .finally(() => current && setGapLoading(false));
+    }, 150);
+    return () => {
+      current = false;
+      window.clearTimeout(t);
+    };
+  }, [source, market, category]);
 
   // Fresh form for each brief the dialog opens on.
   useEffect(() => {
@@ -95,7 +178,7 @@ export function DuplicateMarketModal({
         if (working) e.preventDefault();
       }}
       aria-labelledby="dup-market-h"
-      className="w-[min(540px,calc(100vw-32px))] rounded border border-line bg-stock p-0 text-ink shadow-lift backdrop:bg-ink/40"
+      className="max-h-[calc(100vh-32px)] w-[min(680px,calc(100vw-32px))] overflow-y-auto rounded border border-line bg-stock p-0 text-ink shadow-lift backdrop:bg-ink/40"
     >
       {source && (
         <form
@@ -183,6 +266,7 @@ export function DuplicateMarketModal({
                 className="mt-1 h-9 w-full rounded border border-line-strong bg-stock px-3 text-sm focus:border-ink"
               />
             </div>
+            <GapPreview gap={gap} loading={gapLoading} failed={gapError} />
           </div>
 
           <div className="flex items-center justify-end gap-2 border-t border-line px-5 py-3">

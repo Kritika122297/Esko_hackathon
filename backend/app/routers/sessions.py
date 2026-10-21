@@ -7,23 +7,29 @@ does not stall every other request.
 from __future__ import annotations
 
 import json
+import logging
 import re
 import shutil
+import threading
 from pathlib import Path
 from typing import List, Literal, Optional
 
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
-from fastapi.responses import FileResponse
-from pydantic import BaseModel
+from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
+from pydantic import BaseModel, Field
 
 from app.config import settings
-from app.models.brief import BriefState, ChangeLogEntry, FileInfo
+from app.models.brief import BriefState, ChangeLogEntry, FileInfo, TraceEvent
 from app.routers.common import SessionView, load, locked, require_draft, restore_decisions, save_and_view, view
+from app.services import autopilot, trace
 from app.services.ai_assist import run_ai
 from app.services.guidelines import category_labels, normalize_category
+from app.services.market_gap import MarketGap, market_gap
 from app.services.pipeline import analyze, now, read_files, recompute
+from app.services.values import plural
 from app.session_store import store
 
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/sessions", tags=["Sessions"])
 
 CaseT = Literal["update", "new_market", "new_product"]
@@ -56,13 +62,20 @@ def _create(sid: str, paths: List[Path], case: str, market: str, category: str =
                        company_clauses=company or [])
     if note:
         state.change_log.append(ChangeLogEntry(at=stamp, by="Reviewer", action="duplicate", note=note))
-    ex = read_files([(p, p.name) for p in paths], d)
     for p in paths:
-        pages = sum(1 for pg in ex.pages if pg.file == p.name) or None
-        state.files.append(FileInfo(name=p.name, kind=_kind(p.name), size=p.stat().st_size, pages=pages))
-    ctx = analyze(state, ex)
-    recompute(state, ctx)  # code checks first, so the AI review only adds new points
-    run_ai(state, ctx, ex, d)
+        state.files.append(FileInfo(name=p.name, kind=_kind(p.name), size=p.stat().st_size))
+    # A background build already has a registered recorder (its trace is streamed); a direct one records too.
+    rec = trace.get(sid) or trace.Recorder(sid)
+    with trace.recording(rec):
+        trace.event("upload", "Upload", "ok", f"Received {plural(len(paths), 'file')}: "
+                    + ", ".join(f"{p.name} ({_kind(p.name)})" for p in paths))
+        ctx, ex = autopilot.build(state, paths, d)  # read, extract, reconcile, check, AI review, route
+        for fi in state.files:
+            fi.pages = sum(1 for pg in ex.pages if pg.file == fi.name) or None
+        r = state.readiness
+        trace.event("save", "Brief", "ok" if r and r.ready else "warning",
+                    f"Brief saved: readiness {r.score if r else 0}%, {r.blocking_open if r else 0} blocking decisions open")
+    state.autopilot_trace = rec.final_events()
     return save_and_view(state, ctx, ex)
 
 
@@ -177,7 +190,10 @@ def create_session(
     company_rules: str = Form(""),
     company_file: str = Form(""),
     allow_duplicate: bool = Form(False),
-) -> SessionView:
+    background: bool = Form(False),
+):
+    """Builds a brief. By default it answers with the finished brief (201). With background=true it answers at once
+    (202, the new session id) and builds in the background; follow it with /trace or /trace/stream."""
     _check_names(files)
     category = _category(category)
     company = _company_clauses(company_rules, company_file)
@@ -197,14 +213,86 @@ def create_session(
         d.mkdir(parents=True)
         for s in saved:  # into the brief's folder before reading, so the saved brief always has its files
             shutil.move(str(s), str(d / s.name))
+        args = (sid, [d / s.name for s in saved], case, market, category,
+                [s.strip() for s in standards.split(",") if s.strip()], company, source_market)
+        if background:
+            rec = trace.register(sid)
+            threading.Thread(target=_build_in_background, args=(rec, args), daemon=True,
+                             name=f"brief-{sid}").start()
+            return JSONResponse(status_code=202, content={"session_id": sid, "status": "running"})
         try:
-            return _create(sid, [d / s.name for s in saved], case, market, category,
-                           [s.strip() for s in standards.split(",") if s.strip()], company, source_market)
+            return _create(*args)
         except Exception:
             shutil.rmtree(d, ignore_errors=True)  # no half-made brief left behind
             raise
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
+
+
+def _build_in_background(rec: trace.Recorder, args: tuple) -> None:
+    sid = args[0]
+    try:
+        _create(*args)
+        rec.finish("done")
+    except Exception as err:  # the trace shows the failure; no half-made brief is left behind
+        logger.exception("Background build of %s failed", sid)
+        shutil.rmtree(store.dir(sid), ignore_errors=True)
+        detail = err.detail if isinstance(err, HTTPException) else (str(err)[:200] or err.__class__.__name__)
+        with trace.recording(rec):
+            trace.event("save", "Brief", "warning", f"The brief could not be built: {detail}")
+        rec.finish("error", str(detail))
+
+
+class TraceView(BaseModel):
+    session_id: str
+    status: str = Field(..., description="running, done or error")
+    error: Optional[str] = None
+    events: List[TraceEvent]
+
+
+@router.get("/{sid}/trace", response_model=TraceView)
+def get_trace(sid: str) -> TraceView:
+    """The Autopilot trace: live while the brief is being built, then the one stored with the brief."""
+    rec = trace.get(sid)
+    if rec is not None:
+        return TraceView(session_id=sid, status=rec.status, error=rec.error, events=rec.final_events())
+    state, _, _ = load(sid)
+    return TraceView(session_id=sid, status="done", events=state.autopilot_trace)
+
+
+def _sse(kind: str, payload: str) -> str:
+    return f"event: {kind}\ndata: {payload}\n\n"
+
+
+@router.get("/{sid}/trace/stream")
+def stream_trace(sid: str) -> StreamingResponse:
+    """Server-sent events: each trace event as it is recorded, then 'done'. A finished build is replayed."""
+    rec = trace.get(sid)
+    stored = None if rec is not None else load(sid)[0].autopilot_trace  # 404 for an unknown brief
+
+    def replay():
+        for ev in stored or []:
+            yield _sse("trace", ev.model_dump_json())
+        yield _sse("done", json.dumps({"session_id": sid, "status": "done"}))
+
+    def live():
+        sent = 0
+        while True:
+            with rec.cond:
+                if sent >= len(rec.events) and rec.status == "running":
+                    rec.cond.wait(timeout=15)
+                new, status = rec.events[sent:], rec.status
+                sent += len(new)
+            for ev in new:
+                yield _sse("trace", ev.model_dump_json())
+            if status != "running" and sent >= len(rec.events):
+                yield _sse("done", json.dumps({"session_id": sid, "status": status, "error": rec.error}))
+                return
+            if not new:
+                yield ": keep-alive\n\n"
+
+    return StreamingResponse(live() if rec is not None else replay(), media_type="text/event-stream",
+                             headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
 
 
 @router.post("/{sid}/files", response_model=SessionView)
@@ -238,6 +326,16 @@ def add_files(sid: str, files: List[UploadFile] = File(...)) -> SessionView:
     finally:
         shutil.rmtree(staging, ignore_errors=True)
         shutil.rmtree(backup, ignore_errors=True)
+
+
+@router.get("/{sid}/market-gap", response_model=MarketGap)
+def get_market_gap(sid: str, target: str, category: Optional[str] = None) -> MarketGap:
+    """What changes when this brief moves to another market, from the rule packs of both markets."""
+    state, _, _ = load(sid)
+    target = target.strip().upper()
+    if not target:
+        raise HTTPException(status_code=400, detail="Choose a target market.")
+    return market_gap(state.market, target, _category(category) if category else state.category)
 
 
 class DuplicateMarketRequest(BaseModel):

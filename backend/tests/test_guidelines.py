@@ -22,7 +22,7 @@ def test_explicit_selection_overrides_market():
 
 def test_requirements_cite_clauses():
     req = requirements("US")
-    assert [c.id for c, _ in req["net_weight"]] == ["US-FDA/21CFR101.105"]
+    assert [c.id for c, _ in req["net_weight"]] == ["US-FDA/21CFR101.7"]
     assert "added_sugars" in req and "barcode" in req
 
 

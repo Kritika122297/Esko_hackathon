@@ -47,7 +47,7 @@ def test_standards_options_and_checklist(client):
     assert unknown["market_rules"] is False
     fields = c.get("/api/standards/checklist", params={"market": "US"}).json()["fields"]
     net = next(f for f in fields if f["key"] == "net_weight")
-    assert net["clauses"] == ["US-FDA/21CFR101.105"] and net["owner"] == "Supply Chain"
+    assert net["clauses"] == ["US-FDA/21CFR101.7"] and net["owner"] == "Supply Chain"
 
 
 def test_category_and_standards_are_kept_when_files_are_added(client):

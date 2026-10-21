@@ -85,3 +85,44 @@ def test_duplicate_needs_the_source_files(client):
         (store.dir(sid) / f.name).unlink()
     r = client.post(f"/api/sessions/{sid}/duplicate-market", json={"target_market": "EU"})
     assert r.status_code == 400 and "no longer on the server" in r.json()["detail"]
+
+
+def test_market_gap_rows_cite_real_clauses(client):
+    from app.services.guidelines import load_standards
+
+    known = {c.id for s in load_standards().values() for c in s.clauses}
+    sid = _session(client)  # a US food brief
+    g = client.get(f"/api/sessions/{sid}/market-gap", params={"target": "fr"}).json()
+    assert g["source_market"] == "US" and g["target_market"] == "FR" and g["rules_available"]
+    assert g["rows"] and set(g["summary"]) == {"blocking", "warn", "none"}
+    assert sum(g["summary"].values()) == len(g["rows"])
+    for r in g["rows"]:
+        for side in (r["current"], r["target"]):
+            if side and side["clause_id"]:
+                assert side["clause_id"] in known, side["clause_id"]
+    by_key = {r["key"]: r for r in g["rows"]}
+    assert by_key["net_quantity"]["severity"] == "blocking"
+    assert by_key["net_quantity"]["current"]["clause_id"] == "US-FDA/21CFR101.7"
+    assert by_key["net_quantity"]["target"]["clause_id"] == "EU-1169/Art23"
+    assert by_key["barcode"]["severity"] == "none"
+
+
+def test_market_gap_says_when_no_rules_exist_and_keeps_general_only_categories_general(client):
+    sid = _session(client)
+    uk = client.get(f"/api/sessions/{sid}/market-gap", params={"target": "UK"}).json()
+    assert not uk["rules_available"]
+    assert any(r["key"] == "rules" and "No rules are loaded" in r["target"]["text"] for r in uk["rows"])
+    retail = client.get(f"/api/sessions/{sid}/market-gap", params={"target": "IN", "category": "retail"}).json()
+    assert not {"allergens", "nutrition", "marks"} & {r["key"] for r in retail["rows"]}
+    assert client.get(f"/api/sessions/{sid}/market-gap", params={"target": "IN", "category": "Spaceships"}).status_code == 400
+    assert client.get("/api/sessions/0123456789ab/market-gap", params={"target": "IN"}).status_code == 404
+
+
+def test_market_profiles_only_cite_clauses_in_the_rule_packs():
+    from app.services.guidelines import load_standards
+    from app.services.market_gap import _profiles
+
+    known = {c.id for s in load_standards().values() for c in s.clauses}
+    for market, elements in _profiles().items():
+        for element, entry in elements.items():
+            assert entry.get("clause_id") in (None, *known), (market, element)

@@ -18,7 +18,7 @@ def _state():
 
 
 def _finding(**kw):
-    base = {"clause": "US-FDA/21CFR101.105", "title": "Net weight units", "description": "d",
+    base = {"clause": "US-FDA/21CFR101.7", "title": "Net weight units", "description": "d",
             "fields": ["net_weight"], "quote": "340 g", "question": "Add ounces?", "owner": "Legal"}
     base.update(kw)
     return {"findings": [base]}
@@ -30,7 +30,12 @@ def test_valid_finding_is_kept_as_needs_human_with_clause():
     assert len(out) == 1
     i = out[0]
     assert i.severity == "warning" and i.kind == "needs_human" and i.detected_by == "ai"
-    assert i.clauses == ["US-FDA/21CFR101.105"] and "21CFR101.105" in i.description
+    assert i.clauses == ["US-FDA/21CFR101.7"] and "21CFR101.7" in i.description
+
+
+def test_the_old_net_quantity_citation_is_still_recognised():
+    out = validate_findings(_finding(clause="US-FDA/21CFR101.105"), _state(), clauses_for("US"))
+    assert len(out) == 1 and out[0].clauses == ["US-FDA/21CFR101.7"]
 
 
 def test_unknown_clause_is_dropped():
@@ -59,11 +64,11 @@ def test_prompt_lists_only_market_clauses():
 def test_blank_title_gets_a_readable_title_and_unique_ids():
     st = _state()
     data = {"findings": [
-        {"clause": "US-FDA/21CFR101.105", "title": "", "description": "a", "fields": ["net_weight"], "quote": "340 g"},
+        {"clause": "US-FDA/21CFR101.7", "title": "", "description": "a", "fields": ["net_weight"], "quote": "340 g"},
         {"clause": "US-FDA/21CFR101.4", "title": "", "description": "b", "fields": ["ingredients"], "quote": "Wheat flour"}]}
     out = validate_findings(data, st, clauses_for("US"))
     assert len(out) == 2 and out[0].id != out[1].id
-    assert "21CFR101.105" in out[0].title
+    assert "21CFR101.7" in out[0].title
 
 
 def test_same_point_matches_overlapping_titles_only():

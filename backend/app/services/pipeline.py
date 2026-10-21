@@ -17,6 +17,7 @@ from app.services.guidelines import requirements
 from app.services.merge import build_fields, group_candidates
 from app.services.ai_questions import apply_rewrites
 from app.services.questions import build_questions
+from app.services import trace
 from app.services.values import plural
 
 logger = logging.getLogger(__name__)
@@ -29,14 +30,36 @@ def now() -> str:
 def read_files(paths: List[Tuple[Path, str]], session_dir: Path) -> Extraction:
     parts = []
     for i, (path, name) in enumerate(paths, start=1):
-        try:
-            parts.append(parse_file(path, name, session_dir, i))
-        except Exception as err:  # a broken file must not stop the others
-            logger.exception("Failed to read %s", name)
-            ex = Extraction()
-            ex.notes.append(f"{name}: could not be read ({_plain_error(err)}).")
-            parts.append(ex)
+        with trace.timed("read", "File reader", f"Reading {name}") as t:
+            try:
+                part = parse_file(path, name, session_dir, i)
+                parts.append(part)
+                t.done("ok", f"Read {name}: {_read_counts(part)}")
+            except Exception as err:  # a broken file must not stop the others
+                logger.exception("Failed to read %s", name)
+                ex = Extraction()
+                ex.notes.append(f"{name}: could not be read ({_plain_error(err)}).")
+                parts.append(ex)
+                t.done("warning", f"Could not read {name}", detail=_plain_error(err))
     return merge_extractions(parts)
+
+
+def _read_counts(ex: Extraction) -> str:
+    """'2 pages, 341 text fragments, 16 dieline panels' for one file, from what was actually read."""
+    kinds = {f.kind for f in ex.fragments}
+    bits = []
+    if ex.pages:
+        bits.append(plural(len(ex.pages), "page"))
+    if "excel" in kinds:
+        bits.append(plural(sum(1 for f in ex.fragments if f.kind == "excel"), "sheet cell"))
+    else:
+        bits.append(plural(len(ex.fragments), "text fragment"))
+    if ex.panels:
+        bits.append(plural(len(ex.panels), "dieline panel"))
+    hidden = sum(1 for f in ex.fragments if getattr(f, "is_hidden", False))
+    if hidden:
+        bits.append(f"{hidden} hidden under artwork")
+    return ", ".join(bits)
 
 
 def _plain_error(err: Exception) -> str:

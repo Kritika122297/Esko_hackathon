@@ -14,7 +14,7 @@ from typing import Any, Dict, List
 
 from app.models.brief import BriefState, Issue
 from app.services.checks import CheckContext
-from app.services.guidelines import Clause, clauses_for
+from app.services.guidelines import Clause, canonical_clause, clauses_for
 from app.services.llm import get_llm
 from app.services.values import norm_text
 
@@ -84,7 +84,7 @@ def validate_findings(data: Any, state: BriefState, clauses: List[Clause]) -> Li
             confidence = 0.0
         if confidence < MIN_CONFIDENCE:
             continue
-        cid, quote = c.get("clause"), str(c.get("quote") or "")
+        cid, quote = canonical_clause(str(c.get("clause") or "")), str(c.get("quote") or "")
         keys = [k for k in c.get("fields") or [] if k in values]
         if cid not in by_id or not keys or not quote:
             continue

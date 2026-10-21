@@ -10,7 +10,9 @@ from fastapi.responses import FileResponse
 
 from app.config import settings
 from app.routers.common import load
+from app.services.agency_simulator import SimulatorReport, simulate
 from app.services.ai_summary import summarize
+from app.services.blueprint import Blueprint, build_blueprint
 from app.services.brief_exporter import export_docx, export_pdf
 from app.services.designer import DesignerBrief, build_designer_brief
 
@@ -39,3 +41,17 @@ def export(sid: str, fmt: Literal["docx", "pdf"]) -> FileResponse:
     path = settings.EXPORT_DIR / f"{sid}_{name}"
     (export_docx if fmt == "docx" else export_pdf)(brief, path)
     return FileResponse(path, media_type=MEDIA[fmt], filename=name)
+
+
+@router.get("/{sid}/blueprint", response_model=Blueprint)
+def blueprint(sid: str) -> Blueprint:
+    """The flat plan with the layout rules that apply: zones, type sizes, quiet zone and copy for the studio."""
+    state, _, ex = load(sid)
+    return build_blueprint(state, ex, build_designer_brief(state, ex))
+
+
+@router.post("/{sid}/agency-simulator", response_model=SimulatorReport)
+def agency_simulator(sid: str) -> SimulatorReport:
+    """Would a studio accept this brief? Code checks decide the score; the AI only lists open questions."""
+    state, _, ex = load(sid)
+    return simulate(sid, state, ex)

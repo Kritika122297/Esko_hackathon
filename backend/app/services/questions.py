@@ -48,6 +48,24 @@ def _ack(i: int, who: str) -> QuestionOption:
     return _opt(i, f"Leave open: pass to the agency as an open question ({who} to confirm)", ack=True)
 
 
+def _alternatives(state: BriefState, key: str, start: int = 1) -> List[QuestionOption]:
+    """One option per other value a file gives for the field ('Total fat is 12g (Artwork (left))')."""
+    f = state.field(key)
+    if f is None:
+        return []
+    seen, out = {f.value}, []
+    for c in f.candidates:
+        if c.value not in seen and c.source.kind != "ai":
+            seen.add(c.value)
+            out.append(_opt(start + len(out), f"{f.label} is {c.value} ({_source_label(c.source)})", {key: c.value}))
+    return out
+
+
+def _gs1_check_digit(body: str) -> int:
+    total = sum(int(ch) * (3 if i % 2 == 0 else 1) for i, ch in enumerate(reversed(body)))
+    return (10 - total % 10) % 10
+
+
 def _question_for(issue: Issue, state: BriefState, saved) -> Question | None:
     v = state.value
     check = issue.check
@@ -96,6 +114,42 @@ def _question_for(issue: Issue, state: BriefState, saved) -> Question | None:
         opts.append(_ack(9, "R&D"))
         q_text = f"Total sugars ({v('total_sugars')}) exceed total carbohydrate ({v('total_carbohydrate')}). Which value is correct?"
         custom = "total_carbohydrate"
+    elif check == "math.added_gt_total":
+        opts += _alternatives(state, "added_sugars") + _alternatives(state, "total_sugars", start=5)
+        opts.append(_ack(9, "R&D"))
+        q_text = f"Added sugars ({v('added_sugars')}) are more than total sugars ({v('total_sugars')}). Which value is correct?"
+        custom = "added_sugars"
+    elif check == "math.carb_parts":
+        opts += _alternatives(state, "total_carbohydrate")
+        opts.append(_ack(9, "R&D"))
+        q_text = (f"Fibre and sugars add up to more than total carbohydrate ({v('total_carbohydrate')}). "
+                  "What is the correct total carbohydrate?")
+        custom = "total_carbohydrate"
+    elif check == "math.fat_parts":
+        opts += _alternatives(state, "total_fat")
+        opts.append(_ack(9, "R&D"))
+        q_text = f"Saturated and trans fat add up to more than total fat ({v('total_fat')}). What is the correct total fat?"
+        custom = "total_fat"
+    elif check == "math.mass":
+        opts += _alternatives(state, "serving_size")
+        opts.append(_ack(9, "R&D"))
+        q_text = (f"Fat, carbohydrate and protein weigh more than one serving ({v('serving_size')}). "
+                  "What is the correct serving size?")
+        custom = "serving_size"
+    elif check in ("barcode.format", "barcode.check_digit"):
+        digits = re.sub(r"\D", "", v("barcode") or "")
+        if check == "barcode.check_digit" and digits:
+            fixed = digits[:-1] + str(_gs1_check_digit(digits[:-1]))
+            # Not recommended: a wrong check digit can also mean a wrong digit elsewhere in the number.
+            opts.append(_opt(1, f"Use {fixed} (check digit recalculated; only if the other digits are right)", {"barcode": fixed}))
+        opts += _alternatives(state, "barcode", start=2)
+        opts.append(_ack(9, "Supply Chain"))
+        q_text = "What is the registered barcode number (GTIN) for this pack?"
+        custom = "barcode"
+    elif check == "claim.vegetarian_vs_vegan":
+        opts.append(_opt(1, "Keep 'vegetarian' only (remove the vegan wording)", _without_claim(state, r"\bvegan"), rec=True))
+        opts.append(_ack(2, "Legal"))
+        q_text = "The pack says both 'vegetarian' and 'vegan'. Which one should it say?"
     elif check == "math.dv":
         updates = {}
         for n in NUTRIENTS:

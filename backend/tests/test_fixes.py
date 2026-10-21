@@ -220,3 +220,38 @@ def test_new_product_treats_artwork_as_reference_only(client):
     brief = client.get(f"/api/sessions/{st['session_id']}/designer-brief").json()
     assert brief["summary"][0].startswith("New product")
     assert not any(i["action"] in ("keep", "change") for i in brief["items"])
+
+
+# ---------------------------------------------------------------- questions for every decision
+
+
+def test_former_orphan_issues_get_a_question(client):
+    from app.models.brief import Issue
+    from app.services.questions import _question_for
+    from app.session_store import store
+
+    sid = _session(client)
+    state, ctx, _ = store.load(sid)
+    for check, fields in (("barcode.format", ["barcode"]), ("barcode.check_digit", ["barcode"]),
+                          ("claim.vegetarian_vs_vegan", ["dietary_info", "claims"]),
+                          ("math.added_gt_total", ["added_sugars", "total_sugars"]),
+                          ("math.carb_parts", ["total_carbohydrate"]), ("math.fat_parts", ["total_fat"]),
+                          ("math.mass", ["serving_size"])):
+        issue = Issue(id=check, check=check, severity="blocking", kind="definite", category="math",
+                      title=check, description="d", fields=fields, owner="R&D")
+        q = _question_for(issue, state, ctx)
+        assert q is not None and q.options, check
+
+
+def test_every_open_decision_on_the_sample_has_a_question(client):
+    st = client.get(f"/api/sessions/{_session(client)}").json()["state"]
+    asked = {iid for q in st["questions"] for iid in q["issue_ids"]}
+    needs = {i["id"] for i in st["issues"] if i["state"] == "open" and i["resolution"] == "data"
+             and i["severity"] in ("blocking", "warning")}
+    assert needs <= asked, needs - asked
+
+
+def test_wrong_check_digit_offers_the_recalculated_number():
+    from app.services.questions import _gs1_check_digit
+
+    assert _gs1_check_digit("03600029145") == 2

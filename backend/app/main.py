@@ -6,7 +6,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
-from app.routers import chat_router, export_router, review_router, sessions_router, standards_router
+from app.routers import chat_router, export_router, pack_router, review_router, sessions_router, standards_router
 from app.services.ocr import ocr_status
 from app.services.llm import ROLES, get_llm, llm
 
@@ -28,7 +28,7 @@ app.add_middleware(
     expose_headers=["Content-Disposition"],
 )
 
-for r in (standards_router, sessions_router, review_router, export_router, chat_router):
+for r in (standards_router, sessions_router, review_router, export_router, chat_router, pack_router):
     app.include_router(r, prefix="/api")
 
 
