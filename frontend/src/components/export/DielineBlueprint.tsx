@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Check, ClipboardCopy, Loader2, Ruler } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Flag } from "@/components/shared/badges";
+import { Stamp } from "@/components/shared/badges";
 import { api } from "@/lib/api";
 import { Blueprint, BlueprintPanel } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -21,7 +21,7 @@ const ROLE_TEXT: Record<BlueprintPanel["role"], string> = {
 
 function Unverified() {
   return (
-    <span className="meta text-talker-deep" title="From the draft layout rules; not yet checked against the official text">
+    <span className="meta text-canary-deep" title="From the draft layout rules; not yet checked against the official text">
       Not verified
     </span>
   );
@@ -40,7 +40,7 @@ function CopyButton({ label, text }: { label: string; text: string }) {
     }
   };
   return (
-    <div className="rounded border border-line bg-stock p-3">
+    <div className="rounded-md border border-line bg-paper p-3">
       <div className="flex items-center justify-between gap-2">
         <p className="text-[13px] font-semibold text-ink">{label}</p>
         <Button variant="outline" size="sm" onClick={copy} aria-label={`Copy ${label} for Illustrator`}>
@@ -87,7 +87,7 @@ export function DielineBlueprint({ sessionId, version }: { sessionId: string; ve
   return (
     <div className="space-y-8">
       {bp.notes.length > 0 && (
-        <ul className="space-y-1 rounded border border-talker/60 bg-talker-soft px-4 py-3 text-[13px] text-ink">
+        <ul className="space-y-1 rounded-md border border-canary-deep/60 bg-canary-soft px-4 py-3 text-[13px] text-ink">
           {bp.notes.map((n) => (
             <li key={n}>{n}</li>
           ))}
@@ -100,12 +100,12 @@ export function DielineBlueprint({ sessionId, version }: { sessionId: string; ve
             viewBox={`0 0 ${bp.page_width} ${bp.page_height}`}
             role="group"
             aria-label={bp.generic ? "Generic carton layout" : "Flat plan of the pack from the dieline"}
-            className="h-auto w-full rounded border border-line bg-ground"
+            className="h-auto w-full rounded-md border border-line bg-desk"
           >
             <defs>
               <pattern id="bp-zone" width={fs} height={fs} patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-                <rect width={fs} height={fs} fill="#FFF4CC" />
-                <line x1="0" y1="0" x2="0" y2={fs} stroke="#FFD23F" strokeWidth={fs / 4} />
+                <rect width={fs} height={fs} fill="#FFF5C2" />
+                <line x1="0" y1="0" x2="0" y2={fs} stroke="#FFE066" strokeWidth={fs / 4} />
               </pattern>
             </defs>
             {bp.panels.map((p) => {
@@ -124,18 +124,18 @@ export function DielineBlueprint({ sessionId, version }: { sessionId: string; ve
                     aria-label={`${p.label}: ${p.items.length} copy blocks`}
                     onClick={() => setSelected(p.id)}
                     onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), setSelected(p.id))}
-                    className="cursor-pointer outline-none focus-visible:stroke-[#121514]"
-                    fill={on ? "#E3EDE8" : p.role === "flap" ? "#F7F8F4" : "#FFFFFF"}
-                    stroke={p.role === "pdp" ? "#0F3D2E" : "#AEB4A9"}
+                    className="cursor-pointer outline-none focus-visible:stroke-[#15182B]"
+                    fill={on ? "#E0ECFF" : p.role === "flap" ? "#F4F5F8" : "#FFFFFF"}
+                    stroke={p.role === "pdp" ? "#15182B" : "#B4B9C6"}
                     strokeWidth={p.role === "pdp" || on ? fs / 4 : fs / 10}
                   />
                   {p.role !== "flap" && (
-                    <text x={x0 + fs * 0.6} y={y0 + fs * 1.4} fontSize={fs} fontWeight={700} fill="#121514" pointerEvents="none">
+                    <text x={x0 + fs * 0.6} y={y0 + fs * 1.4} fontSize={fs} fontWeight={700} fill="#15182B" pointerEvents="none">
                       {p.role === "pdp" ? "PDP" : p.role === "info" ? "Information panel" : p.label.replace(/ panel.*$/i, "")}
                     </text>
                   )}
                   {p.items.length > 0 && p.role !== "flap" && (
-                    <text x={x0 + fs * 0.6} y={y0 + fs * 2.7} fontSize={fs * 0.8} fill="#5A615C" pointerEvents="none">
+                    <text x={x0 + fs * 0.6} y={y0 + fs * 2.7} fontSize={fs * 0.8} fill="#555A6E" pointerEvents="none">
                       {p.items.length} copy block{p.items.length === 1 ? "" : "s"}
                     </text>
                   )}
@@ -151,7 +151,7 @@ export function DielineBlueprint({ sessionId, version }: { sessionId: string; ve
                 <g pointerEvents="none">
                   <rect x={x0} y={y1 - h} width={x1 - x0} height={h} fill="url(#bp-zone)" opacity={0.85} />
                   {/* Short label inside the panel; the citation is in the side card. */}
-                  <text x={x0 + fs * 0.6} y={y1 - h + fs * 1.3} fontSize={fs * 0.8} fontWeight={700} fill="#8A6A00">
+                  <text x={x0 + fs * 0.6} y={y1 - h + fs * 1.3} fontSize={fs * 0.8} fontWeight={700} fill="#735600">
                     Net quantity zone ({Math.round(zone.fraction * 100)}%)
                   </text>
                 </g>
@@ -164,7 +164,7 @@ export function DielineBlueprint({ sessionId, version }: { sessionId: string; ve
               const pad = fs * 0.4;
               return (
                 <rect x={x0 + pad} y={y0 + pad} width={x1 - x0 - 2 * pad} height={y1 - y0 - 2 * pad} fill="none" pointerEvents="none"
-                  stroke={group.ok === false ? "#D92B2B" : "#0F3D2E"} strokeWidth={fs / 5} strokeDasharray={`${fs} ${fs / 2}`} />
+                  stroke={group.ok === false ? "#D3283C" : "#15182B"} strokeWidth={fs / 5} strokeDasharray={`${fs} ${fs / 2}`} />
               );
             })()}
             {quiet && quiet.panel && (() => {
@@ -175,8 +175,8 @@ export function DielineBlueprint({ sessionId, version }: { sessionId: string; ve
               const cx = (x0 + x1) / 2;
               return (
                 <g pointerEvents="none">
-                  <rect x={cx - w / 2} y={y1 - fs * 5} width={w} height={fs * 3} fill="#FFFFFF" stroke="#121514" strokeDasharray={`${fs / 3}`} strokeWidth={fs / 12} />
-                  <text x={cx} y={y1 - fs * 3.2} fontSize={fs * 0.7} textAnchor="middle" fill="#121514">Barcode + quiet zone</text>
+                  <rect x={cx - w / 2} y={y1 - fs * 5} width={w} height={fs * 3} fill="#FFFFFF" stroke="#15182B" strokeDasharray={`${fs / 3}`} strokeWidth={fs / 12} />
+                  <text x={cx} y={y1 - fs * 3.2} fontSize={fs * 0.7} textAnchor="middle" fill="#15182B">Barcode + quiet zone</text>
                 </g>
               );
             })()}
@@ -190,14 +190,14 @@ export function DielineBlueprint({ sessionId, version }: { sessionId: string; ve
 
         <aside className="space-y-4" aria-live="polite">
           {panel ? (
-            <div className="rounded border border-line bg-stock p-4">
-              <p className="meta text-ink-muted">{ROLE_TEXT[panel.role]}</p>
-              <h3 className="text-[16px] font-bold text-ink">{panel.label}</h3>
+            <div className="rounded-md border border-line bg-paper p-4">
+              <h3 className="heading text-[18px] text-ink">{panel.label}</h3>
+              <p className="meta mt-0.5">{ROLE_TEXT[panel.role]}</p>
               {panel.items.length ? (
                 <ul className="mt-2 space-y-1 text-[13px] text-ink-2">
                   {panel.items.map((i) => (
                     <li key={i} className="flex gap-2">
-                      <span aria-hidden className="mt-2 h-1 w-1 shrink-0 rounded-full bg-rail" /> {i}
+                      <span aria-hidden className="mt-2 h-1 w-1 shrink-0 rounded-full bg-ink" /> {i}
                     </li>
                   ))}
                 </ul>
@@ -208,7 +208,7 @@ export function DielineBlueprint({ sessionId, version }: { sessionId: string; ve
                 <div key={o.label} className="mt-3 border-t border-line pt-2 text-[12px]">
                   <p className="font-semibold text-ink">{o.label}</p>
                   <p className="text-ink-2">{o.text}</p>
-                  <p className="mt-0.5 flex flex-wrap items-center gap-2 font-mono text-[10px] text-ink-faint">
+                  <p className="mt-0.5 flex flex-wrap items-center gap-2 text-[11px] tabular-nums text-ink-faint">
                     {o.citation} {!o.verified && <Unverified />}
                   </p>
                 </div>
@@ -216,10 +216,10 @@ export function DielineBlueprint({ sessionId, version }: { sessionId: string; ve
             </div>
           ) : null}
           {quiet && (
-            <div className="rounded border border-line bg-stock p-4 text-[12px]">
+            <div className="rounded-md border border-line bg-paper p-4 text-[12px]">
               <p className="font-semibold text-ink">Barcode quiet zone</p>
               <p className="text-ink-2">{quiet.text}</p>
-              <p className="mt-0.5 flex flex-wrap items-center gap-2 font-mono text-[10px] text-ink-faint">
+              <p className="mt-0.5 flex flex-wrap items-center gap-2 text-[11px] tabular-nums text-ink-faint">
                 {quiet.citation} {!quiet.verified && <Unverified />}
               </p>
             </div>
@@ -229,7 +229,7 @@ export function DielineBlueprint({ sessionId, version }: { sessionId: string; ve
 
       <section aria-labelledby="spec-h" className="space-y-3">
         <div className="section-rule">
-          <h3 id="spec-h" className="flex items-center gap-2 text-[16px] font-bold text-ink">
+          <h3 id="spec-h" className="heading flex items-center gap-2 text-[18px] text-ink">
             <Ruler className="h-4 w-4" aria-hidden /> Type and size spec
           </h3>
           <span className="text-xs text-ink-muted">US and EU values are separate rules</span>
@@ -241,17 +241,17 @@ export function DielineBlueprint({ sessionId, version }: { sessionId: string; ve
           </p>
         ) : null}
         {bp.dimensions_needed && (
-          <p className="flex flex-wrap items-center gap-2 rounded border border-talker/60 bg-talker-soft px-3 py-2 text-[13px] text-ink">
-            <Flag tone="review" side="right" className="-ml-3">Dimensions needed</Flag>
+          <p className="flex flex-wrap items-center gap-2 rounded-md border border-canary-deep/60 bg-canary-soft px-3 py-2 text-[13px] text-ink">
+            <Stamp tone="review" className="-ml-3">Dimensions needed</Stamp>
             Enter the real front panel size as “Front panel (PDP) size” in the{" "}
             <Link href="/review" className="font-semibold underline">workbench</Link>, for example 190 × 280 mm.
           </p>
         )}
         {bp.general_only && <p className="text-[13px] text-ink-muted">General checks only for this category: no category-specific type sizes apply.</p>}
         {bp.type_specs.length > 0 ? (
-          <div className="overflow-x-auto rounded border border-line">
+          <div className="overflow-x-auto rounded-md border border-line">
             <table className="w-full text-left text-[13px]">
-              <thead className="bg-ground">
+              <thead className="bg-desk">
                 <tr className="border-b border-line">
                   <th scope="col" className="meta px-3 py-2 text-ink-muted">Element</th>
                   <th scope="col" className="meta px-3 py-2 text-ink-muted">Minimum height</th>
@@ -271,7 +271,7 @@ export function DielineBlueprint({ sessionId, version }: { sessionId: string; ve
                       {s.note && <span className="block text-xs text-ink-muted">{s.note}</span>}
                     </td>
                     <td className="px-3 py-2">
-                      <span className="block font-mono text-[11px] text-ink-2">{s.citation}</span>
+                      <span className="block text-[12px] tabular-nums text-ink-2">{s.citation}</span>
                       {!s.verified && <Unverified />}
                     </td>
                   </tr>
@@ -287,7 +287,7 @@ export function DielineBlueprint({ sessionId, version }: { sessionId: string; ve
       {bp.copy_blocks.length > 0 && (
         <section aria-labelledby="copy-for-h" className="space-y-3">
           <div className="section-rule">
-            <h3 id="copy-for-h" className="text-[16px] font-bold text-ink">Copy for Illustrator</h3>
+            <h3 id="copy-for-h" className="heading text-[18px] text-ink">Copy for Illustrator</h3>
             <span className="text-xs text-ink-muted">Approved text, cleaned for pasting</span>
           </div>
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">

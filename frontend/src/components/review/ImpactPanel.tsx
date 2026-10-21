@@ -2,14 +2,14 @@
 
 import { ArrowRight, MapPin, Users } from "lucide-react";
 import { ImpactPreview } from "@/lib/types";
-import { Flag } from "@/components/shared/badges";
+import { Stamp } from "@/components/shared/badges";
 import { SourceChip } from "@/components/shared/SourceChip";
 
 /** Change Impact Simulator: what a change would resolve or introduce, before it is saved. */
 export function ImpactPanel({ p }: { p: ImpactPreview }) {
   const places = [...p.artwork_locations, ...p.sheet_locations];
   return (
-    <div className="anim-rise space-y-3 rounded border border-line-strong bg-ground p-3 text-xs text-ink-2">
+    <div className="anim-rise space-y-3 rounded-lg border border-line-strong bg-desk/60 p-3.5 text-[12.5px] text-ink-2">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <p className="text-[13px] font-bold text-ink">
           If “{p.old ?? "empty"}” becomes “{p.new}”
@@ -29,13 +29,13 @@ export function ImpactPanel({ p }: { p: ImpactPreview }) {
       </div>
       {p.resolved.length > 0 && (
         <div className="flex items-start gap-2">
-          <Flag tone="ok" side="right" className="mt-0.5 shrink-0">Resolves</Flag>
+          <Stamp tone="ok" className="shrink-0">Resolves</Stamp>
           <ul className="space-y-0.5">{p.resolved.map((i) => <li key={i.id}>{i.title}</li>)}</ul>
         </div>
       )}
       {p.introduced.length > 0 && (
         <div className="flex items-start gap-2">
-          <Flag tone="stop" side="right" className="mt-0.5 shrink-0">New</Flag>
+          <Stamp tone="gold" className="shrink-0">New</Stamp>
           <ul className="space-y-0.5">{p.introduced.map((i) => <li key={i.id}>{i.title}</li>)}</ul>
         </div>
       )}

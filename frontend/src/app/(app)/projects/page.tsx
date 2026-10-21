@@ -3,9 +3,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowRight, FileText, Globe, Plus, Trash2 } from "lucide-react";
+import { ArrowRight, FileText, Globe, Plus, RotateCcw, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { CategoryChip, Flag, MarketChip } from "@/components/shared/badges";
+import { Segmented } from "@/components/ui/Segmented";
+import { LogoMark } from "@/components/brand/Logo";
+import { CategoryChip, MarketChip, Stamp } from "@/components/shared/badges";
 import { Loading, PageHead } from "@/components/shared/Notice";
 import { SearchBox, matchesQuery } from "@/components/shared/SearchBox";
 import { DuplicateMarketModal } from "@/components/projects/DuplicateMarketModal";
@@ -57,9 +59,29 @@ function when(iso: string) {
   return d.toLocaleString(undefined, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
 }
 
+/** Readiness as a figure over a bar, the same reading the brief bar gives inside a brief. */
+function Readiness({ p }: { p: ProjectSummary }) {
+  const score = p.readiness ?? 0;
+  const done = p.status === "finalized";
+  return (
+    <div className="w-full min-w-[150px] max-w-[220px]">
+      <div className="flex items-baseline gap-1.5">
+        <span className="figure text-[30px] text-ink">
+          {score}
+          <span className="text-[18px]">%</span>
+        </span>
+        <span className="text-[12.5px] text-ink-muted">ready</span>
+      </div>
+      <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-desk-2" role="presentation">
+        <div className={cn("h-full rounded-full transition-[width] duration-700 ease-out", done ? "bg-mint-deep" : score >= 80 ? "bg-mint-deep" : "bg-ink")} style={{ width: `${score}%` }} />
+      </div>
+    </div>
+  );
+}
+
 export default function ProjectsPage() {
   const router = useRouter();
-  useSession(); // keeps the remembered open brief loaded, so the rail shows it
+  useSession(); // keeps the remembered open brief loaded, so "Continue" in the top bar can offer it
   const { sessionId, load, reset, busy } = useBriefStore();
   const [projects, setProjects] = useState<ProjectSummary[] | null>(null);
   const [markets, setMarkets] = useState<{ code: string; label: string }[]>([]);
@@ -148,7 +170,7 @@ export default function ProjectsPage() {
   const nameOf = (sid?: string | null) => projects?.find((x) => x.session_id === sid)?.product_name;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <PageHead
         title="Projects"
         lead="Every packaging brief on this server. Each one keeps its own files, findings, answers and change log."
@@ -160,128 +182,137 @@ export default function ProjectsPage() {
           </Button>
         }
       />
+
       {error && (
-        <p role="alert" className="text-sm text-stop-deep">
-          {error}
-        </p>
+        <div role="alert" className="anim-rise flex flex-wrap items-center justify-between gap-3 rounded-lg border border-stop/30 bg-stop-soft px-4 py-3">
+          <p className="flex items-start gap-3 text-[14px] text-ink">
+            <Stamp tone="stop" className="bg-paper">
+              Problem
+            </Stamp>
+            <span className="[overflow-wrap:anywhere]">{error}</span>
+          </p>
+          <Button variant="outline" size="sm" onClick={refresh}>
+            <RotateCcw className="h-3.5 w-3.5" /> Try again
+          </Button>
+        </div>
       )}
 
-      {projects === null && !error && <Loading what="projects" />}
+      {projects === null && !error && <Loading what="projects" rows={3} />}
 
       {projects?.length === 0 && (
-        <div className="ticket mx-auto max-w-lg p-8 text-center">
-          <h2 className="text-lg font-bold text-ink">No briefs yet</h2>
-          <p className="mt-1 text-sm text-ink-muted">Upload a product&apos;s artwork and content sheet to build the first one.</p>
-          <Button asChild className="mt-5">
-            <Link href="/upload">
-              New brief <ArrowRight className="h-4 w-4" />
-            </Link>
-          </Button>
+        <div className="anim-rise mx-auto max-w-xl pt-6">
+          <div className="sheet-set px-8 py-12 text-center">
+            <LogoMark className="mx-auto h-14 w-14" />
+            <h2 className="heading mt-6 text-[26px] text-ink">No briefs yet</h2>
+            <p className="mx-auto mt-2 max-w-sm text-[15px] text-ink-muted">
+              Upload a product&apos;s artwork and content sheet. BriefForge reads them, fills the brief with proof and lists what needs a decision.
+            </p>
+            <Button asChild size="lg" className="mt-7">
+              <Link href="/upload" onClick={() => reset()}>
+                Create the first brief <ArrowRight className="h-4 w-4" />
+              </Link>
+            </Button>
+          </div>
         </div>
       )}
 
       {projects && projects.length > 0 && (
         <>
-          <div className="space-y-3">
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <Segmented
+              label="Filter by status"
+              value={tab}
+              onChange={setTab}
+              items={TABS.map((t) => ({ id: t.id, label: t.label, count: counts[t.id] }))}
+            />
+            <div className="flex flex-wrap items-center gap-2">
               <SearchBox
                 id="project-search"
                 label="Search briefs"
                 value={query}
                 onChange={setQuery}
-                placeholder="Product, market, category, situation or file name"
+                placeholder="Product, market, category, situation or file"
                 count={shown.length}
                 noun={["brief", "briefs"]}
-                className="w-full max-w-md"
+                className="w-full sm:w-80"
               />
-              <div className="flex items-center gap-2">
-                <label htmlFor="project-sort" className="text-[13px] font-semibold text-ink">
-                  Sort
-                </label>
-                <select
-                  id="project-sort"
-                  value={sort}
-                  onChange={(e) => setSort(e.target.value as Sort)}
-                  className="h-9 rounded border border-line-strong bg-stock px-2 text-sm font-medium"
-                >
-                  {SORTS.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-              <div role="tablist" aria-label="Filter by status" className="inline-flex flex-wrap gap-1 rounded border border-line bg-stock p-1">
-                {TABS.map((t) => (
-                  <button
-                    key={t.id}
-                    role="tab"
-                    aria-selected={tab === t.id}
-                    onClick={() => setTab(t.id)}
-                    className={cn(
-                      "h-8 rounded px-3 text-[13px] font-semibold transition-colors",
-                      tab === t.id ? "bg-ink text-white" : "text-ink-muted hover:text-ink"
-                    )}
-                  >
-                    {t.label} <b className="figure ml-0.5 text-[15px]">{counts[t.id]}</b>
-                  </button>
+              <label htmlFor="project-sort" className="sr-only">
+                Sort
+              </label>
+              <select
+                id="project-sort"
+                value={sort}
+                onChange={(e) => setSort(e.target.value as Sort)}
+                className="h-10 rounded-md border border-line-strong bg-paper px-3 text-[14px] font-medium text-ink hover:border-ink-soft focus:border-ink"
+              >
+                {SORTS.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.label}
+                  </option>
                 ))}
-              </div>
-              {filtering && (
-                <p className="text-xs text-ink-muted" aria-hidden>
-                  Showing {shown.length} of {projects.length}
-                </p>
-              )}
+              </select>
             </div>
           </div>
+          {filtering && (
+            <p className="-mt-4 text-[13px] text-ink-muted" aria-hidden>
+              Showing {shown.length} of {projects.length}
+            </p>
+          )}
 
-          <ul className="space-y-2" aria-label="Briefs">
+          <ul className="space-y-3" aria-label="Briefs">
             {shown.map((p, i) => {
               const current = p.session_id === sessionId;
               const fromName = nameOf(p.source_session_id);
+              const finalized = p.status === "finalized";
               return (
                 <li
                   key={p.session_id}
-                  className={cn("ticket anim-rise grid grid-cols-1 gap-3 p-4 lg:grid-cols-[minmax(0,1fr)_auto_auto] lg:items-center", current && "border-ink shadow-[inset_0_0_0_1px_#121514]")}
-                  style={{ animationDelay: `${Math.min(i, 8) * 30}ms` }}
+                  className={cn(
+                    "sheet anim-rise lift-on-hover grid grid-cols-1 gap-5 p-5 md:p-6 lg:grid-cols-[minmax(0,1fr)_220px_minmax(170px,auto)_auto] lg:items-center lg:gap-8",
+                    current && "border-ink shadow-selected"
+                  )}
+                  style={{ animationDelay: `${Math.min(i, 8) * 40}ms` }}
                 >
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
                       <button
                         onClick={() => open(p.session_id)}
-                        className="min-w-0 max-w-full text-left text-[17px] font-bold leading-snug text-ink [overflow-wrap:anywhere] hover:underline"
+                        className="heading min-w-0 max-w-full text-left text-[19px] text-ink [overflow-wrap:anywhere] hover:underline hover:decoration-2 hover:underline-offset-4"
                       >
                         {p.product_name}
                       </button>
+                      {current && <Stamp tone="sky">Open now</Stamp>}
+                    </div>
+                    <div className="mt-2 flex flex-wrap items-center gap-1.5">
                       <MarketChip market={p.market} />
                       <CategoryChip category={p.category} />
-                      {current && <span className="meta text-rail">Open now</span>}
+                      <span className="text-[13px] text-ink-muted">
+                        {CASE_TEXT[p.case] ?? p.case}
+                        {p.source_market && ` from ${p.source_market}`}
+                        {fromName && <> · copy of {fromName}</>} · Updated {when(p.updated_at)}
+                      </span>
                     </div>
-                    <p className="mt-0.5 text-[13px] text-ink-muted">
-                      {CASE_TEXT[p.case] ?? p.case}
-                      {p.source_market && ` from ${p.source_market}`}
-                      {fromName && <> (copy of {fromName})</>} · Updated {when(p.updated_at)}
-                    </p>
-                    <p className="mt-1 flex min-w-0 items-center gap-1.5 text-xs text-ink-muted">
-                      <FileText className="h-3.5 w-3.5 shrink-0" />
-                      <span className="truncate">{p.files.join(" · ")}</span>
+                    <p className="mt-2 flex min-w-0 items-center gap-1.5 text-[12.5px] text-ink-muted">
+                      <FileText className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                      <span className="truncate">
+                        {p.files.length} file{p.files.length === 1 ? "" : "s"} · {p.files.join(" · ")}
+                      </span>
                     </p>
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
-                    <span className="flex items-baseline gap-1 text-xs text-ink-muted">
-                      <b className="figure text-[30px] text-ink">{p.readiness ?? 0}%</b> ready
-                    </span>
-                    {p.status === "finalized" ? (
-                      <Flag tone="ok">Finalized</Flag>
+                  <Readiness p={p} />
+
+                  <div className="flex flex-col items-start gap-1.5">
+                    {finalized ? (
+                      <Stamp tone="ok">Finalized</Stamp>
                     ) : p.blocking_open ? (
-                      <Flag tone="stop">{p.blocking_open} blocking</Flag>
+                      <Stamp tone="stop">{p.blocking_open} blocking</Stamp>
                     ) : (
-                      <Flag tone="ok">Ready to finalize</Flag>
+                      <Stamp tone="ok">Ready to finalize</Stamp>
                     )}
-                    {p.questions_open ? <span className="text-xs text-ink-muted">{p.questions_open} questions</span> : null}
+                    <span className="text-[12.5px] text-ink-muted">
+                      {p.questions_open ? `${p.questions_open} question${p.questions_open === 1 ? "" : "s"} open` : finalized ? "Handed off" : "No open questions"}
+                    </span>
                   </div>
 
                   <div className="flex flex-wrap items-center gap-2 lg:justify-end">
@@ -293,33 +324,35 @@ export default function ProjectsPage() {
                       aria-haspopup="dialog"
                       title="A new brief from the same files, checked against another market's rules"
                     >
-                      <Globe className="h-3.5 w-3.5" /> Duplicate as new market
+                      <Globe className="h-3.5 w-3.5" /> New market<span className="sr-only"> (duplicate as new market)</span>
                     </Button>
-                    <Button variant="outline" size="sm" onClick={() => open(p.session_id, "/export")}>
+                    <Button variant="ghost" size="sm" onClick={() => open(p.session_id, "/export")}>
                       Designer brief
                     </Button>
+                    <span className="flex items-center gap-2">
                     <Button size="sm" onClick={() => open(p.session_id)}>
                       Open <ArrowRight className="h-3.5 w-3.5" />
                     </Button>
                     <button
                       onClick={() => remove(p)}
-                      className="grid h-8 w-8 place-items-center rounded text-ink-muted hover:bg-stop-soft hover:text-stop-deep"
+                      className="pressable grid h-8 w-8 place-items-center rounded-md text-ink-muted transition-colors hover:bg-stop-soft hover:text-stop-deep"
                       aria-label={`Delete the brief for ${p.product_name}`}
                       title="Delete brief"
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
+                    </span>
                   </div>
                 </li>
               );
             })}
             {shown.length === 0 && (
-              <li className="rounded border border-dashed border-line-strong bg-stock p-6 text-center">
-                <p className="text-[14px] font-semibold text-ink">
+              <li className="rounded-lg border border-dashed border-line-strong bg-paper/60 px-6 py-10 text-center">
+                <p className="heading text-[18px] text-ink">
                   {query.trim() ? `No ${tab === "all" ? "" : `${TABS.find((t) => t.id === tab)?.label.toLowerCase()} `}brief matches “${query.trim()}”.` : `No ${TABS.find((t) => t.id === tab)?.label.toLowerCase()} briefs.`}
                 </p>
-                <p className="mt-1 text-[13px] text-ink-muted">Try a product name, a market code such as US, a category, or part of a file name.</p>
-                <Button variant="outline" size="sm" className="mt-3" onClick={clearFilters}>
+                <p className="mt-1.5 text-[14px] text-ink-muted">Try a product name, a market code such as US, a category, or part of a file name.</p>
+                <Button variant="outline" size="sm" className="mt-4" onClick={clearFilters}>
                   Clear filters
                 </Button>
               </li>

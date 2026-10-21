@@ -68,8 +68,8 @@ export function SearchBox({
         }}
         placeholder={placeholder}
         className={cn(
-          "w-full rounded border border-line-strong bg-stock text-ink focus:border-ink [&::-webkit-search-cancel-button]:hidden",
-          small ? "h-8 pl-7 pr-8 text-xs" : "h-10 pl-9 pr-10 text-sm"
+          "w-full rounded-md border border-line-strong bg-paper text-ink transition-[border-color,box-shadow] duration-150 hover:border-ink-soft focus:border-ink focus:shadow-[0_0_0_3px_rgba(21,24,43,0.08)] focus-visible:outline-none [&::-webkit-search-cancel-button]:hidden",
+          small ? "h-8 pl-7 pr-8 text-[12.5px]" : "h-10 pl-9 pr-10 text-[14px]"
         )}
       />
       {value && (
@@ -81,7 +81,7 @@ export function SearchBox({
           }}
           aria-label={`Clear ${label.toLowerCase()}`}
           className={cn(
-            "absolute top-1/2 grid -translate-y-1/2 place-items-center rounded text-ink-muted hover:bg-ink/5 hover:text-ink",
+            "absolute top-1/2 grid -translate-y-1/2 place-items-center rounded-md text-ink-muted hover:bg-ink/[0.06] hover:text-ink",
             small ? "right-1 h-6 w-6" : "right-1.5 h-7 w-7"
           )}
         >

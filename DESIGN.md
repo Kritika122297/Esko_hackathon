@@ -1,343 +1,379 @@
 ---
 name: BriefForge
-description: Shelf Edge. Every brief value is a shelf-edge ticket with its proof printed on the code line and its state on a notched talker flag.
+description: The packaging brief as a multi-part carbonless routing form, checked, stamped and source-linked.
 colors:
-  rail: "#0F3D2E"
-  rail-hover: "#174D3B"
-  ground: "#F1F2EC"
-  stock: "#FFFFFF"
-  ink: "#121514"
-  ink-2: "#2C322F"
-  ink-muted: "#5A615C"
-  ink-faint: "#757C77"
-  line: "#D6D9CF"
-  line-strong: "#AEB4A9"
-  talker: "#FFD23F"
-  talker-soft: "#FFF4CC"
-  talker-deep: "#8A6A00"
-  stop: "#D92B2B"
-  stop-soft: "#FBE8E6"
-  stop-deep: "#A11D1D"
-  ok-soft: "#E3EDE8"
+  ink: "#15182B"
+  ink-2: "#2E3247"
+  ink-muted: "#555A6E"
+  ink-faint: "#6B7083"
+  ink-soft: "#8C91A3"
+  paper: "#FFFFFF"
+  desk: "#ECEEF2"
+  desk-2: "#E2E5EB"
+  desk-3: "#D6DAE2"
+  line: "#DADDE4"
+  line-strong: "#B4B9C6"
+  canary-soft: "#FFF5C2"
+  canary: "#FFE066"
+  canary-deep: "#735600"
+  mint-soft: "#DDF3E4"
+  mint: "#8FDBA9"
+  mint-deep: "#17663A"
+  sky-soft: "#E0ECFF"
+  sky: "#A6C8FF"
+  sky-deep: "#1D4FA0"
+  gold-soft: "#FFEDCC"
+  gold: "#FFC85C"
+  gold-deep: "#7A4E00"
+  pink-soft: "#FFE3EA"
+  pink: "#FFB3C7"
+  pink-deep: "#9E2049"
+  stop-soft: "#FFE4E7"
+  stop: "#D3283C"
+  stop-deep: "#A01A2B"
 typography:
-  figure:
-    fontFamily: "Archivo, system-ui, sans-serif"
-    fontSize: "56px"
-    fontWeight: 800
-    lineHeight: 0.88
-    letterSpacing: "-0.01em"
-    fontFeature: "tnum"
-    fontVariation: "'wdth' 62.5"
-  headline:
-    fontFamily: "Archivo, system-ui, sans-serif"
-    fontSize: "28px"
-    fontWeight: 800
-    lineHeight: 1.25
-    letterSpacing: "-0.01em"
-    fontVariation: "'wdth' 87.5"
-  ticket-value:
-    fontFamily: "Archivo, system-ui, sans-serif"
-    fontSize: "19px"
-    fontWeight: 600
-    lineHeight: 1.375
-    fontVariation: "'wdth' 87.5"
-  title:
-    fontFamily: "Archivo, system-ui, sans-serif"
-    fontSize: "16px"
+  display:
+    fontFamily: "Bricolage Grotesque, Hanken Grotesk, system-ui, sans-serif"
+    fontSize: "clamp(52px, 8.6vw, 128px)"
     fontWeight: 700
-    lineHeight: 1.4
+    lineHeight: 0.98
+    letterSpacing: "-0.025em"
+    fontVariation: "'opsz' 96, 'wdth' 82"
+  headline:
+    fontFamily: "Bricolage Grotesque, Hanken Grotesk, system-ui, sans-serif"
+    fontSize: "56px"
+    fontWeight: 700
+    lineHeight: 0.98
+    letterSpacing: "-0.025em"
+    fontVariation: "'opsz' 96, 'wdth' 82"
+  title:
+    fontFamily: "Bricolage Grotesque, Hanken Grotesk, system-ui, sans-serif"
+    fontSize: "18px"
+    fontWeight: 700
+    lineHeight: 1.15
+    letterSpacing: "-0.012em"
+    fontVariation: "'opsz' 32, 'wdth' 88"
+  figure:
+    fontFamily: "Bricolage Grotesque, Hanken Grotesk, system-ui, sans-serif"
+    fontSize: "34px"
+    fontWeight: 700
+    lineHeight: 0.9
+    letterSpacing: "-0.02em"
+    fontFeature: "'tnum', 'lnum'"
+    fontVariation: "'opsz' 96, 'wdth' 75"
   body:
-    fontFamily: "Archivo, system-ui, sans-serif"
+    fontFamily: "Hanken Grotesk, system-ui, sans-serif"
     fontSize: "14px"
     fontWeight: 400
-    lineHeight: 1.45
-  label:
-    fontFamily: "Archivo, system-ui, sans-serif"
-    fontSize: "12px"
-    fontWeight: 700
-    lineHeight: "16px"
-    letterSpacing: "0.06em"
-  meta:
-    fontFamily: "Archivo, system-ui, sans-serif"
-    fontSize: "11px"
+    lineHeight: 1.5
+    fontFeature: "'ss01'"
+  interface:
+    fontFamily: "Hanken Grotesk, system-ui, sans-serif"
+    fontSize: "13px"
     fontWeight: 600
-    letterSpacing: "0.06em"
-    fontFeature: "tnum"
-  flag:
-    fontFamily: "Archivo, system-ui, sans-serif"
-    fontSize: "11px"
+    lineHeight: 1.4
+  label:
+    fontFamily: "Hanken Grotesk, system-ui, sans-serif"
+    fontSize: "12px"
+    fontWeight: 500
+    lineHeight: "16px"
+    fontFeature: "'tnum'"
+  stamp:
+    fontFamily: "Bricolage Grotesque, Hanken Grotesk, system-ui, sans-serif"
+    fontSize: "11.5px"
     fontWeight: 800
     lineHeight: 1
-    letterSpacing: "0.08em"
-    fontVariation: "'wdth' 87.5"
-  code:
-    fontFamily: "JetBrains Mono, ui-monospace, monospace"
-    fontSize: "11px"
-    fontWeight: 400
-    lineHeight: "16px"
-    letterSpacing: "0.05em"
+    letterSpacing: "0.06em"
+    fontVariation: "'opsz' 14, 'wdth' 75"
 rounded:
-  sm: "2px"
-  DEFAULT: "2px"
-  md: "3px"
-  lg: "4px"
+  sm: "4px"
+  DEFAULT: "6px"
+  md: "8px"
+  lg: "12px"
+  xl: "16px"
 spacing:
-  xs: "4px"
-  sm: "8px"
-  md: "12px"
-  lg: "16px"
-  xl: "20px"
-  2xl: "24px"
-  3xl: "32px"
+  page-x-sm: "16px"
+  page-x-md: "24px"
+  page-x-xl: "32px"
+  sheet-pad: "20px"
+  page-max: "1560px"
 components:
   button-primary:
-    backgroundColor: "{colors.rail}"
-    textColor: "{colors.stock}"
-    rounded: "{rounded.DEFAULT}"
-    padding: "0 16px"
+    backgroundColor: "{colors.ink}"
+    textColor: "{colors.paper}"
+    typography: "{typography.interface}"
+    rounded: "{rounded.md}"
+    padding: "0 14px"
     height: "36px"
   button-primary-hover:
-    backgroundColor: "{colors.rail-hover}"
+    backgroundColor: "{colors.ink-2}"
   button-outline:
-    backgroundColor: "{colors.stock}"
+    backgroundColor: "{colors.paper}"
     textColor: "{colors.ink}"
-    rounded: "{rounded.DEFAULT}"
-    padding: "0 16px"
+    rounded: "{rounded.md}"
+    padding: "0 14px"
     height: "36px"
-  button-outline-hover:
-    backgroundColor: "{colors.ground}"
-  button-talker:
-    backgroundColor: "{colors.talker}"
+  button-soft:
+    backgroundColor: "{colors.desk}"
     textColor: "{colors.ink}"
-    rounded: "{rounded.DEFAULT}"
-    padding: "0 16px"
+    rounded: "{rounded.md}"
+    padding: "0 14px"
     height: "36px"
-  button-destructive:
-    backgroundColor: "{colors.stop}"
-    textColor: "{colors.stock}"
-    rounded: "{rounded.DEFAULT}"
-    padding: "0 16px"
-    height: "36px"
-  button-destructive-hover:
-    backgroundColor: "{colors.stop-deep}"
-  ticket:
-    backgroundColor: "{colors.stock}"
+  button-soft-hover:
+    backgroundColor: "{colors.desk-2}"
+  button-canary:
+    backgroundColor: "{colors.canary}"
     textColor: "{colors.ink}"
-    rounded: "{rounded.DEFAULT}"
-  flag-review:
-    backgroundColor: "{colors.talker}"
-    textColor: "{colors.ink}"
-    typography: "{typography.flag}"
-    padding: "4px 10px 4px 14px"
-  flag-stop:
-    backgroundColor: "{colors.stop}"
-    textColor: "{colors.stock}"
-    typography: "{typography.flag}"
-    padding: "4px 10px 4px 14px"
-  flag-ok:
-    backgroundColor: "{colors.rail}"
-    textColor: "{colors.stock}"
-    typography: "{typography.flag}"
-    padding: "4px 10px 4px 14px"
-  flag-missing:
-    backgroundColor: "{colors.stock}"
-    textColor: "{colors.ink}"
-    typography: "{typography.flag}"
-    padding: "4px 10px 4px 14px"
-  code-line:
-    textColor: "{colors.ink-muted}"
-    typography: "{typography.code}"
-    padding: "6px 16px"
-  input:
-    backgroundColor: "{colors.stock}"
-    textColor: "{colors.ink}"
-    rounded: "{rounded.DEFAULT}"
-    padding: "0 8px"
-    height: "36px"
-  nav-rail:
-    backgroundColor: "{colors.rail}"
-    textColor: "{colors.stock}"
-    width: "240px"
-  nav-item-active:
-    backgroundColor: "{colors.stock}"
-    textColor: "{colors.ink}"
-    rounded: "{rounded.DEFAULT}"
+    rounded: "{rounded.md}"
+    padding: "0 20px"
     height: "44px"
-  readiness-panel:
-    backgroundColor: "{colors.rail}"
-    textColor: "{colors.stock}"
-    rounded: "{rounded.DEFAULT}"
-    padding: "16px"
+  sheet:
+    backgroundColor: "{colors.paper}"
+    rounded: "{rounded.lg}"
+    padding: "{spacing.sheet-pad}"
+  form-box:
+    backgroundColor: "{colors.paper}"
+    rounded: "{rounded.md}"
+  input:
+    backgroundColor: "{colors.paper}"
+    textColor: "{colors.ink}"
+    rounded: "{rounded.md}"
+    padding: "0 12px"
+    height: "40px"
+  stamp-confirmed:
+    backgroundColor: "{colors.mint-soft}"
+    textColor: "{colors.mint-deep}"
+    typography: "{typography.stamp}"
+    rounded: "{rounded.sm}"
+    padding: "4px 7px 3.5px"
+  stamp-review:
+    backgroundColor: "{colors.canary-soft}"
+    textColor: "{colors.canary-deep}"
+    typography: "{typography.stamp}"
+    rounded: "{rounded.sm}"
+  stamp-blocking:
+    backgroundColor: "{colors.stop-soft}"
+    textColor: "{colors.stop-deep}"
+    typography: "{typography.stamp}"
+    rounded: "{rounded.sm}"
+  stamp-warning:
+    backgroundColor: "{colors.gold-soft}"
+    textColor: "{colors.gold-deep}"
+    typography: "{typography.stamp}"
+    rounded: "{rounded.sm}"
+  stamp-handoff:
+    backgroundColor: "{colors.sky-soft}"
+    textColor: "{colors.sky-deep}"
+    typography: "{typography.stamp}"
+    rounded: "{rounded.sm}"
+  stamp-remove:
+    backgroundColor: "{colors.desk-2}"
+    textColor: "{colors.ink-2}"
+    typography: "{typography.stamp}"
+    rounded: "{rounded.sm}"
+  stamp-muted:
+    backgroundColor: "{colors.desk}"
+    textColor: "{colors.ink-muted}"
+    typography: "{typography.stamp}"
+    rounded: "{rounded.sm}"
+  stamp-missing:
+    backgroundColor: "{colors.paper}"
+    textColor: "{colors.ink-2}"
+    typography: "{typography.stamp}"
+    rounded: "{rounded.sm}"
+  market-chip:
+    backgroundColor: "{colors.ink}"
+    textColor: "{colors.paper}"
+    rounded: "{rounded.sm}"
+    padding: "0 6px"
+    height: "24px"
+  owner-tag:
+    backgroundColor: "{colors.paper}"
+    textColor: "{colors.ink-2}"
+    rounded: "{rounded.sm}"
+    padding: "0 6px"
+    height: "24px"
+  segmented:
+    backgroundColor: "{colors.paper}"
+    textColor: "{colors.ink-muted}"
+    rounded: "{rounded.md}"
+    padding: "3px"
+  segmented-selected:
+    backgroundColor: "{colors.ink}"
+    textColor: "{colors.paper}"
 ---
 
 # Design System: BriefForge
 
 ## Overview
 
-**Creative North Star: "Shelf Edge"**
+**Creative North Star: "The Carbon Set"**
 
-Every value in the brief is a shelf-edge ticket. The value prints large, in condensed heavy tabular figures when it is a number; its proof prints small along the ticket's dashed code line; its state hangs off the ticket's right edge as a notched talker flag. The shell around the tickets is the shelf strip itself: a deep green rail that owns navigation, the readiness panel and the primary action, set against a pale store-light ground.
+BriefForge treats the packaging brief as a multi-part carbonless routing form laid on a cool desk. One carbon ink carries all structure, text and primary action. White bond sheets hold every working area. Tinted copies peek out beneath a sheet as offset stacked paper edges, and the tint of each copy says what that copy carries. Every decided state is a stamped word, every open value is an outlined gap, and every value keeps a proof stub that tears off along a perforation.
 
-The system is dense, flat and printed. Surfaces are white ticket stock with hairline edges and 2px corners, separated by a faint paper shadow rather than by elevation. Colour is reserved for meaning: green is the shell and "OK", yellow asks for a decision, red blocks. Everything else is ink on stock. The system rejects the category default of soft white cards, indigo buttons and pastel status pills.
+The world lends type, palette, density and its signature devices to standard web structure; navigation, controls and layout remain conventional so the brand manager can operate at speed. Density is that of a working form: 13px interface text, 12px tabular meta, condensed display figures for anything read at a glance. Ornament is limited to what a real carbon set carries: perforations, proof stubs, stamps and copy edges.
 
-Motion behaves like a label printer. When a decision lands, the ticket re-prints in place: the value wipes in from the left and the flag slides back onto the edge. Nothing else animates beyond short rises and height-based disclosures, and all of it collapses under reduced motion.
+The system refuses the green-rail internal tool and the indigo-button SaaS card kit. Colour is never decoration: each lit tint is a real state or a real copy.
 
 **Key Characteristics:**
-- Green rail shell, store-light ground, white ticket stock with 1px edges and 2px corners.
-- Condensed heavy tabular figures for every count, score and numeric value.
-- States as notched talker flags carrying a word, never colour alone.
-- Proof printed on a dashed mono code line at the foot of each ticket.
-- Re-print animation as the signature interaction when a value or state changes.
+- One carbon ink (#15182B) for text, rules and primary actions on a cool desk ground (#ECEEF2).
+- White bond sheets with 12px corners and ink-tinted soft shadows.
+- Copies drawn as offset stacked edges beneath a sheet, tinted by what they carry.
+- Stamps as the only state grammar: a bordered, condensed, uppercase word with ink grain.
+- Perforated tear lines and dashed proof stubs as the only ornaments.
+- Bricolage Grotesque condensed for display, figures and stamps; Hanken Grotesk for interface text.
+- Motion that marks events (a stamp lands, a value is re-written, readiness rolls), never decoration on first paint.
 
 ## Colors
 
-A shelf-strip palette: one deep green that owns the shell, white stock and ink for content, and two signal colours (talker yellow, stop red) that only ever mean "decide" and "blocked".
+One ink, one desk, white paper, and a set of copy tints that each carry exactly one meaning.
 
 ### Primary
-- **Shelf-Strip Green** (rail): The navigation rail, the readiness panel, primary buttons, the OK flag, finalized chips, section rules and the selected-source text colour. Used at region scale, never as a tint wash. Hover deepens to **Rail Hover** (rail-hover).
+- **Carbon Ink** (ink): text, hairline rules, primary buttons, the selected segment, the active nav item, market chips, focus outlines. Its secondary tones step down for hierarchy: **Ink Two** (ink-2) for secondary text and slate stamps, **Ink Muted** (ink-muted) for captions and meta, **Ink Faint** (ink-faint) for placeholders and supporting icons, **Ink Soft** (ink-soft) for input hover borders.
 
-### Secondary
-- **Talker Yellow** (talker): Review flags, open-count badges on the rail, the readiness progress fill, the busy-toast scan bar, text selection, the skip link and the artwork highlight wash. On the green rail it is also the focus ring and the finalize button. **Talker Soft** (talker-soft) backs alternative-value rows; **Talker Deep** (talker-deep) is their dashed edge and the uncertain-source flag icon.
+### Secondary (state tints)
+Each family has a soft fill, a mid value and a deep text value. Stamps use soft fill with deep text and border.
+- **Canary** (canary family): needs review, unknown, a decision to make. The mid value fills the Finalize button, the to-review share of the readiness bar, text selection and the skip link. Count figures in the selected segment are canary on ink.
+- **Mint** (mint family): confirmed, and the Add action. Mint deep fills the confirmed share of the readiness bar.
+- **Stop Red** (stop family): blocking findings, and conditions that stop the work (failed operations, rejected files, delete affordances on hover). It never marks a warning, a preference or decoration.
+- **Gold** (gold family): warning severity and non-blocking checks.
+- **Sky** (sky family): passed to the agency, handoff, the open brief. The agency tear-off copy on the designer brief is a sky sheet.
+- **Slate** (desk-2 fill with ink-2 text): the Remove action.
+- **Muted** (desk fill with ink-muted text): Keep and Info.
 
-### Tertiary
-- **Stop Red** (stop): Blocking flags, destructive buttons and the "Problem" flag. **Stop Soft** (stop-soft) backs the error banner; **Stop Deep** (stop-deep) is the destructive hover.
+### Tertiary (copy material)
+- **Pink** (pink family): a copy-sheet material only, used for the findings copy on the landing desk and the brief sheet's first copy edge there, and for the PDF file tile. It carries no state and is not a stamp tone.
 
 ### Neutral
-- **Store-Light Ground** (ground): Page background, inset rows (open questions, agency notes, table heads), outline-button hover.
-- **Ticket Stock** (stock): Every ticket, input, chip and the active navigation item.
-- **Ink** (ink): Body text, headings, the selected-ticket frame, the busy toast, the artwork highlight frame and the default focus ring.
-- **Ink 2 / Ink Muted / Ink Faint** (ink-2, ink-muted, ink-faint): Secondary copy, captions and code lines, and placeholders and disabled hints, in that order.
-- **Hairline / Strong Line** (line, line-strong): Ticket edges and dashed code-line rules; input borders, scrollbars and hover edges.
-- **OK Soft** (ok-soft): Rare green-tinted backing for confirmed context.
+- **Bond Paper** (paper): every sheet, form box, input and popover.
+- **Desk** (desk): the page ground, perforation punch holes, soft buttons, muted stamps.
+- **Desk Two** (desk-2): recessed bands (the landing example band), readiness bar track, skeleton base, slate stamps.
+- **Desk Three** (desk-3): deepest desk tone for pressed or nested recesses.
+- **Rule** (line): sheet borders, section hairlines, segmented frame.
+- **Strong Rule** (line-strong): input and outline-button borders, the proof stub's dashed line, owner tags, scrollbar thumb.
 
 ### Named Rules
-**The No Evidence Blue Rule.** The palette is rail green, ground, white ticket stock, ink, talker yellow and stop red. No blue or indigo appears anywhere, including links, sources and evidence; located sources use ink-muted with a dotted underline that turns rail green on hover.
+**The One Ink Rule.** Structure and primary action use Carbon Ink only. No second brand colour exists; emphasis comes from weight, size and the ink fill.
 
-**The Signal Scarcity Rule.** Yellow means a person must decide and red means something blocks. Neither appears as decoration, and neither appears without a word beside it.
+**The Every Tint Is a State Rule.** A tint appears only when it means its state or its copy. If removing the tint loses no information, the tint does not belong.
+
+**The Stop Means Stop Rule.** Stop red marks only what halts the work: blocking findings, failures and destructive actions. A warning is gold, a question is canary.
+
+**The Neutral AI Rule.** AI suggestions are set in neutral ink with a sparkle icon and a plain-language qualifier. They never take a state tint and never block.
 
 ## Typography
 
-**Display Font:** Archivo across its width axis (with system-ui, sans-serif)
-**Body Font:** Archivo at normal width (with system-ui, sans-serif)
-**Label/Mono Font:** JetBrains Mono, for source code lines only (with ui-monospace, monospace)
+**Display Font:** Bricolage Grotesque, variable opsz and wdth axes (with Hanken Grotesk, system-ui)
+**Body Font:** Hanken Grotesk (with system-ui), stylistic set ss01 enabled globally
+**Label Font:** Hanken Grotesk at 12px with tabular figures; stamps use Bricolage at the narrowest width
 
-**Character:** One family carries the whole system by changing width: condensed heavy for shelf-price figures, semi-condensed for headings, values and flags, normal width for interface text. The mono face is the printed code under the price and appears nowhere else.
+**Character:** Bricolage set condensed is the lettering of a printed form header: compact, heavy and confident. Hanken Grotesk is a quiet, legible interface face that holds dense rows without noise.
 
 ### Hierarchy
-- **Figure** (800, 26 / 40 / 56 / 76px, 0.88, width 62.5%, tabular): Counts in the context bar (26px), numeric ticket values (40px, 56px for nutrition and quantity), and the readiness score (76px). Units drop to width 75% at roughly 40% of the figure size.
-- **Headline** (800, 28px, width 87.5%, -0.01em): One page title per screen, with an optional 15px ink-muted lead capped at 70ch.
-- **Ticket Value** (600, 19px, width 87.5%): Text values on tickets. Values over 140 characters drop to 16px medium.
-- **Title** (700, 16px): Section headings sitting on a section rule.
-- **Body** (400, 14px, 1.45): Interface text. Secondary copy at 13px and 12px.
-- **Label** (700, 12px, 0.06em, uppercase): Panel and ticket labels such as "Brief fields", "Artwork" and field names.
-- **Meta** (600, 11px, 0.06em, uppercase, tabular): All other small uppercase metadata: rail footer context, readiness breakdown, designer-task and agency chips, artwork footer.
-- **Flag** (800, 11px, 0.08em, uppercase, width 87.5%): Talker flag words.
-- **Code** (JetBrains Mono 400, 11px, 0.05em, uppercase): Source lines on tickets and evidence lists.
+- **Display** (700, clamp(52px, 8.6vw, 128px), 0.98, opsz 96, wdth 82, -0.025em): the landing headline only, revealed line by line.
+- **Headline** (700, 40px to 76px stepped at md, same settings as Display): landing section heads and large app page heads.
+- **Title** (700, 17px to 24px, typically 18px, 1.15, opsz 32, wdth 88, -0.012em): sheet titles, section heads on a hairline, the wordmark.
+- **Figure** (700, 15px to 68px, 0.9, opsz 96, wdth 75, tabular lining figures): every count, score and number read at a glance, including the rolling readiness figure.
+- **Body** (400, 14px, 1.5): running text; the landing lead is 17px relaxed at a 44ch measure.
+- **Interface** (600, 13px to 13.5px): buttons, nav, segments, list rows.
+- **Label** (500, 12px, 16px line, tabular, ink-muted): meta captions placed beside or after a title, never above it.
+- **Stamp** (800, 11.5px, uppercase, 0.06em, opsz 14, wdth 75; large stamps 14px): state words only.
 
 ### Named Rules
-**The Mono Is Proof Rule.** JetBrains Mono appears only on source code lines (ticket code lines, source chips, the artwork highlight source). Every other small uppercase text uses the Archivo meta style.
+**The No Eyebrow Rule.** No small label sits above a heading. Captions and counts sit on the heading's baseline to the right, or below it.
 
-**The Price Figure Rule.** Any number a person reads at a glance (counts, scores, numeric values) sets as a condensed heavy tabular figure, never as body text.
-
-**The No Kicker Rule.** No eyebrow or kicker label sits above a heading. Headings stand on their own; context belongs in the lead line beneath or in the section rule's right-hand caption.
+**The Figures Are Matter Rule.** Any number a user reads at a glance is set in the condensed figure style with tabular digits, so counts align and roll in place.
 
 ## Layout
 
-A fixed 240px green rail on the left from 1024px up; below that it collapses into a 56px sticky green bar whose step list opens as a height disclosure. A sticky context bar on ground (95% opacity) carries the product name, market and status chips, field-count figures and the blocking flag on every screen after upload.
-
-Content sits in a centred main column capped at 1600px, padded 16px on mobile and 24px from 768px, with 24px to 32px vertical padding. Each screen has one dominant work area. The workbench is a three-column grid from 1280px (artwork, brief tickets as the widest column, readiness and findings), two columns from 1024px with the artwork behind a tab, and one column below. Findings and upload use a two-column split from 1024px.
-
-Rhythm runs on a 4px base: 8px between tickets, 20px to 24px between grid columns, 24px between sections, 16px ticket side padding and 12px vertical padding.
-
-### Named Rules
-**The Section Rule Rule.** Sections open on a 3px rail-green strip under the section title, with an optional right-aligned ink-muted caption ("2 to resolve", counts) on the same baseline.
+Pages are centred in a 1560px container with horizontal padding of 16px, 24px from md and 32px from xl. The app shell stacks a 60px sticky white top bar, the brief bar (product, market chips, status stamp, four-stage stepper, readiness) and the page. The brief bar publishes the CSS variable --stick-top (top bar height plus its own height plus 16px; default 76px); every sticky work area (artwork viewer, findings sheet, readiness column) starts at that offset and sizes its height from it. Working screens use a 12-column grid: artwork left at about 40 percent, field sheets centre, readiness and findings right, collapsing to a single column below lg. Sheets use 20px internal padding; section heads sit on a hairline with an 8px gap beneath. Scroll padding at the top is 140px so anchored targets clear the sticky bars.
 
 ## Elevation & Depth
 
-The system is flat and printed. Depth comes from hairline edges and tone (stock on ground), with one faint paper shadow under ticket stock and one lifted shadow reserved for floating toasts. The only structural depth effect is the artwork highlight's white halo.
+Depth is paper on a desk: soft, ink-tinted shadows that read as sheets resting, never glows. Copies beneath a sheet are drawn as hard, offset paper edges in the copy tint with a fine ink edge, followed by one soft cast shadow; this is the world's own material, not a decorative hard shadow.
 
 ### Shadow Vocabulary
-- **Ticket** (`box-shadow: 0 1px 0 rgba(18,21,20,0.04), 0 2px 6px -2px rgba(18,21,20,0.08)`): Under every ticket and the readiness panel. Barely visible; it reads as paper thickness.
-- **Lift** (`box-shadow: 0 2px 4px rgba(18,21,20,0.06), 0 12px 28px -12px rgba(18,21,20,0.22)`): The bottom-right busy and confirmation toasts only.
-- **Selected Frame** (`box-shadow: inset 0 0 0 1px #121514` with an ink border): A selected ticket or chosen answer option. Selection doubles the edge in ink rather than raising the surface.
-- **Artwork Highlight** (`box-shadow: 0 0 0 3px #FFFFFF, 0 6px 18px rgba(18,21,20,0.35)`): The located-source frame on the artwork.
+- **Sheet** (`box-shadow: 0 1px 0 rgba(21,24,43,0.03), 0 1px 3px rgba(21,24,43,0.06), 0 12px 28px -18px rgba(21,24,43,0.22)`): the resting bond sheet.
+- **Raised** (`box-shadow: 0 1px 2px rgba(21,24,43,0.06), 0 18px 40px -20px rgba(21,24,43,0.32)`): landing copies, hover lift target.
+- **Lift** (`box-shadow: 0 2px 6px rgba(21,24,43,0.08), 0 28px 56px -24px rgba(21,24,43,0.42)`): the chat drawer and dialogs.
+- **Sheet Set** (two copy edges at 5px and 10px offset, each a copy-tint edge plus a 0.12 or 0.10 ink hairline, then `10px 22px 30px -18px rgba(21,24,43,0.28)`): readiness, pack inspector, designer brief, empty states. Copy tints are set per use through --copy-1 and --copy-2.
+- **Selected** (`box-shadow: inset 0 0 0 1.5px #15182B`): a selected sheet or option.
 
 ### Named Rules
-**The Paper Not Glass Rule.** Surfaces never float, blur or glow. State changes the edge (ink frame) or re-prints the ticket; it never raises it.
+**The Copies Carry Meaning Rule.** A sheet set shows copies only where the copies say something (ready is mint over sky; not ready is canary over stop soft; agency handoff is sky). The tints follow the state, never taste.
 
 ## Shapes
 
-Nearly square: 2px radius on tickets, buttons, inputs, chips and navigation items, 3px to 4px only where the scale allows. Edges are 1px hairlines; code lines and artwork panel outlines are dashed. The one distinctive silhouette is the talker flag: a rectangle with a 7px V-notch cut into its leading edge by clip-path, hanging off the right edge of tickets and findings.
+Corners are gently rounded and scale with the object: stamps, chips and tags 4px, segments 5px, buttons, inputs and form boxes 8px, sheets 12px, large bands 16px. Borders are 1px hairlines in Rule; stamps carry a 1.5px border in their own colour (2px on large stamps). Two dashed lines carry meaning: the **perforation** (1.5px dashed with half punch holes in desk colour at each end) separates a value from its proof, and the **proof stub** (1px dashed strong rule at the foot of a sheet, 12px muted text) carries sources. A dashed outline elsewhere means a missing value.
 
 ## Components
 
 ### Buttons
-Short, square and decisive.
-- **Shape:** Near-square corners (2px), 36px tall at default, 28px small, 44px large; 13px semibold label with an optional 14px to 16px icon.
-- **Primary:** Rail green on white text with a 1px inner bottom shade (`inset 0 -1px 0 rgba(0,0,0,0.25)`). Used for Confirm, Save, Apply answer and Start a brief.
-- **Hover / Focus / Active:** Hover deepens to rail hover; active presses down 1px; focus is a 2px ink outline offset 2px (talker yellow on the rail). Transitions run 150ms ease-out. Disabled drops to 55% opacity.
-- **Outline:** Stock with a strong-line border; hover turns the border ink and the fill ground.
-- **Talker:** Talker yellow with ink text, for Finalize and Open designer brief on the green readiness panel.
-- **On Rail:** White at 10% with a 30% white border, for secondary actions on green.
-- **Destructive / Ghost / Link:** Stop red deepening on hover; transparent with a 5% ink hover; rail-green underlined text thickening on hover.
+Ink, decisive and compact.
+- **Shape:** gently rounded (8px); xl size uses 12px.
+- **Primary:** Carbon Ink fill, white 13.5px semibold text, 36px high, 14px horizontal padding, a faint inner top highlight.
+- **Hover / Focus:** hover steps to Ink Two; focus is a 2px ink outline offset 2px (canary on ink surfaces); press scales to 0.97 over 140ms to 150ms, removed under reduced motion.
+- **Outline:** paper fill, strong rule border, border turns ink on hover.
+- **Soft:** desk fill, desk-2 on hover. **Ghost:** ink-2 text, 6 percent ink wash on hover.
+- **Canary:** reserved for the single finishing action on a brief (Finalize on the readiness sheet); canary fill with ink text and a faint canary-deep inner base line.
+- **Destructive:** stop fill, used only for deletion.
 
-### Talker Flags
-- **Style:** Notched rectangle, flag type, always a word: OK (rail green, white), Review (talker, ink), Missing (stock with a 1px ink inset), Blocking (stop, white), Warning (talker), Info (ground with a strong-line inset), Fix and Suggested (rail green).
-- **Placement:** Status flags hang from a ticket's top-right edge; severity and action flags use the right-pointing variant. Designer actions (Change, Add, Remove, Unknown, Keep) use the same tones.
-- **Motion:** On re-print the flag slides in from 10px right over 360ms.
+### Stamps (signature)
+The state grammar. A stamp is a bordered, condensed, uppercase word with a fractal ink-grain mask, so it reads as a rubber impression on bond paper. State is always the word plus its tint, never colour alone.
+- **Tones:** Confirmed (mint, with a check), Review and Unknown (canary), Blocking (stop), Warning (gold), Passed to agency and Open now (sky), Remove (slate), Keep and Info (muted), Change (ink on paper), Missing (gap: paper fill with a dashed ink-2 border).
+- **Landing:** when its value changes after first render, the stamp comes down at 1.6x scale, overshoots to 0.94 and settles over 360ms. It never animates on first paint. Large stamps may carry a slight tilt.
 
-### Tickets
-- **Corner Style:** 2px.
-- **Background:** Ticket stock on the ground.
-- **Shadow Strategy:** Ticket shadow (see Elevation & Depth).
-- **Border:** 1px hairline; strong line on hover when the ticket can locate a source; ink frame when selected.
-- **Internal Padding:** 16px sides, 12px top, label row then value then actions, closed by the code line.
-- **Re-print:** When a value or state changes, the value wipes in from the left (`clip-path` inset, 420ms) and the flag slides back in. First render never animates.
+### Chips
+- **Market chip:** a small ink plate, 24px high, white condensed uppercase code; adapted briefs read "EU → US".
+- **Owner tag:** paper with a strong rule border and a route icon, naming who the item is routed to.
+- **Category chip:** desk fill, ink-2 semibold text.
 
-### Code Line
-A dashed hairline rule across the foot of a ticket, 6px by 16px padding, holding source chips in JetBrains Mono 11px uppercase, separated by strong-line middle dots. Located sources carry a crosshair icon and a dotted underline that turns solid and rail green on hover; clicking highlights the spot on the artwork.
+### Cards / Containers
+- **Corner Style:** 12px.
+- **Background:** Bond Paper on the desk.
+- **Shadow Strategy:** Sheet at rest; Sheet Set where copies carry meaning; see Elevation & Depth.
+- **Border:** 1px Rule.
+- **Internal Padding:** 20px; proof stubs run full width at the foot with 20px by 10px padding.
 
 ### Inputs / Fields
-- **Style:** Stock fill, strong-line 1px border, 2px corners, 32px to 40px tall, 12px to 13px text, rail-green caret, ink-faint placeholder.
-- **Focus:** Border turns ink plus the global 2px ink focus outline.
-- **Choice rows:** Radio options sit in bordered rows; the chosen row gets an ink frame on ground. Native radios take the rail-green accent.
+- **Style:** paper fill, 1px strong rule border, 8px corners, 36px to 44px high, ink caret, ink-faint placeholder.
+- **Focus:** border turns Carbon Ink; global focus outline applies.
+- **Form box:** a ruled box (8px, Rule border) where the label sits inside the rule and the value is what was written.
 
 ### Navigation
-- **Style:** Green rail with a condensed 22px extra-bold wordmark, then five numbered steps, each 44px tall with a 24px numbered square, label and one-line hint.
-- **States:** Active is a stock item with ink text and an ink-bordered number; idle is white at 85% with a 10% white hover; disabled is white at 40%. Open counts sit as talker-yellow figure badges.
-- **Mobile:** A 56px sticky green bar with the wordmark and a menu button; the same list opens as a grid-row disclosure.
+- **Top bar:** white at 80 to 90 percent with a backdrop blur, Rule hairline beneath, 60px high; wordmark, then Projects and New brief as 36px items. Active is an ink fill with white text; idle is ink-2 with an ink wash on hover.
+- **Brief bar stepper:** four stages; a single ink rule slides under the active stage by translateX and scaleX over 220ms. Stage counts sit in small tinted tiles (stop for Findings, canary for Questions).
+- **Segmented control:** paper frame with a 3px inset; one ink indicator moves by translate and scaleX only over 220ms and is placed without motion on first paint.
 
-### Readiness Panel
-The shelf price of the whole brief: a rail-green panel with the state headline, a 76px white figure score with a 30px percent sign, a 6px progress strip (talker for confirmed, 35% white for to-review), the meta breakdown, the owners being waited on, and the finalize gate as a talker or locked on-rail button.
+### Readiness
+The readiness figure is a RollingNumber: each digit rolls to its new value over 520ms; first paint shows the value in place. The readiness bar is a 6px to 8px desk-2 track with mint-deep confirmed and canary to-review segments that move by scaleX and translateX only, so a change never re-lays out the page.
 
-### Artwork Highlight
-- **Frame:** A 3px ink border with a 50% talker-yellow wash, a 3px white halo and a soft drop shadow, so the spot reads on any artwork colour.
-- **Minimum size:** Targets grow to at least 2.5% of the page width (70% of that in height), centred on the spot; very small targets also zoom the pane to at least 200%.
-- **No dimming:** The rest of the artwork and the page stay at full strength. The pane scrolls itself to centre the spot and never scrolls the page.
-
-### Disclosure
-Height animates through grid rows from 0fr to 1fr over 240ms on the out curve. Used for finding bodies, ticket notes and history, the question rationale and the mobile step list.
-
-### Toasts
-Bottom-right, 288px. Busy is ink with elapsed time in tabular figures and a talker scan bar; confirmation is rail green with a talker check, dismissed after 2.4 seconds.
+### Motion grammar
+- Route enter: 260ms rise of 8px with a 3px blur clearing.
+- Value re-write: clip-path wipe left to right over 460ms, like carbon transferring.
+- Disclosures: grid rows from 0fr to 1fr over 260ms.
+- Dialogs: rise 12px from 0.97 scale over 260ms on a blurred ink backdrop.
+- Chat drawer: slides in over 380ms on the drawer curve (cubic-bezier(0.32, 0.72, 0, 1)).
+- Hover lift: 2px rise to the Raised shadow, only under hover-capable fine pointers.
+- Landing focal sequence: headline lines wipe up (820ms, staggered), sheets are laid on the desk (760ms), the proof leader draws (700ms), stamps land.
+- Reduced motion keeps fades and colour changes and removes travel, scale, wipes, draws and loops.
 
 ## Do's and Don'ts
 
 ### Do:
-- **Do** keep the palette to rail green, ground, white ticket stock, ink, talker yellow and stop red.
-- **Do** carry every state as a notched talker flag with a word: OK, Review, Missing, Blocking, Warning, Info.
-- **Do** set every glanceable number as a condensed heavy tabular figure (800 weight, width 62.5%).
-- **Do** print sources on the ticket's dashed code line in JetBrains Mono 11px uppercase.
-- **Do** use the Archivo meta style (11px, 600, uppercase, 0.06em) for all other small uppercase text.
-- **Do** open sections on a 3px rail-green section rule.
-- **Do** re-print a ticket in place when its value or state changes, and collapse all motion under reduced motion.
-- **Do** mark the located spot on the artwork with an ink frame, yellow wash, white halo and minimum size.
+- **Do** set every state as a stamp word with its tint and border; pair Missing with the dashed gap outline.
+- **Do** use Carbon Ink (#15182B) for primary actions, active navigation and the selected segment.
+- **Do** place sheets on the desk with the Sheet shadow and 12px corners; use a Sheet Set only when the copy tints mean something.
+- **Do** separate a value from its sources with a perforation, and carry sources in a dashed proof stub.
+- **Do** start sticky work areas at var(--stick-top) and size them from it.
+- **Do** animate stamps, re-writes and readiness only when a value changes, never on first paint.
+- **Do** move indicators and bars by transform only (translate, scaleX).
 
 ### Don't:
-- **Don't** use blue or indigo for evidence, links, sources or anything else.
-- **Don't** use JetBrains Mono for anything except source code lines.
-- **Don't** signal a state with colour alone, a dot, or a pastel pill.
-- **Don't** place eyebrow or kicker labels above headings.
-- **Don't** dim or veil the page or the artwork when highlighting a source.
-- **Don't** raise, blur or glow surfaces to show state; change the edge or re-print instead.
-- **Don't** round corners beyond 4px or use soft white cards with large radii.
+- **Don't** convey a state by colour alone or by a coloured dot without its word.
+- **Don't** use stop red for warnings, questions or emphasis.
+- **Don't** use pink as a state or stamp tone; it is copy material.
+- **Don't** give AI suggestions a state tint; keep them neutral ink with the sparkle icon.
+- **Don't** place eyebrow labels or kickers above headings.
+- **Don't** introduce a second brand accent or an indigo primary.
+- **Don't** add ornament beyond perforations, proof stubs, stamps and copy edges.

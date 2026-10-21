@@ -5,7 +5,7 @@ import Link from "next/link";
 import { ArrowLeft, Download, FileText, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DesignerBriefView } from "@/components/export/DesignerBriefView";
-import { Flag } from "@/components/shared/badges";
+import { Stamp } from "@/components/shared/badges";
 import { ErrorBanner, Loading, NoSession, PageHead, SessionPending } from "@/components/shared/Notice";
 import { useSession } from "@/components/shared/useSession";
 import { api } from "@/lib/api";
@@ -81,11 +81,13 @@ export default function ExportPage() {
       />
       <ErrorBanner />
       {!finalized && (
-        <div className="ticket flex flex-wrap items-center gap-3 border-talker-deep/30 bg-talker-soft py-2.5 pr-4">
-          <Flag tone="review" side="right">Draft</Flag>
-          <p className="text-[13px] text-ink">
+        <div className="flex flex-wrap items-center gap-3 rounded-lg border border-canary-deep/25 bg-canary-soft px-4 py-3">
+          <Stamp tone="review" className="bg-paper">
+            Draft
+          </Stamp>
+          <p className="text-[13.5px] text-ink">
             Not finalized yet, so downloads are marked DRAFT. {view.state.readiness?.headline}{" "}
-            <Link href="/review" className="font-semibold underline">
+            <Link href="/review" className="font-semibold underline decoration-ink/30 underline-offset-2 hover:decoration-ink">
               Finish in the workbench
             </Link>
           </p>
@@ -105,6 +107,31 @@ export default function ExportPage() {
         </p>
       )}
       {brief ? <DesignerBriefView brief={brief} state={view.state} pages={view.pages} panels={view.panels} /> : !error && <Loading what="designer brief" />}
+      {brief && (
+        <section aria-labelledby="tear-h" className="no-print mx-auto max-w-[1240px] overflow-hidden rounded-xl border border-sky-deep/20 bg-sky-soft">
+          <div className="perf border-sky-deep/30 [&::after]:bg-desk [&::before]:bg-desk" aria-hidden />
+          <div className="flex flex-wrap items-center justify-between gap-4 px-6 py-5 md:px-10">
+            <div className="min-w-0">
+              <h2 id="tear-h" className="heading text-[20px] text-ink">
+                The agency&apos;s copy
+              </h2>
+              <p className="mt-1 text-[13.5px] text-ink-2">
+                {finalized ? "Finalized: hand this to the design agency." : "Draft: downloads are marked DRAFT until the brief is finalized."} One summary page, then the changes, approved copy, open questions and sources.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" className="bg-paper" onClick={() => download("docx")} disabled={!!busy || !!preparing} aria-busy={preparing === "docx"}>
+                {preparing === "docx" ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}
+                {preparing === "docx" ? "Preparing…" : "Word"}
+              </Button>
+              <Button onClick={() => download("pdf")} disabled={!!busy || !!preparing} aria-busy={preparing === "pdf"}>
+                {preparing === "pdf" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                {preparing === "pdf" ? "Preparing…" : "Download PDF"}
+              </Button>
+            </div>
+          </div>
+        </section>
+      )}
     </div>
   );
 }

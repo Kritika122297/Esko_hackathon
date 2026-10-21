@@ -27,12 +27,12 @@ export function SourceChip({ source, label }: { source: SourceRef; label?: strin
     <>
       {locatable && <Crosshair aria-hidden className="h-3 w-3 shrink-0" />}
       <span className="truncate">{sourceLabel(source)}</span>
-      {source.flagged && <FlagIcon aria-label="marked uncertain by the source" className="h-3 w-3 shrink-0 fill-talker text-talker-deep" />}
+      {source.flagged && <FlagIcon aria-label="marked uncertain by the source" className="h-3 w-3 shrink-0 fill-canary text-canary-deep" />}
     </>
   );
   const cls = cn(
-    "inline-flex max-w-full items-center gap-1 font-mono text-code uppercase",
-    source.kind === "ai" ? "text-ink-2" : source.kind === "user" ? "text-rail" : "text-ink-muted"
+    "inline-flex max-w-full items-center gap-1 text-[12px] font-medium tabular-nums",
+    source.kind === "ai" ? "text-ink-2" : source.kind === "user" ? "text-mint-deep" : "text-ink-muted"
   );
   if (!locatable) {
     return (
@@ -49,7 +49,7 @@ export function SourceChip({ source, label }: { source: SourceRef; label?: strin
         e.stopPropagation();
         setHighlight({ label: label ?? sourceLabel(source), sources: [source] });
       }}
-      className={cn(cls, "rounded-sm underline decoration-dotted decoration-1 underline-offset-[3px] hover:text-rail hover:decoration-solid")}
+      className={cn(cls, "rounded-sm underline decoration-ink/30 decoration-dotted decoration-1 underline-offset-[3px] transition-colors hover:text-ink hover:decoration-solid hover:decoration-ink")}
     >
       {body}
     </button>
@@ -63,7 +63,7 @@ export function SourceLine({ sources, label, className }: { sources: SourceRef[]
     <div className={cn("flex flex-wrap items-center gap-x-2 gap-y-1", className)}>
       {sources.map((s, i) => (
         <span key={i} className="inline-flex items-center gap-2">
-          {i > 0 && <span aria-hidden className="font-mono text-code text-line-strong">·</span>}
+          {i > 0 && <span aria-hidden className="text-[12px] text-line-strong">/</span>}
           <SourceChip source={s} label={label} />
         </span>
       ))}

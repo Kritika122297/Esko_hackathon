@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { ArrowUp, Check, Loader2, MessageSquareText, Trash2, Wand2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Flag } from "@/components/shared/badges";
+import { Stamp } from "@/components/shared/badges";
 import { api } from "@/lib/api";
 import { ChatAction, ChatCitation } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -33,16 +33,16 @@ function ActionCard({
   const imp = action.impact;
   const proposed = action.status === "proposed";
   return (
-    <div className={cn("rounded border bg-stock p-3", proposed ? "border-ink" : "border-line")}>
+    <div className={cn("rounded-md border bg-paper p-3", proposed ? "border-ink" : "border-line")}>
       <div className="flex items-start gap-2">
-        <Wand2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-rail" aria-hidden />
+        <Wand2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-ink" aria-hidden />
         <div className="min-w-0 flex-1">
           <p className="text-[13px] font-semibold leading-snug text-ink [overflow-wrap:anywhere]">{action.label}</p>
           {action.detail && <p className="mt-0.5 text-xs leading-snug text-ink-muted [overflow-wrap:anywhere]">{action.detail}</p>}
           {imp && proposed && (
             <ul className="mt-1.5 space-y-0.5 text-xs leading-snug">
               {imp.resolved.length > 0 && (
-                <li className="text-ok-deep">
+                <li className="text-mint-deep">
                   <b className="font-semibold">Fixes {imp.resolved.length}:</b> {imp.resolved.slice(0, 3).join("; ")}
                   {imp.resolved.length > 3 && ` and ${imp.resolved.length - 3} more`}
                 </li>
@@ -71,9 +71,9 @@ function ActionCard({
         </div>
       ) : (
         <div className="mt-2 flex flex-wrap items-center gap-2">
-          <Flag tone={action.status === "applied" ? "ok" : action.status === "failed" ? "stop" : "muted"} side="right" className="-ml-3">
+          <Stamp tone={action.status === "applied" ? "ok" : action.status === "failed" ? "stop" : "muted"} className="-ml-3">
             {action.status === "applied" ? "Applied" : action.status === "failed" ? "Not applied" : "Cancelled"}
-          </Flag>
+          </Stamp>
           {action.result && action.status === "failed" && <span className="text-xs text-ink-muted">{action.result}</span>}
         </div>
       )}
@@ -100,7 +100,7 @@ function useSmallScreen() {
 const FOCUSABLE =
   'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
-/** The "Ask" button for the context bar and the mobile corner. */
+/** The "Ask" button in the brief bar, on every screen width. */
 export function AskButton({ className }: { className?: string }) {
   const { setChatOpen, chatOpen } = useBriefStore();
   return (
@@ -109,7 +109,7 @@ export function AskButton({ className }: { className?: string }) {
       aria-expanded={chatOpen}
       aria-controls="brief-chat"
       className={cn(
-        "inline-flex h-9 items-center gap-2 rounded border border-ink bg-stock px-3 text-[13px] font-semibold text-ink transition-colors hover:bg-ground",
+        "pressable inline-flex h-9 items-center gap-2 rounded-md bg-ink px-3 text-[13px] font-semibold text-white transition-colors hover:bg-ink-2",
         className
       )}
     >
@@ -129,7 +129,6 @@ export function ChatPanel() {
   const listRef = useRef<HTMLOListElement | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const panelRef = useRef<HTMLElement | null>(null);
-  const fabRef = useRef<HTMLButtonElement | null>(null);
   const returnTo = useRef<HTMLElement | null>(null);
   const wasOpen = useRef(false);
   const small = useSmallScreen();
@@ -167,7 +166,7 @@ export function ChatPanel() {
       const focusWasInside = !active || active === document.body || !!panelRef.current?.contains(active);
       if (focusWasInside) {
         const prev = returnTo.current;
-        const back = prev && prev.isConnected && prev.offsetParent !== null ? prev : fabRef.current;
+        const back = prev && prev.isConnected && prev.offsetParent !== null ? prev : document.querySelector<HTMLElement>('[aria-controls="brief-chat"]');
         back?.focus();
       }
       returnTo.current = null;
@@ -301,18 +300,7 @@ export function ChatPanel() {
 
   return (
     <>
-      {!chatOpen && (
-        <button
-          ref={fabRef}
-          onClick={() => setChatOpen(true)}
-          aria-expanded={false}
-          className="no-print fixed bottom-5 left-5 z-40 inline-flex h-11 items-center gap-2 rounded-full bg-ink px-4 text-[13px] font-semibold text-white shadow-lift lg:hidden"
-          aria-controls="brief-chat"
-        >
-          <MessageSquareText className="h-4 w-4" /> Ask
-        </button>
-      )}
-      {modal && <div aria-hidden className="no-print fixed inset-0 z-50 bg-ink/40 lg:hidden" onClick={() => setChatOpen(false)} />}
+      {modal && <div aria-hidden className="anim-toast no-print fixed inset-0 z-50 bg-ink/40 backdrop-blur-[2px] lg:hidden" onClick={() => setChatOpen(false)} />}
       <aside
         ref={panelRef}
         id="brief-chat"
@@ -320,13 +308,13 @@ export function ChatPanel() {
         role={modal ? "dialog" : "complementary"}
         aria-modal={modal || undefined}
         className={cn(
-          "no-print fixed inset-y-0 right-0 z-50 flex w-full max-w-[420px] flex-col border-l border-line bg-stock shadow-lift transition-transform duration-300 ease-out",
+          "no-print fixed inset-y-0 right-0 z-50 flex w-full max-w-[420px] flex-col border-l border-line bg-paper shadow-lift transition-transform duration-[380ms] ease-drawer motion-reduce:transition-none",
           chatOpen ? "translate-x-0" : "pointer-events-none translate-x-full"
         )}
       >
         <header className="flex items-start justify-between gap-3 border-b border-line px-4 py-3">
           <div className="min-w-0">
-            <h2 id="brief-chat-h" className="text-[16px] font-bold text-ink">
+            <h2 id="brief-chat-h" className="heading text-[18px] text-ink">
               Assistant
             </h2>
             <p className="text-xs text-ink-muted">
@@ -341,12 +329,12 @@ export function ChatPanel() {
                   await api.clearChat(sessionId);
                   setChat(sessionId, []);
                 }}
-                className="inline-flex h-8 items-center gap-1 rounded px-2 text-xs font-semibold text-ink-muted hover:bg-ink/5 hover:text-ink"
+                className="inline-flex h-8 items-center gap-1 rounded-md px-2 text-xs font-semibold text-ink-muted hover:bg-ink/[0.06] hover:text-ink"
               >
                 <Trash2 className="h-3.5 w-3.5" /> Clear
               </button>
             )}
-            <button onClick={() => setChatOpen(false)} className="grid h-8 w-8 place-items-center rounded hover:bg-ink/5" aria-label="Close the assistant">
+            <button onClick={() => setChatOpen(false)} className="pressable grid h-8 w-8 place-items-center rounded-md hover:bg-ink/[0.06]" aria-label="Close the assistant">
               <X className="h-4 w-4" />
             </button>
           </div>
@@ -360,7 +348,7 @@ export function ChatPanel() {
               </p>
               <div className="flex flex-col items-start gap-1.5">
                 {STARTERS.map((s) => (
-                  <button key={s} onClick={() => ask(s)} className="rounded border border-line bg-ground px-2.5 py-1.5 text-left text-[13px] text-ink hover:border-ink">
+                  <button key={s} onClick={() => ask(s)} className="pressable rounded-md border border-line bg-paper px-3 py-2 text-left text-[13px] text-ink transition-colors hover:border-ink hover:bg-desk/50">
                     {s}
                   </button>
                 ))}
@@ -370,7 +358,7 @@ export function ChatPanel() {
           {messages.map((m, i) => (
             <li key={i} className={cn("anim-rise", m.role === "user" ? "flex justify-end" : "")}>
               {m.role === "user" ? (
-                <p className="max-w-[85%] rounded bg-ink px-3 py-2 text-[13px] leading-relaxed text-white">{m.text}</p>
+                <p className="max-w-[85%] rounded-lg rounded-br-sm bg-ink px-3.5 py-2.5 text-[13.5px] leading-relaxed text-white">{m.text}</p>
               ) : (
                 <div className="max-w-[95%] space-y-2">
                   <p className="whitespace-pre-line text-[14px] leading-relaxed text-ink">{m.text}</p>
@@ -385,7 +373,7 @@ export function ChatPanel() {
                         <button
                           key={`${c.kind}-${c.key}`}
                           onClick={() => follow(c)}
-                          className="max-w-full truncate rounded border border-line-strong bg-stock px-2 py-0.5 text-left text-xs font-semibold text-rail hover:border-ink"
+                          className="max-w-full truncate rounded-md border border-line-strong bg-paper px-2 py-0.5 text-left text-xs font-semibold text-ink hover:border-ink"
                           title={c.kind === "field" ? "Open this field in the workbench" : "Open this finding"}
                         >
                           {c.label}
@@ -417,7 +405,7 @@ export function ChatPanel() {
                   {m.suggestions && m.suggestions.length > 0 && (
                     <div className="flex flex-col items-start gap-1.5">
                       {m.suggestions.map((s) => (
-                        <button key={s} onClick={() => ask(s)} className="rounded border border-line bg-ground px-2.5 py-1.5 text-left text-[13px] text-ink hover:border-ink">
+                        <button key={s} onClick={() => ask(s)} className="pressable rounded-md border border-line bg-paper px-3 py-2 text-left text-[13px] text-ink transition-colors hover:border-ink hover:bg-desk/50">
                           {s}
                         </button>
                       ))}
@@ -459,12 +447,12 @@ export function ChatPanel() {
               rows={2}
               maxLength={1000}
               placeholder="Ask anything, or ask for a change: set storage to Keep dry"
-              className="min-h-[44px] flex-1 resize-none rounded border border-line-strong bg-stock px-3 py-2 text-sm focus:border-ink"
+              className="min-h-[44px] flex-1 resize-none rounded-md border border-line-strong bg-paper px-3 py-2 text-sm focus:border-ink"
             />
             <button
               type="submit"
               disabled={!draft.trim() || thinking}
-              className="grid h-11 w-11 shrink-0 place-items-center rounded bg-rail text-white hover:bg-rail-2 disabled:opacity-50"
+              className="grid h-11 w-11 shrink-0 place-items-center rounded-md bg-ink text-white hover:bg-ink-2 disabled:opacity-50"
               aria-label="Send question"
             >
               <ArrowUp className="h-5 w-5" />

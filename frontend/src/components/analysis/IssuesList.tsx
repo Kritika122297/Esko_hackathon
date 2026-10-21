@@ -1,14 +1,15 @@
 "use client";
 
 import { useId, useMemo, useState } from "react";
-import { ChevronDown, Crosshair, RotateCcw, Send } from "lucide-react";
+import { ChevronDown, Crosshair, Lightbulb, RotateCcw, Send, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { api } from "@/lib/api";
 import { Issue } from "@/lib/types";
 import { useBriefStore } from "@/store/briefStore";
-import { Flag, KindLabel, OwnerTag, SeverityFlag } from "@/components/shared/badges";
+import { KindLabel, OwnerTag, SeverityStamp, Stamp } from "@/components/shared/badges";
 import { SourceLine } from "@/components/shared/SourceChip";
 import { SearchBox, matchesQuery } from "@/components/shared/SearchBox";
+import { Segmented } from "@/components/ui/Segmented";
 
 type Filter = "decisions" | "design" | "info" | "acknowledged" | "all";
 
@@ -30,6 +31,7 @@ export function IssuesList({ issues: allIssues, editable = true }: { issues: Iss
   );
   const [filter, setFilter] = useState<Filter>(groups.decisions.length ? "decisions" : "all");
   const [query, setQuery] = useState("");
+  const [aiOpen, setAiOpen] = useState(false);
   const fields = useBriefStore((s) => s.view?.state.fields);
   const labelOf = useMemo(() => new Map((fields ?? []).map((f) => [f.key, f.label])), [fields]);
   const hit = (i: Issue) => matchesQuery(query, i.title, i.description, i.owner, ...i.fields.map((k) => labelOf.get(k) ?? k.replace(/_/g, " ")));
@@ -46,23 +48,16 @@ export function IssuesList({ issues: allIssues, editable = true }: { issues: Iss
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div role="tablist" aria-label="Filter findings" className="flex flex-wrap gap-1">
-        {tabs.map(([k, label]) => (
-          <button
-            key={k}
-            role="tab"
-            aria-selected={filter === k}
-            onClick={() => setFilter(k)}
-            className={cn(
-              "h-7 rounded border px-2 text-xs font-semibold transition-colors duration-150",
-              filter === k ? "border-ink bg-ink text-white" : "border-line text-ink-muted hover:border-ink-faint hover:text-ink"
-            )}
-          >
-            {label} <b className="figure ml-0.5 text-[14px]">{groups[k].length}</b>
-          </button>
-        ))}
-      </div>
-      <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
+      <Segmented
+        label="Filter findings"
+        size="sm"
+        value={filter}
+        onChange={setFilter}
+        items={tabs.map(([k, label]) => ({ id: k, label, count: groups[k].length }))}
+        wrapRows
+        className="w-full"
+      />
+      <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1">
         <SearchBox
           id={`finding-search-${idBase}`}
           label="Search findings"
@@ -75,38 +70,50 @@ export function IssuesList({ issues: allIssues, editable = true }: { issues: Iss
           className="min-w-0 flex-1"
         />
         {searching && (
-          <p className="text-xs text-ink-muted" aria-hidden>
+          <p className="text-[12px] text-ink-muted" aria-hidden>
             Showing {shown.length} of {groups[filter].length}
           </p>
         )}
       </div>
-      <div className="mt-3 min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
+      <div className="-mx-1 mt-3 min-h-0 flex-1 space-y-2.5 overflow-y-auto px-1 pb-1">
         {shown.length === 0 && (
-          <p className="ticket p-5 text-center text-sm text-ink-muted">
-            {searching
-              ? `No finding in this view matches “${query.trim()}”.`
-              : filter === "decisions"
-                ? "No open decisions. Everything is resolved or passed on."
-                : "Nothing in this view."}
-          </p>
+          <div className="rounded-lg border border-dashed border-line-strong px-5 py-8 text-center">
+            <p className="text-[14px] font-semibold text-ink">
+              {searching ? `No finding in this view matches “${query.trim()}”.` : filter === "decisions" ? "No open decisions." : "Nothing in this view."}
+            </p>
+            {!searching && filter === "decisions" && <p className="mt-1 text-[13px] text-ink-muted">Everything is resolved or passed on.</p>}
+          </div>
         )}
         {shown.map((i, idx) => (
           <IssueCard key={i.id} issue={i} editable={editable} index={idx} />
         ))}
         {aiShown.length > 0 && (
-          <details className="rounded border border-dashed border-line-strong bg-ground/50 p-2">
-            <summary className="cursor-pointer select-none text-xs font-bold uppercase tracking-wider text-ink-2">
-              AI suggestions <b className="figure ml-1 text-[14px]">{aiShown.length}</b>
-              <span className="ml-2 font-normal normal-case tracking-normal text-ink-muted">
-                Possible problems the AI noticed. Not calculated, never blocking, always needs a person.
+          <section className="rounded-lg border border-dashed border-line-strong bg-desk/50">
+            <button
+              type="button"
+              onClick={() => setAiOpen((v) => !v)}
+              aria-expanded={aiOpen}
+              aria-controls={`ai-findings-${idBase}`}
+              className="flex w-full items-start justify-between gap-3 px-3.5 py-3 text-left"
+            >
+              <span className="min-w-0">
+                <span className="flex items-center gap-1.5 text-[13.5px] font-semibold text-ink">
+                  <Sparkles className="h-3.5 w-3.5 text-ink-muted" aria-hidden /> AI suggestions <span className="figure text-[16px]">{aiShown.length}</span>
+                </span>
+                <span className="mt-0.5 block text-[12.5px] leading-snug text-ink-muted">Possible problems the AI noticed. Not calculated, never blocking, always needs a person.</span>
               </span>
-            </summary>
-            <div className="mt-2 space-y-2">
-              {aiShown.map((i, idx) => (
-                <IssueCard key={i.id} issue={i} editable={editable} index={idx} />
-              ))}
+              <ChevronDown className={cn("mt-0.5 h-4 w-4 shrink-0 text-ink-faint transition-transform duration-200 ease-out", aiOpen && "rotate-180")} aria-hidden />
+            </button>
+            <div id={`ai-findings-${idBase}`} className="disclosure" data-open={aiOpen} aria-hidden={!aiOpen}>
+              <div>
+                <div className="space-y-2.5 px-2.5 pb-2.5">
+                  {aiShown.map((i, idx) => (
+                    <IssueCard key={i.id} issue={i} editable={editable} index={idx} />
+                  ))}
+                </div>
+              </div>
             </div>
-          </details>
+          </section>
         )}
       </div>
     </div>
@@ -121,73 +128,71 @@ function IssueCard({ issue, editable, index }: { issue: Issue; editable: boolean
   const locatable = issue.evidence.filter((e) => e.bbox);
   const selected = highlight?.label === issue.title;
   const bodyId = `issue-${issue.id.replace(/[^a-z0-9]/gi, "-")}`;
+  const passed = issue.state === "acknowledged";
 
   return (
-    <article
-      className={cn("ticket anim-rise overflow-hidden", issue.state === "acknowledged" && "opacity-75", selected && "border-ink shadow-[inset_0_0_0_1px_#121514]")}
-      style={{ animationDelay: `${Math.min(index, 8) * 30}ms` }}
-    >
+    <article className={cn("sheet overflow-hidden transition-[border-color,box-shadow] duration-200", passed && "bg-desk/40", selected && "border-ink shadow-selected")}>
       {/* Fixed furniture: severity, kind, owner always in the same place */}
-      <div className="grid grid-cols-[auto_1fr_auto] items-center gap-2 pr-3 pt-2.5">
-        <SeverityFlag severity={issue.severity} />
-        <KindLabel kind={issue.kind} ai={issue.detected_by === "ai"} />
+      <div className="flex items-center gap-2 px-3.5 pt-3">
+        <SeverityStamp severity={issue.severity} />
+        <span className="min-w-0 flex-1 truncate">
+          <KindLabel kind={issue.kind} ai={issue.detected_by === "ai"} />
+        </span>
         <OwnerTag owner={issue.owner} />
       </div>
-      <button
-        className="flex w-full items-start justify-between gap-2 px-3 pb-2.5 pt-2 text-left"
-        onClick={() => setOpen((v) => !v)}
-        aria-expanded={open}
-        aria-controls={bodyId}
-      >
-        <span className="text-[14px] font-bold leading-snug text-ink">{issue.title}</span>
-        <ChevronDown className={cn("mt-0.5 h-4 w-4 shrink-0 text-ink-faint transition-transform duration-200", open && "rotate-180")} />
+      <button className="flex w-full items-start justify-between gap-3 px-3.5 pb-3 pt-2 text-left" onClick={() => setOpen((v) => !v)} aria-expanded={open} aria-controls={bodyId}>
+        <span className={cn("text-[14.5px] font-semibold leading-snug", passed ? "text-ink-2" : "text-ink")}>{issue.title}</span>
+        <ChevronDown className={cn("mt-0.5 h-4 w-4 shrink-0 text-ink-faint transition-transform duration-200 ease-out", open && "rotate-180")} />
       </button>
-      <div className="flex flex-wrap gap-1.5 px-3 pb-2.5 empty:hidden">
-        {issue.resolution === "design" && (
-          <span className="rounded bg-ground px-1.5 py-0.5 meta text-ink-2">Designer task</span>
-        )}
-        {issue.state === "acknowledged" && (
-          <span className="rounded bg-ground px-1.5 py-0.5 meta text-ink-2">Passed to agency</span>
-        )}
-      </div>
+      {(issue.resolution === "design" || passed) && (
+        <div className="flex flex-wrap gap-1.5 px-3.5 pb-3">
+          {issue.resolution === "design" && <Stamp tone="muted">Designer task</Stamp>}
+          {passed && (
+            <Stamp tone="sky" landed={issue.state}>
+              <Send className="h-3 w-3" aria-hidden /> Passed to agency
+            </Stamp>
+          )}
+        </div>
+      )}
 
-      <div id={bodyId} className="disclosure" data-open={open}>
+      <div id={bodyId} className="disclosure" data-open={open} aria-hidden={!open}>
         <div>
-          <div className="space-y-2.5 border-t border-line px-3 py-3 text-xs">
+          <div className="space-y-3 border-t border-line px-3.5 py-3.5 text-[13px]">
             <p className="leading-relaxed text-ink-2">{issue.description}</p>
             {issue.suggestion && (
-              <div className="flex items-start gap-2 rounded border border-line bg-stock py-2 pr-2">
-                <Flag tone="ok" side="right" className="mt-0.5 shrink-0">
-                  Fix
-                </Flag>
-                <p className="leading-relaxed text-ink">{issue.suggestion}</p>
+              <div className="flex items-start gap-2.5 rounded-md bg-mint-soft px-3 py-2.5">
+                <Lightbulb className="mt-0.5 h-4 w-4 shrink-0 text-mint-deep" aria-hidden />
+                <p className="leading-relaxed text-ink">
+                  <span className="sr-only">Suggested fix: </span>
+                  {issue.suggestion}
+                </p>
               </div>
             )}
             {issue.evidence.length > 0 && (
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-ink-muted">Evidence</span>
+                  <span className="text-[12px] font-semibold text-ink-muted">Evidence</span>
                   {locatable.length > 0 && (
                     <button
-                      className="inline-flex items-center gap-1 text-[11px] font-semibold text-rail underline decoration-1 underline-offset-2 hover:decoration-2"
+                      className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[12.5px] font-semibold text-ink underline decoration-ink/30 underline-offset-2 hover:bg-canary-soft hover:decoration-ink"
                       onClick={() => setHighlight({ label: issue.title, sources: locatable })}
                     >
-                      <Crosshair className="h-3 w-3" /> Show on artwork
+                      <Crosshair className="h-3.5 w-3.5" /> Show on artwork
                     </button>
                   )}
                 </div>
                 <SourceLine sources={issue.evidence} label={issue.title} />
               </div>
             )}
-            {issue.state === "acknowledged" && (
-              <p className="rounded bg-ground p-2 text-ink-2">
+            {passed && (
+              <p className="rounded-md bg-sky-soft px-3 py-2 text-ink-2">
                 Passed to the agency: <i>{issue.acknowledgement}</i>
               </p>
             )}
             {editable && !finalized && issue.resolution === "data" && (
-              <div className="pt-1">
+              <div className="pt-0.5">
                 {issue.state === "open" ? (
-                  <div className="space-y-1.5">
+                  <div className="flex flex-col gap-2 sm:flex-row">
                     <label htmlFor={`${bodyId}-note`} className="sr-only">
                       Note for the agency
                     </label>
@@ -196,19 +201,19 @@ function IssueCard({ issue, editable, index }: { issue: Issue; editable: boolean
                       value={note}
                       onChange={(e) => setNote(e.target.value)}
                       placeholder="Note for the agency (optional)"
-                      className="h-8 w-full rounded border border-line-strong bg-stock px-2 text-xs focus:border-ink"
+                      className="h-9 min-w-0 flex-1 rounded-md border border-line-strong bg-paper px-2.5 text-[13px] focus:border-ink"
                     />
                     <button
-                      className="inline-flex h-8 w-full items-center justify-center gap-1.5 rounded border border-ink bg-stock text-xs font-semibold text-ink transition-colors hover:bg-ground disabled:pointer-events-none disabled:opacity-55"
+                      className="pressable inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-md border border-ink bg-paper px-3 text-[13px] font-semibold text-ink transition-colors hover:bg-sky-soft disabled:pointer-events-none disabled:opacity-50"
                       disabled={!!busy}
                       onClick={() => run("Passing to agency", (sid) => api.acknowledge(sid, issue.id, note || "Passed to the agency as an open question."), "Passed to the agency")}
                     >
-                      <Send className="h-3.5 w-3.5" /> Pass to agency as open question
+                      <Send className="h-3.5 w-3.5" /> Pass to agency
                     </button>
                   </div>
                 ) : (
                   <button
-                    className="inline-flex h-8 items-center gap-1.5 rounded border border-line-strong bg-stock px-3 text-xs font-semibold text-ink hover:border-ink disabled:pointer-events-none disabled:opacity-55"
+                    className="pressable inline-flex h-9 items-center gap-1.5 rounded-md border border-line-strong bg-paper px-3 text-[13px] font-semibold text-ink transition-colors hover:border-ink disabled:pointer-events-none disabled:opacity-50"
                     disabled={!!busy}
                     onClick={() => run("Reopening", (sid) => api.reopenIssue(sid, issue.id), "Reopened")}
                   >

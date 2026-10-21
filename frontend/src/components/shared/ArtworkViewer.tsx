@@ -81,9 +81,9 @@ export function ArtworkViewer({ pages, panels, panelActions, className, height =
 
   if (!page) {
     return (
-      <div className={cn("ticket flex flex-col items-center justify-center p-6 text-center", height, className)}>
-        <p className="text-sm font-semibold text-ink">No artwork in this brief</p>
-        <p className="mt-1 max-w-xs text-xs text-ink-muted">Values come from the content sheet and notes. Upload a packaging PDF to check placement on the pack.</p>
+      <div className={cn("sheet flex flex-col items-center justify-center p-6 text-center", height, className)}>
+        <p className="heading text-[17px] text-ink">No artwork in this brief</p>
+        <p className="mt-1.5 max-w-xs text-[13px] leading-relaxed text-ink-muted">Values come from the content sheet and notes. Upload a packaging PDF to check placement on the pack.</p>
       </div>
     );
   }
@@ -116,13 +116,13 @@ export function ArtworkViewer({ pages, panels, panelActions, className, height =
   const shownPanels = panels.filter((p) => p.page === page.page && p.file === page.file && !p.id.startsWith("tuck"));
 
   return (
-    <section aria-label="Artwork" className={cn("ticket flex min-w-0 flex-col overflow-hidden", className)}>
-      <div className="flex items-center justify-between gap-2 border-b border-line px-3 py-2">
-        <h2 className="text-label font-bold uppercase text-ink">Artwork</h2>
+    <section aria-label="Artwork" className={cn("sheet flex min-w-0 flex-col overflow-hidden", className)}>
+      <div className="flex items-center justify-between gap-2 border-b border-line py-1.5 pl-4 pr-2">
+        <h2 className="text-[13.5px] font-semibold text-ink">Artwork</h2>
         <div className="flex items-center gap-0.5">
           {onInspect && (
             <button
-              className={cn("grid h-8 w-8 place-items-center rounded hover:bg-ink/5", talk ? "text-rail" : "text-ink-faint")}
+              className={cn("pressable grid h-9 w-9 place-items-center rounded-md transition-colors", talk ? "bg-canary-soft text-ink" : "text-ink-faint hover:bg-ink/[0.06]")}
               aria-pressed={talk}
               aria-label="Talk to the Pack: click elements on the artwork"
               title="Talk to the Pack"
@@ -132,7 +132,7 @@ export function ArtworkViewer({ pages, panels, panelActions, className, height =
             </button>
           )}
           <button
-            className={cn("grid h-8 w-8 place-items-center rounded hover:bg-ink/5", showPanels ? "text-rail" : "text-ink-faint")}
+            className={cn("pressable grid h-9 w-9 place-items-center rounded-md transition-colors", showPanels ? "bg-desk text-ink" : "text-ink-faint hover:bg-ink/[0.06]")}
             aria-pressed={showPanels}
             aria-label="Show panel outlines"
             title="Panel outlines"
@@ -140,19 +140,19 @@ export function ArtworkViewer({ pages, panels, panelActions, className, height =
           >
             <Layers className="h-4 w-4" />
           </button>
-          <button className="grid h-8 w-8 place-items-center rounded hover:bg-ink/5 disabled:opacity-40" aria-label="Zoom out" disabled={zoom <= 1} onClick={() => setZoom((z) => Math.max(1, z - 0.5))}>
+          <button className="pressable grid h-9 w-9 place-items-center rounded-md hover:bg-ink/[0.06] disabled:opacity-40" aria-label="Zoom out" disabled={zoom <= 1} onClick={() => setZoom((z) => Math.max(1, z - 0.5))}>
             <Minus className="h-4 w-4" />
           </button>
-          <span className="w-11 text-center text-xs tabular-nums text-ink-muted">{Math.round(zoom * 100)}%</span>
-          <button className="grid h-8 w-8 place-items-center rounded hover:bg-ink/5 disabled:opacity-40" aria-label="Zoom in" disabled={zoom >= 4} onClick={() => setZoom((z) => Math.min(4, z + 0.5))}>
+          <span className="w-11 text-center text-[12.5px] font-semibold tabular-nums text-ink-muted">{Math.round(zoom * 100)}%</span>
+          <button className="pressable grid h-9 w-9 place-items-center rounded-md hover:bg-ink/[0.06] disabled:opacity-40" aria-label="Zoom in" disabled={zoom >= 4} onClick={() => setZoom((z) => Math.min(4, z + 0.5))}>
             <Plus className="h-4 w-4" />
           </button>
         </div>
       </div>
 
-      <div ref={scroller} className={cn("relative overflow-auto bg-[#E4E6DE]", height)}>
+      <div ref={scroller} className={cn("relative overflow-auto bg-[#F1F2F6] [background-image:radial-gradient(rgba(21,24,43,0.09)_1px,transparent_1px)] [background-size:14px_14px]", height)}>
         <div className="relative" style={{ width: `${zoom * 100}%` }}>
-          {!loaded && <div className="absolute inset-0 animate-pulse bg-line/40" aria-hidden />}
+          {!loaded && <div className="skeleton absolute inset-0" aria-hidden />}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             ref={imgRef}
@@ -166,11 +166,11 @@ export function ArtworkViewer({ pages, panels, panelActions, className, height =
             shownPanels.map((p) => {
               const acts = panelActions?.[p.id] ?? [];
               return (
-                <div key={p.id} className="pointer-events-none absolute border border-dashed border-rail/50" style={pct(p.bbox)}>
+                <div key={p.id} className="pointer-events-none absolute border border-dashed border-ink/40" style={pct(p.bbox)}>
                   <span
                     className={cn(
-                      "absolute left-0 top-0 max-w-full truncate px-1 py-px text-[10px] font-bold leading-tight empty:hidden",
-                      p.is_main ? "bg-rail text-white" : "bg-stock/90 text-rail"
+                      "absolute left-0 top-0 max-w-full truncate rounded-br-[4px] px-1.5 py-0.5 text-[10.5px] font-semibold leading-tight empty:hidden",
+                      p.is_main ? "bg-ink text-white" : "bg-paper/90 text-ink"
                     )}
                   >
                     {p.is_main || !p.id.includes("_") ? p.label : null}
@@ -197,12 +197,12 @@ export function ArtworkViewer({ pages, panels, panelActions, className, height =
               title={b.label}
               className={cn(
                 "absolute rounded-sm outline-none transition-[box-shadow,background-color] duration-150",
-                "hover:bg-talker/25 hover:shadow-[0_0_0_2px_#121514] focus-visible:shadow-[0_0_0_3px_#121514]",
+                "hover:bg-canary/25 hover:shadow-[0_0_0_2px_#15182B] focus-visible:shadow-[0_0_0_3px_#15182B]",
                 inspected === b.key
-                  ? "bg-talker/30 shadow-[0_0_0_3px_#121514]"
+                  ? "bg-canary/30 shadow-[0_0_0_3px_#15182B]"
                   : b.status === "needs_review"
-                    ? "shadow-[0_0_0_1.5px_#FFD23F]"
-                    : "shadow-[0_0_0_1px_rgba(15,61,46,0.45)]"
+                    ? "shadow-[0_0_0_1.5px_#E5B800]"
+                    : "shadow-[0_0_0_1px_rgba(21,24,43,0.32)]"
               )}
               style={pct(minBox(b.bbox))}
             />
@@ -211,25 +211,25 @@ export function ArtworkViewer({ pages, panels, panelActions, className, height =
             <div
               key={`${highlight?.label}-${i}`}
               ref={i === 0 ? firstBox : undefined}
-              className="anim-rise pointer-events-none absolute rounded-sm border-[3px] border-ink bg-talker/50 shadow-[0_0_0_3px_#FFFFFF,0_6px_18px_rgba(18,21,20,0.35)]"
+              className="anim-stamp pointer-events-none absolute rounded-sm border-[3px] border-ink bg-canary/50 shadow-[0_0_0_3px_#FFFFFF,0_6px_18px_rgba(21,24,43,0.35)]"
               style={pct(minBox(s.bbox!))}
             />
           ))}
         </div>
       </div>
 
-      <div className="flex min-h-10 items-center justify-between gap-2 border-t border-line px-3 py-2">
+      <div className="flex min-h-11 items-center justify-between gap-2 border-t border-line py-2 pl-4 pr-2">
         {highlight ? (
           <>
-            <p className="min-w-0 text-xs leading-relaxed">
+            <p className="min-w-0 text-[12.5px] leading-relaxed">
               <span className="font-semibold text-ink">Showing: {highlight.label}</span>
               {boxes.length === 0 ? (
                 <span className="text-ink-muted"> · not on the artwork (content sheet or image)</span>
               ) : (
-                <span className="whitespace-nowrap font-mono text-code uppercase text-ink-muted"> · {sourceLabel(boxes[0])}</span>
+                <span className="whitespace-nowrap tabular-nums text-ink-muted"> · {sourceLabel(boxes[0])}</span>
               )}
             </p>
-            <button onClick={() => setHighlight(null)} className="grid h-7 w-7 shrink-0 place-items-center rounded hover:bg-ink/5" aria-label="Clear highlight">
+            <button onClick={() => setHighlight(null)} className="pressable grid h-8 w-8 shrink-0 place-items-center rounded-md hover:bg-ink/[0.06]" aria-label="Clear highlight">
               <X className="h-3.5 w-3.5" />
             </button>
           </>

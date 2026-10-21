@@ -1,35 +1,44 @@
 import type { Config } from "tailwindcss";
 
-// Shelf Edge: the shelf-strip green owns the shell, white ticket stock carries values,
-// talker yellow and stop red carry review and blocking states.
+// Carbon Set: the brief is a multi-part routing form. Carbon ink carries structure and action,
+// white bond sheets sit on a cool desk, copy tints carry state, and stamp red only ever blocks.
 const config: Config = {
   content: ["./src/**/*.{ts,tsx}"],
   theme: {
     extend: {
       colors: {
-        rail: { DEFAULT: "#0F3D2E", 2: "#174D3B", 3: "#1F5C47", ink: "#C9D8D1" },
-        ground: "#F1F2EC",
-        stock: "#FFFFFF",
-        ink: { DEFAULT: "#121514", 2: "#2C322F", muted: "#5A615C", faint: "#757C77" },
-        line: { DEFAULT: "#D6D9CF", strong: "#AEB4A9" },
-        talker: { DEFAULT: "#FFD23F", soft: "#FFF4CC", deep: "#8A6A00" },
-        stop: { DEFAULT: "#D92B2B", soft: "#FBE8E6", deep: "#A11D1D" },
-        ok: { DEFAULT: "#0F3D2E", soft: "#E3EDE8", deep: "#1C6B4F" },
+        ink: { DEFAULT: "#15182B", 2: "#2E3247", muted: "#555A6E", faint: "#6B7083", soft: "#8C91A3" },
+        paper: "#FFFFFF",
+        desk: { DEFAULT: "#ECEEF2", 2: "#E2E5EB", 3: "#D6DAE2" },
+        line: { DEFAULT: "#DADDE4", strong: "#B4B9C6" },
+        canary: { soft: "#FFF5C2", DEFAULT: "#FFE066", deep: "#735600" },
+        mint: { soft: "#DDF3E4", DEFAULT: "#8FDBA9", deep: "#17663A" },
+        sky: { soft: "#E0ECFF", DEFAULT: "#A6C8FF", deep: "#1D4FA0" },
+        gold: { soft: "#FFEDCC", DEFAULT: "#FFC85C", deep: "#7A4E00" },
+        pink: { soft: "#FFE3EA", DEFAULT: "#FFB3C7", deep: "#9E2049" },
+        stop: { soft: "#FFE4E7", DEFAULT: "#D3283C", deep: "#A01A2B" },
       },
       fontFamily: {
-        sans: ["var(--font-archivo)", "system-ui", "sans-serif"],
-        mono: ["var(--font-mono)", "ui-monospace", "monospace"],
+        sans: ["var(--font-text)", "system-ui", "sans-serif"],
+        display: ["var(--font-display)", "var(--font-text)", "system-ui", "sans-serif"],
       },
-      borderRadius: { DEFAULT: "2px", sm: "2px", md: "3px", lg: "4px" },
+      borderRadius: { sm: "4px", DEFAULT: "6px", md: "8px", lg: "12px", xl: "16px", "2xl": "22px" },
       fontSize: {
-        code: ["11px", { lineHeight: "16px", letterSpacing: "0.05em" }],
-        label: ["12px", { lineHeight: "16px", letterSpacing: "0.06em" }],
+        meta: ["12px", { lineHeight: "16px" }],
       },
       boxShadow: {
-        ticket: "0 1px 0 rgba(18,21,20,0.04), 0 2px 6px -2px rgba(18,21,20,0.08)",
-        lift: "0 2px 4px rgba(18,21,20,0.06), 0 12px 28px -12px rgba(18,21,20,0.22)",
+        sheet: "0 1px 0 rgba(21,24,43,0.03), 0 1px 3px rgba(21,24,43,0.06), 0 12px 28px -18px rgba(21,24,43,0.22)",
+        raised: "0 1px 2px rgba(21,24,43,0.06), 0 18px 40px -20px rgba(21,24,43,0.32)",
+        lift: "0 2px 6px rgba(21,24,43,0.08), 0 28px 56px -24px rgba(21,24,43,0.42)",
+        focus: "0 0 0 2px #FFFFFF, 0 0 0 4px #15182B",
+        selected: "inset 0 0 0 1.5px #15182B",
       },
-      transitionTimingFunction: { out: "cubic-bezier(0.16, 1, 0.3, 1)" },
+      transitionTimingFunction: {
+        out: "cubic-bezier(0.23, 1, 0.32, 1)",
+        "in-out": "cubic-bezier(0.77, 0, 0.175, 1)",
+        drawer: "cubic-bezier(0.32, 0.72, 0, 1)",
+      },
+      maxWidth: { page: "1560px" },
     },
   },
   plugins: [],

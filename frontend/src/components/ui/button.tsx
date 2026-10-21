@@ -4,23 +4,25 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex select-none items-center justify-center gap-1.5 whitespace-nowrap rounded font-semibold transition-[background-color,border-color,color,transform,box-shadow] duration-150 ease-out active:translate-y-px disabled:pointer-events-none disabled:opacity-55",
+  "inline-flex select-none items-center justify-center gap-1.5 whitespace-nowrap rounded-md font-semibold transition-[background-color,border-color,color,box-shadow,transform] duration-150 ease-out active:scale-[0.97] disabled:pointer-events-none disabled:opacity-50 motion-reduce:active:scale-100",
   {
     variants: {
       variant: {
-        default: "bg-rail text-white hover:bg-rail-2 shadow-[inset_0_-1px_0_rgba(0,0,0,0.25)]",
-        outline: "border border-line-strong bg-stock text-ink hover:border-ink hover:bg-ground",
-        ghost: "text-ink-2 hover:bg-ink/5",
+        default: "bg-ink text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.12),0_1px_2px_rgba(21,24,43,0.2)] hover:bg-ink-2",
+        outline: "border border-line-strong bg-paper text-ink hover:border-ink hover:bg-desk/60",
+        soft: "bg-desk text-ink hover:bg-desk-2",
+        ghost: "text-ink-2 hover:bg-ink/[0.06] hover:text-ink",
         destructive: "bg-stop text-white hover:bg-stop-deep",
-        onRail: "border border-white/30 bg-white/10 text-white hover:bg-white/20",
-        talker: "bg-talker text-ink hover:brightness-95",
-        link: "text-rail underline decoration-1 hover:decoration-2",
+        onInk: "border border-white/25 bg-white/10 text-white hover:bg-white/20",
+        canary: "bg-canary text-ink shadow-[inset_0_-1px_0_rgba(115,86,0,0.25)] hover:bg-[#FFD633]",
+        link: "h-auto px-0 text-ink underline decoration-ink/30 decoration-1 hover:decoration-ink active:scale-100",
       },
       size: {
-        default: "h-9 px-4 text-[13px]",
-        sm: "h-7 px-2.5 text-xs",
-        lg: "h-11 px-6 text-sm",
-        icon: "h-8 w-8",
+        default: "h-9 px-3.5 text-[13.5px]",
+        sm: "h-8 px-2.5 text-[12.5px]",
+        lg: "h-11 px-5 text-[14.5px]",
+        xl: "h-12 rounded-lg px-6 text-[15px]",
+        icon: "h-9 w-9",
       },
     },
     defaultVariants: { variant: "default", size: "default" },

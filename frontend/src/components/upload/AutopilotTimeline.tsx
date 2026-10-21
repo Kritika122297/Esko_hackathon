@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { AlertTriangle, CheckCircle2, ChevronDown, Info, Loader2, RotateCcw } from "lucide-react";
+import { AlertTriangle, Check, ChevronDown, Info, Loader2, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api";
 import { TraceEvent, TraceView } from "@/lib/types";
@@ -17,6 +17,7 @@ const STEP_TEXT: Record<string, string> = {
   route: "Route the questions",
   save: "Save the brief",
 };
+const STEP_ORDER = Object.keys(STEP_TEXT);
 
 function ms(n: number) {
   if (n < 1) return "<1 ms";
@@ -24,10 +25,14 @@ function ms(n: number) {
 }
 
 function Icon({ status }: { status: TraceEvent["status"] }) {
-  if (status === "running") return <Loader2 className="h-4 w-4 animate-spin text-rail" aria-label="Running" />;
-  if (status === "warning") return <AlertTriangle className="h-4 w-4 text-talker-deep" aria-label="Needs attention" />;
+  if (status === "running") return <Loader2 className="h-4 w-4 animate-spin text-ink" aria-label="Running" />;
+  if (status === "warning") return <AlertTriangle className="h-4 w-4 text-gold-deep" aria-label="Needs attention" />;
   if (status === "info") return <Info className="h-4 w-4 text-ink-muted" aria-label="Note" />;
-  return <CheckCircle2 className="h-4 w-4 text-ok-deep" aria-label="Done" />;
+  return (
+    <span className="grid h-4 w-4 place-items-center rounded-full bg-mint-soft text-mint-deep" aria-label="Done">
+      <Check className="h-2.5 w-2.5" strokeWidth={3.5} />
+    </span>
+  );
 }
 
 function Row({ ev }: { ev: TraceEvent }) {
@@ -40,24 +45,28 @@ function Row({ ev }: { ev: TraceEvent }) {
         onClick={() => more && setOpen((v) => !v)}
         aria-expanded={more ? open : undefined}
         disabled={!more}
-        className={cn("grid w-full grid-cols-[18px_minmax(0,1fr)_auto] items-start gap-2 rounded px-2 py-1.5 text-left", more && "hover:bg-ground")}
+        className={cn("grid w-full grid-cols-[18px_minmax(0,1fr)_auto] items-start gap-2.5 rounded-md px-2 py-1.5 text-left disabled:cursor-default", more && "hover:bg-desk/70")}
       >
-        <Icon status={ev.status} />
-        <span className="min-w-0 text-[13px] leading-snug">
-          <b className="font-semibold text-ink">{ev.tool}</b> <span className="text-ink-2">{ev.message}</span>
-          {ev.citation && <span className="ml-1.5 font-mono text-[10px] text-ink-faint">{ev.citation}</span>}
+        <span className="pt-0.5">
+          <Icon status={ev.status} />
         </span>
-        <span className="flex items-center gap-1 text-[11px] tabular-nums text-ink-faint">
+        <span className="min-w-0 text-[13.5px] leading-snug">
+          <b className="font-semibold text-ink">{ev.tool}</b> <span className="text-ink-2">{ev.message}</span>
+          {ev.citation && <span className="ml-1.5 text-[11px] tabular-nums text-ink-faint">{ev.citation}</span>}
+        </span>
+        <span className="flex items-center gap-1 pt-0.5 text-[12px] tabular-nums text-ink-faint">
           {ev.status !== "running" && ms(ev.duration_ms)}
-          {more && <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", open && "rotate-180")} aria-hidden />}
+          {more && <ChevronDown className={cn("h-3.5 w-3.5 transition-transform duration-200 ease-out", open && "rotate-180")} aria-hidden />}
         </span>
       </button>
-      {open && (
-        <div className="mb-1 ml-8 mr-2 rounded bg-ground px-3 py-2 text-xs leading-relaxed text-ink-2">
-          {ev.detail && <p className="whitespace-pre-line">{ev.detail.split("; ").join("\n")}</p>}
-          {ev.citation && <p className="mt-1 font-mono text-[10px] text-ink-muted">Rule {ev.citation}</p>}
+      <div className="disclosure" data-open={open} aria-hidden={!open}>
+        <div>
+          <div className="mb-1 ml-9 mr-2 rounded-md bg-desk px-3 py-2 text-[12.5px] leading-relaxed text-ink-2">
+            {ev.detail && <p className="whitespace-pre-line">{ev.detail.split("; ").join("\n")}</p>}
+            {ev.citation && <p className="mt-1 text-[11px] tabular-nums text-ink-muted">Rule {ev.citation}</p>}
+          </div>
         </div>
-      )}
+      </div>
     </li>
   );
 }
@@ -153,38 +162,81 @@ export function AutopilotTimeline({
     return () => window.clearTimeout(t);
   }, [status, sessionId, onDone]);
 
+  // Keep the newest line in view while the trace grows.
+  const list = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    const el = list.current;
+    if (el && status === "running") el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+  }, [events.length, status]);
+
   const steps = Array.from(new Set(events.map((e) => e.step)));
   const warnings = events.filter((e) => e.status === "warning").length;
   const took = events.length ? Math.max(0, (Date.parse(events[events.length - 1].timestamp) - Date.parse(events[0].timestamp)) / 1000) : 0;
   const running = status === "running";
+  // Progress by pipeline stage reached, from the real trace; the bar fills when the build reports done.
+  const reached = steps.reduce((m, s) => Math.max(m, STEP_ORDER.indexOf(s) + 1), 0);
+  const progress = status === "done" ? 1 : Math.min(0.96, reached / STEP_ORDER.length);
+  const currentStep = [...events].reverse().find((e) => e.status === "running")?.step ?? steps[steps.length - 1];
 
   return (
-    <section role="status" aria-live="polite" aria-labelledby="autopilot-h" className="ticket anim-rise overflow-hidden">
-      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-line bg-rail px-5 py-4 text-white">
-        <div className="flex items-center gap-3">
-          <span className="relative flex h-3 w-3" aria-hidden>
-            {running && <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-talker opacity-75" />}
-            <span className={cn("relative inline-flex h-3 w-3 rounded-full", running ? "bg-talker" : status === "done" ? "bg-[#9AD5B8]" : "bg-stop")} />
-          </span>
-          <div>
-            <h2 id="autopilot-h" className="text-[18px] font-bold">Brief Autopilot</h2>
-            <p className="text-[12px] text-white/75">
-              {running ? "Live: every line is a step the pipeline has just run, with its real counts." : status === "done" ? "Finished." : "Stopped."}
-            </p>
+    <section role="status" aria-live="polite" aria-labelledby="autopilot-h" className="sheet anim-rise overflow-hidden">
+      <header className="on-ink bg-ink px-5 pb-5 pt-4 text-white md:px-6">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <span className="relative flex h-3 w-3" aria-hidden>
+              {running && <span className="pulse-ring absolute inline-flex h-full w-full rounded-full bg-canary" />}
+              <span className={cn("relative inline-flex h-3 w-3 rounded-full", running ? "bg-canary" : status === "done" ? "bg-mint" : "bg-stop")} />
+            </span>
+            <div>
+              <h2 id="autopilot-h" className="heading text-[20px]">
+                {running ? "Building the brief" : status === "done" ? "Brief built" : "The build stopped"}
+              </h2>
+              <p className="text-[13px] text-white/70">
+                {running
+                  ? `${STEP_TEXT[currentStep ?? ""] ?? "Starting"}… every line below is a step the pipeline has just run, with its real counts.`
+                  : status === "done"
+                    ? "Opening the workbench."
+                    : "See the step marked below."}
+              </p>
+            </div>
           </div>
+          <p className="figure text-[34px]" aria-label="Elapsed">
+            {running ? `${Math.round((Date.now() - started.current) / 1000)}s` : `${took.toFixed(1)}s`}
+          </p>
         </div>
-        <p className="figure text-[28px] tabular-nums" aria-label="Elapsed">
-          {running ? `${Math.round((Date.now() - started.current) / 1000)} s` : `${took.toFixed(1)} s`}
-        </p>
+        <div className="mt-4">
+          <div
+            className="h-1.5 overflow-hidden rounded-full bg-white/15"
+            role="progressbar"
+            aria-label="Build progress by stage"
+            aria-valuemin={0}
+            aria-valuemax={STEP_ORDER.length}
+            aria-valuenow={status === "done" ? STEP_ORDER.length : reached}
+          >
+            <div
+              className={cn("h-full origin-left rounded-full transition-transform duration-700 ease-out", status === "error" ? "bg-stop" : status === "done" ? "bg-mint" : "bg-canary")}
+              style={{ transform: `scaleX(${Math.max(progress, 0.03)})` }}
+            />
+          </div>
+          <ol className="mt-2.5 hidden grid-cols-8 gap-2 text-[11.5px] md:grid" aria-hidden>
+            {STEP_ORDER.map((s, i) => (
+              <li key={s} className={cn("truncate transition-colors duration-300", i < reached || status === "done" ? "text-white" : "text-white/40")}>
+                {STEP_TEXT[s]}
+              </li>
+            ))}
+          </ol>
+        </div>
       </header>
 
-      <div className="max-h-[460px] overflow-y-auto px-3 py-3">
+      <div ref={list} className="max-h-[420px] overflow-y-auto px-3 py-3 md:px-4">
         {events.length === 0 && running && (
-          <p className="flex items-center gap-2 px-2 py-2 text-[13px] text-ink-muted"><Loader2 className="h-4 w-4 animate-spin" /> Starting…</p>
+          <p className="flex items-center gap-2 px-2 py-2 text-[13.5px] text-ink-muted">
+            <Loader2 className="h-4 w-4 animate-spin" /> Sending the files…
+          </p>
         )}
         {steps.map((step) => (
           <div key={step} className="mb-2">
-            <p className="meta px-2 pb-0.5 pt-1 text-ink-faint">{STEP_TEXT[step] ?? step}</p>
+            <p className="px-2 pb-1 pt-1.5 text-[12px] font-semibold text-ink-faint">{STEP_TEXT[step] ?? step}</p>
             <ol>
               {events.filter((e) => e.step === step).map((e) => (
                 <Row key={e.id} ev={e} />
@@ -195,13 +247,12 @@ export function AutopilotTimeline({
       </div>
 
       {status === "done" && (
-        <p className="border-t border-line bg-ok-soft px-5 py-3 text-[13px] text-ink">
-          <b className="font-semibold">Done in {took.toFixed(1)} s:</b> {steps.length} stages, {events.length} steps,{" "}
-          {warnings} need attention. Opening the workbench…
+        <p className="border-t border-line bg-mint-soft px-5 py-3 text-[13.5px] text-ink md:px-6">
+          <b className="font-semibold">Done in {took.toFixed(1)} s:</b> {steps.length} stages, {events.length} steps, {warnings} need attention. Opening the workbench…
         </p>
       )}
       {status === "error" && (
-        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line bg-stop-soft px-5 py-3 text-[13px] text-ink">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line bg-stop-soft px-5 py-3 text-[13.5px] text-ink md:px-6">
           <p>
             <b className="font-semibold">The brief could not be built.</b> {error ?? "See the step marked above."}
           </p>

@@ -3,9 +3,10 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ArrowRight, Check, RotateCcw, X } from "lucide-react";
+import { ArrowRight, Check, FolderOpen, RotateCcw, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Flag } from "@/components/shared/badges";
+import { Stamp } from "@/components/shared/badges";
+import { cn } from "@/lib/utils";
 import { useBriefStore } from "@/store/briefStore";
 
 export function ErrorBanner() {
@@ -13,15 +14,15 @@ export function ErrorBanner() {
   if (!error) return null;
   const blocking = (errorDetail as any)?.blocking as { id: string; title: string }[] | undefined;
   return (
-    <div role="alert" className="ticket anim-rise flex items-start justify-between gap-3 border-stop/40 bg-stop-soft p-3 pl-0 text-sm">
-      <div className="flex items-start gap-3">
-        <Flag tone="stop" side="right" className="mt-0.5">
+    <div role="alert" className="anim-rise flex items-start justify-between gap-3 rounded-lg border border-stop/30 bg-stop-soft px-4 py-3 text-sm">
+      <div className="flex min-w-0 items-start gap-3">
+        <Stamp tone="stop" className="mt-0.5 bg-paper">
           Problem
-        </Flag>
-        <div>
-          <p className="font-semibold text-ink">{error}</p>
+        </Stamp>
+        <div className="min-w-0">
+          <p className="font-semibold text-ink [overflow-wrap:anywhere]">{error}</p>
           {blocking && (
-            <ul className="mt-1 list-disc space-y-0.5 pl-5 text-xs text-ink-2">
+            <ul className="mt-1 list-disc space-y-0.5 pl-5 text-[13px] text-ink-2">
               {blocking.map((b) => (
                 <li key={b.id}>{b.title}</li>
               ))}
@@ -29,7 +30,7 @@ export function ErrorBanner() {
           )}
         </div>
       </div>
-      <button onClick={clearError} className="rounded p-1 text-ink-muted hover:bg-stop/10 hover:text-ink" aria-label="Dismiss">
+      <button onClick={clearError} className="grid h-8 w-8 shrink-0 place-items-center rounded-md text-ink-muted hover:bg-stop/10 hover:text-ink" aria-label="Dismiss">
         <X className="h-4 w-4" />
       </button>
     </div>
@@ -52,7 +53,7 @@ export function fmtElapsed(s: number) {
 
 /**
  * Bottom-right status: what is running (with real elapsed time), then a short confirmation.
- * On phones it spans the width just above the floating Ask button instead of covering it.
+ * On phones it spans the width at the foot of the screen.
  */
 export function BusyToast() {
   const { busy, busySince, notice, clearNotice } = useBriefStore();
@@ -68,20 +69,23 @@ export function BusyToast() {
   if (pathname === "/upload") return null;
   if (!busy && !notice) return null;
   return (
-    <div role="status" aria-live="polite" className="no-print fixed inset-x-4 bottom-[76px] z-50 sm:inset-x-auto sm:bottom-5 sm:right-5">
+    <div role="status" aria-live="polite" className="no-print fixed inset-x-4 bottom-4 z-50 sm:inset-x-auto sm:bottom-6 sm:right-6">
       {busy ? (
-        <div className="anim-toast w-full overflow-hidden rounded bg-ink text-white shadow-lift sm:w-72">
-          <div className="flex items-center justify-between px-4 py-2.5 text-[13px] font-semibold">
-            <span>{busy}…</span>
-            <span className="text-xs tabular-nums text-white/70">{fmtElapsed(elapsed)}</span>
+        <div className="anim-toast w-full overflow-hidden rounded-lg bg-ink text-white shadow-lift sm:w-80">
+          <div className="flex items-center justify-between gap-3 px-4 py-3 text-[13.5px] font-semibold">
+            <span className="min-w-0 truncate">{busy}…</span>
+            <span className="figure text-[18px] text-white/75">{fmtElapsed(elapsed)}</span>
           </div>
-          <div className="h-1 bg-white/10">
-            <div className="scan-bar h-full w-1/4 bg-talker" />
+          <div className="h-[3px] bg-white/10">
+            <div className="scan-bar h-full w-1/4 rounded-full bg-canary" />
           </div>
         </div>
       ) : (
-        <div className="anim-toast flex items-center gap-2 rounded bg-rail px-4 py-2.5 text-[13px] font-semibold text-white shadow-lift">
-          <Check className="h-4 w-4 text-talker" /> {notice}
+        <div className="anim-toast flex items-center gap-3 rounded-lg border border-line bg-paper py-2.5 pl-3 pr-4 text-[13.5px] font-semibold text-ink shadow-lift">
+          <span className="anim-stamp grid h-6 w-6 place-items-center rounded-full bg-mint-soft text-mint-deep">
+            <Check className="h-3.5 w-3.5" strokeWidth={3} aria-hidden />
+          </span>
+          {notice}
         </div>
       )}
     </div>
@@ -92,16 +96,25 @@ export function NoSession() {
   const loadError = useBriefStore((s) => s.loadError);
   if (loadError) return <LoadFailed />;
   return (
-    <div className="ticket anim-rise mx-auto mt-16 max-w-md p-8 text-center">
-      <h2 className="text-xl font-bold text-ink">No brief open</h2>
-      <p className="mt-2 text-sm text-ink-muted">
-        Start from the product files, or open the hackathon sample pack, and BriefForge will read, fill and check the brief.
-      </p>
-      <Button asChild className="mt-6">
-        <Link href="/upload">
-          Start a brief <ArrowRight className="h-4 w-4" />
-        </Link>
-      </Button>
+    <div className="anim-rise mx-auto mt-10 max-w-lg">
+      <div className="sheet-set p-8 text-center sm:p-10">
+        <h1 className="heading text-[26px] text-ink">No brief open</h1>
+        <p className="mx-auto mt-2 max-w-sm text-[14.5px] text-ink-muted">
+          Start from the product files, or open an existing brief from Projects. BriefForge reads, fills and checks it for you.
+        </p>
+        <div className="mt-7 flex flex-wrap justify-center gap-2">
+          <Button asChild size="lg">
+            <Link href="/upload">
+              Create a brief <ArrowRight className="h-4 w-4" />
+            </Link>
+          </Button>
+          <Button asChild size="lg" variant="outline">
+            <Link href="/projects">
+              <FolderOpen className="h-4 w-4" /> Projects
+            </Link>
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -111,51 +124,58 @@ export function LoadFailed() {
   const { loadError, load, busy } = useBriefStore();
   if (!loadError) return null;
   return (
-    <div role="alert" className="ticket anim-rise mx-auto mt-16 max-w-md border-stop/40 p-8 pl-0 text-left">
-      <Flag tone="stop" side="right">
+    <div role="alert" className="sheet anim-rise mx-auto mt-10 max-w-lg p-8">
+      <Stamp tone="stop" size="lg" tilt={-2}>
         Problem
-      </Flag>
-      <div className="pl-8 pt-3">
-        <h2 className="text-xl font-bold text-ink">The brief could not be opened</h2>
-        <p className="mt-2 break-words text-sm text-ink-2">{loadError.message}</p>
-        <div className="mt-6 flex flex-wrap gap-2">
-          <Button onClick={() => load(loadError.id)} disabled={busy === "Loading brief"}>
-            <RotateCcw className="h-4 w-4" /> Try again
-          </Button>
-          <Button asChild variant="outline">
-            <Link href="/projects">All projects</Link>
-          </Button>
-        </div>
+      </Stamp>
+      <h1 className="heading mt-4 text-[24px] text-ink">The brief could not be opened</h1>
+      <p className="mt-2 break-words text-sm text-ink-2">{loadError.message}</p>
+      <div className="mt-6 flex flex-wrap gap-2">
+        <Button onClick={() => load(loadError.id)} disabled={busy === "Loading brief"}>
+          <RotateCcw className="h-4 w-4" /> Try again
+        </Button>
+        <Button asChild variant="outline">
+          <Link href="/projects">All projects</Link>
+        </Button>
       </div>
     </div>
   );
 }
 
-/** While the open brief is not in memory yet: a loading line, or the failure with a retry. */
+/** While the open brief is not in memory yet: a loading shape, or the failure with a retry. */
 export function SessionPending({ what = "brief" }: { what?: string }) {
   const loadError = useBriefStore((s) => s.loadError);
   return loadError ? <LoadFailed /> : <Loading what={what} />;
 }
 
-export function PageHead({ title, lead, actions }: { title: string; lead?: string; actions?: React.ReactNode }) {
+export function PageHead({ title, lead, actions, className }: { title: string; lead?: React.ReactNode; actions?: React.ReactNode; className?: string }) {
   return (
-    <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
+    <div className={cn("flex flex-col justify-between gap-4 md:flex-row md:items-end", className)}>
       <div className="min-w-0">
-        <h1 className="text-[28px] font-extrabold leading-tight tracking-[-0.01em] text-ink [font-stretch:87.5%]">{title}</h1>
-        {lead && <p className="mt-1 max-w-[70ch] text-[15px] leading-relaxed text-ink-muted">{lead}</p>}
+        <h1 className="heading text-[30px] text-ink md:text-[34px]">{title}</h1>
+        {lead && <p className="mt-2 max-w-[68ch] text-[15px] leading-relaxed text-ink-muted">{lead}</p>}
       </div>
       {actions && <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div>}
     </div>
   );
 }
 
-export function Loading({ what = "brief" }: { what?: string }) {
+/** Loading: the shape of what is coming, so the page does not jump when it lands. */
+export function Loading({ what = "brief", rows = 3 }: { what?: string; rows?: number }) {
   return (
-    <div className="mt-10 flex items-center gap-3 text-sm text-ink-muted" role="status">
-      <span className="relative block h-1 w-24 overflow-hidden rounded bg-line">
-        <span className="scan-bar absolute inset-y-0 left-0 w-1/3 bg-rail" />
-      </span>
-      Loading {what}…
+    <div className="mt-2 space-y-3" role="status" aria-live="polite">
+      <span className="sr-only">Loading {what}…</span>
+      <div aria-hidden className="h-8 w-56 rounded-md skeleton" />
+      {Array.from({ length: rows }).map((_, i) => (
+        <div key={i} aria-hidden className="sheet flex items-center gap-4 p-4" style={{ opacity: 1 - i * 0.22 }}>
+          <div className="h-10 w-10 shrink-0 rounded-md skeleton" />
+          <div className="flex-1 space-y-2">
+            <div className="h-3.5 w-2/5 rounded skeleton" />
+            <div className="h-3 w-3/5 rounded skeleton" />
+          </div>
+          <div className="hidden h-8 w-24 rounded-md skeleton sm:block" />
+        </div>
+      ))}
     </div>
   );
 }

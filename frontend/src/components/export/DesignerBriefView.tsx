@@ -7,9 +7,10 @@ import { DielineBlueprint } from "@/components/export/DielineBlueprint";
 import { BriefState, DesignAction, DesignerBrief, OpenQuestion, PageView, Panel } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { ArtworkViewer } from "@/components/shared/ArtworkViewer";
-import { ACTION_META, ActionFlag, OwnerTag, StatusFlag } from "@/components/shared/badges";
+import { ACTION_META, ActionStamp, OwnerTag, StatusStamp } from "@/components/shared/badges";
 import { SearchBox, matchesQuery } from "@/components/shared/SearchBox";
 import { useBriefStore } from "@/store/briefStore";
+import { Segmented } from "@/components/ui/Segmented";
 
 type Tab = "blueprint" | "copy";
 const TABS: { id: Tab; label: string }[] = [
@@ -23,10 +24,10 @@ function Section({ id, title, aside, children }: { id: string; title: string; as
   return (
     <section aria-labelledby={id} className="scroll-mt-24">
       <div className="section-rule mb-4">
-        <h2 id={id} className="text-[20px] font-extrabold text-ink [font-stretch:87.5%]">
+        <h2 id={id} className="heading text-[24px] text-ink">
           {title}
         </h2>
-        {aside && <span className="text-xs text-ink-muted">{aside}</span>}
+        {aside && <span className="text-[13px] text-ink-muted">{aside}</span>}
       </div>
       {children}
     </section>
@@ -36,7 +37,7 @@ function Section({ id, title, aside, children }: { id: string; title: string; as
 function Fold({ title, count, children }: { title: string; count: number; children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   return (
-    <section className="rounded border border-line">
+    <section className="rounded-md border border-line">
       <button onClick={() => setOpen((v) => !v)} aria-expanded={open} className="flex w-full items-center justify-between px-4 py-3 text-left">
         <span className="text-[15px] font-bold text-ink">
           {title} <b className="figure ml-1 text-[18px]">{count}</b>
@@ -62,19 +63,19 @@ function NutritionPanel({ brief, state }: { brief: DesignerBrief; state: BriefSt
   const minerals = new Set(["Vitamin D", "Calcium", "Iron", "Potassium"]);
   const pending = (st?: string) => st && st !== "confirmed";
   return (
-    <div className="w-full max-w-[320px] border-2 border-ink bg-stock p-2 font-sans text-ink">
-      <p className="text-[34px] font-black leading-none tracking-[-0.02em] [font-stretch:87.5%]">Nutrition Facts</p>
+    <div className="w-full max-w-[320px] border-2 border-ink bg-paper p-2 font-sans text-ink">
+      <p className="text-[34px] font-black leading-none tracking-[-0.02em] [font-family:var(--font-display)] [font-variation-settings:'wdth'_80]">Nutrition Facts</p>
       <div className="my-1 border-b border-ink" />
       <p className="text-[14px]">{servings ? `${servings} servings per container` : "Servings per container: to confirm"}</p>
       <p className="flex justify-between text-[16px] font-black">
         <span>Serving size</span>
-        <span className={cn(pending(state.fields.find((f) => f.key === "serving_size")?.status) && "bg-talker px-1")}>{serving ?? "—"}</span>
+        <span className={cn(pending(state.fields.find((f) => f.key === "serving_size")?.status) && "bg-canary px-1")}>{serving ?? "—"}</span>
       </p>
       <div className="my-1 h-2.5 bg-ink" />
       <p className="text-[11px] font-bold">Amount per serving</p>
       <p className="flex items-end justify-between leading-none">
         <span className="text-[28px] font-black">Calories</span>
-        <span className={cn("text-[36px] font-black", pending(cal?.status) && "bg-talker px-1")}>{cal?.amount ?? "—"}</span>
+        <span className={cn("text-[36px] font-black", pending(cal?.status) && "bg-canary px-1")}>{cal?.amount ?? "—"}</span>
       </p>
       <div className="my-1 h-1.5 bg-ink" />
       <p className="text-right text-[11px] font-bold">% Daily Value*</p>
@@ -85,7 +86,7 @@ function NutritionPanel({ brief, state }: { brief: DesignerBrief; state: BriefSt
             "flex justify-between border-t border-ink/60 py-0.5 text-[13px]",
             n.label === "Vitamin D" && "border-t-[8px] border-ink",
             indented.has(n.label) && "pl-4",
-            pending(n.status) && "bg-talker-soft"
+            pending(n.status) && "bg-canary-soft"
           )}
         >
           <span>
@@ -123,7 +124,7 @@ function QuestionGroup({ id, title, lead, questions }: { id: string; title: stri
               {questions
                 .filter((q) => q.owner === o)
                 .map((q) => (
-                  <li key={q.issue_id} className="rounded bg-ground p-3">
+                  <li key={q.issue_id} className="rounded-md bg-desk p-3">
                     <p className="text-[14px] font-bold leading-snug text-ink">{q.question}</p>
                     {q.status !== "open" && <p className="meta mt-1 text-ink-muted">{PASSED_TEXT[q.status] ?? q.status}</p>}
                     <p className="mt-1 line-clamp-3 text-[13px] leading-relaxed text-ink-muted">
@@ -156,11 +157,11 @@ export function DesignerBriefView({ brief, state, pages, panels }: { brief: Desi
   const decisions = brief.decisions ?? [];
 
   return (
-    <article className="ticket mx-auto max-w-[1240px] space-y-10 px-5 py-7 md:px-10 md:py-10">
+    <article className="sheet-set mx-auto mb-3 mr-3 max-w-[1240px] space-y-10 px-5 py-7 [--copy-1:#E0ECFF] [--copy-2:#ECEEF2] md:px-10 md:py-10">
       {/* Title block */}
-      <header className="grid grid-cols-1 gap-6 border-b-[6px] border-rail pb-6 lg:grid-cols-[minmax(0,1fr)_auto]">
+      <header className="grid grid-cols-1 gap-8 pb-2 lg:grid-cols-[minmax(0,1fr)_auto]">
         <div>
-          <h1 className="text-[clamp(30px,4vw,44px)] font-extrabold leading-[1.02] tracking-[-0.02em] text-ink [font-stretch:80%]">{brief.product}</h1>
+          <h1 className="display text-[clamp(34px,4.6vw,56px)] text-ink">{brief.product}</h1>
           <ul className="mt-3 space-y-1 text-[15px] text-ink-2">
             {brief.summary.map((s, i) => (
               <li key={i}>{s}</li>
@@ -182,23 +183,10 @@ export function DesignerBriefView({ brief, state, pages, panels }: { brief: Desi
           <dd className="figure text-[24px] text-ink">{brief.readiness?.score ?? 0}%</dd>
         </dl>
       </header>
+      <div aria-hidden className="perf -mx-5 !mt-6 md:-mx-10" />
 
       <div className="no-print flex flex-wrap items-center justify-between gap-3">
-        <div role="tablist" aria-label="Designer brief view" className="inline-flex gap-1 rounded border border-line bg-stock p-1">
-          {TABS.map((t) => (
-            <button
-              key={t.id}
-              id={`dbv-tab-${t.id}`}
-              role="tab"
-              aria-selected={tab === t.id}
-              aria-controls={`dbv-panel-${t.id}`}
-              onClick={() => setTab(t.id)}
-              className={cn("h-9 rounded px-4 text-[13px] font-semibold transition-colors", tab === t.id ? "bg-ink text-white" : "text-ink-muted hover:text-ink")}
-            >
-              {t.label}
-            </button>
-          ))}
-        </div>
+        <Segmented label="Designer brief view" idPrefix="dbv" value={tab} onChange={setTab} items={TABS.map((t) => ({ id: t.id, label: t.label }))} />
         {sessionId && <AgencySimulatorButton sessionId={sessionId} />}
       </div>
 
@@ -217,7 +205,7 @@ export function DesignerBriefView({ brief, state, pages, panels }: { brief: Desi
             role="tab"
             aria-selected={action === "all"}
             onClick={() => setAction("all")}
-            className={cn("h-9 rounded border px-3 text-[13px] font-semibold", action === "all" ? "border-ink bg-ink text-white" : "border-line text-ink hover:border-ink")}
+            className={cn("h-9 rounded-md border px-3 text-[13px] font-semibold", action === "all" ? "border-ink bg-ink text-white" : "border-line text-ink hover:border-ink")}
           >
             All <b className="figure ml-1 text-[17px]">{brief.items.length}</b>
           </button>
@@ -231,11 +219,11 @@ export function DesignerBriefView({ brief, state, pages, panels }: { brief: Desi
                 disabled={!n}
                 onClick={() => setAction(a)}
                 className={cn(
-                  "inline-flex h-9 items-center gap-2 rounded border pl-1 pr-3 text-[13px] font-semibold transition-colors disabled:opacity-40",
-                  action === a ? "border-ink bg-ground shadow-[inset_0_0_0_1px_#121514]" : "border-line hover:border-ink"
+                  "inline-flex h-9 items-center gap-2 rounded-md border pl-1 pr-3 text-[13px] font-semibold transition-colors disabled:opacity-40",
+                  action === a ? "border-ink bg-desk shadow-selected" : "border-line hover:border-ink"
                 )}
               >
-                <ActionFlag action={a} />
+                <ActionStamp action={a} />
                 <b className="figure text-[19px]">{n}</b>
               </button>
             );
@@ -265,22 +253,22 @@ export function DesignerBriefView({ brief, state, pages, panels }: { brief: Desi
           </div>
           <ol className="space-y-2" aria-label="Design actions">
             {items.length === 0 && (
-              <li className="rounded border border-dashed border-line-strong p-6 text-center">
+              <li className="rounded-md border border-dashed border-line-strong p-6 text-center">
                 <p className="text-[14px] font-semibold text-ink">
                   {searching ? `No item matches “${query.trim()}”.` : "No item in this view."}
                 </p>
                 {searching && (
-                  <button onClick={() => setQuery("")} className="mt-2 text-[13px] font-semibold text-rail underline decoration-1 hover:decoration-2">
+                  <button onClick={() => setQuery("")} className="mt-2 text-[13px] font-semibold text-ink underline decoration-1 hover:decoration-2">
                     Clear search
                   </button>
                 )}
               </li>
             )}
             {items.map((i, k) => (
-              <li key={`${i.item}-${k}`} className="ticket anim-rise overflow-hidden" style={{ animationDelay: `${Math.min(k, 10) * 25}ms` }}>
+              <li key={`${i.item}-${k}`} className="sheet anim-rise overflow-hidden" style={{ animationDelay: `${Math.min(k, 10) * 25}ms` }}>
                 <div className="flex items-start justify-between gap-3 pr-4 pt-3">
                   <div className="flex min-w-0 items-start gap-3">
-                    <ActionFlag action={i.action} className="mt-0.5 shrink-0" />
+                    <ActionStamp action={i.action} className="mt-0.5 shrink-0" />
                     <div className="min-w-0">
                       <p className="text-[15px] font-bold leading-snug text-ink">{i.item}</p>
                       <p className="meta text-ink-muted">{panelLabel(i.panel)}</p>
@@ -291,20 +279,20 @@ export function DesignerBriefView({ brief, state, pages, panels }: { brief: Desi
                 <div className="space-y-2 px-4 pb-3 pt-2 text-[13px] leading-relaxed text-ink-2">
                   <p>{i.instruction}</p>
                   {i.action === "change" && i.current && (
-                    <div className="grid gap-1 rounded bg-ground p-2.5 text-[13px]">
+                    <div className="grid gap-1 rounded-md bg-desk p-2.5 text-[13px]">
                       <p>
                         <span className="mr-2 meta text-ink-muted">Now</span>
-                        <span className="text-ink-muted line-through decoration-stop/70">{i.current}</span>
+                        <span className="text-ink-muted line-through decoration-ink/40">{i.current}</span>
                       </p>
                       <p>
-                        <span className="mr-2 meta text-rail">Use</span>
+                        <span className="mr-2 meta text-ink">Use</span>
                         <span className="font-semibold text-ink">{i.new}</span>
                       </p>
                     </div>
                   )}
                   {i.action === "add" && i.new && (
-                    <p className="rounded bg-ok-soft p-2.5 font-semibold text-ink">
-                      <span className="mr-2 meta text-rail">Add</span>
+                    <p className="rounded-md bg-mint-soft p-2.5 font-semibold text-ink">
+                      <span className="mr-2 meta text-ink">Add</span>
                       {i.new}
                     </p>
                   )}
@@ -323,7 +311,7 @@ export function DesignerBriefView({ brief, state, pages, panels }: { brief: Desi
                 <dt className="text-[13px] font-bold text-ink">{c.label}</dt>
                 <dd className="text-[14px] leading-relaxed text-ink">{c.value ?? <i className="text-ink-faint">Not provided yet</i>}</dd>
                 <dd className="md:-mr-1">
-                  <StatusFlag status={c.status} />
+                  <StatusStamp status={c.status} />
                 </dd>
               </div>
             ))}
@@ -334,7 +322,7 @@ export function DesignerBriefView({ brief, state, pages, panels }: { brief: Desi
             <NutritionPanel brief={brief} state={state} />
             {pendingNutrition > 0 && (
               <p className="mt-2 flex items-center gap-2 text-xs text-ink-muted">
-                <span className="inline-block h-3 w-5 bg-talker-soft ring-1 ring-talker" aria-hidden /> Highlighted values still need confirmation.
+                <span className="inline-block h-3 w-5 bg-canary-soft ring-1 ring-canary-deep" aria-hidden /> Highlighted values still need confirmation.
               </p>
             )}
           </Section>
@@ -389,7 +377,7 @@ export function DesignerBriefView({ brief, state, pages, panels }: { brief: Desi
         <Fold title="Proof: where every value came from" count={brief.proof.length}>
           <div className="overflow-x-auto">
             <table className="w-full min-w-[640px] text-left text-[13px]">
-              <thead className="bg-ground text-[11px] uppercase tracking-wider text-ink-muted">
+              <thead className="bg-desk text-[11px] uppercase tracking-wider text-ink-muted">
                 <tr>
                   <th className="px-4 py-2 font-semibold">Field</th>
                   <th className="px-4 py-2 font-semibold">Value</th>
@@ -403,9 +391,9 @@ export function DesignerBriefView({ brief, state, pages, panels }: { brief: Desi
                     <td className="px-4 py-2 font-semibold text-ink">{p.label}</td>
                     <td className="max-w-[320px] px-4 py-2 text-ink">{p.value ?? "—"}</td>
                     <td className="px-4 py-2">
-                      <StatusFlag status={p.status} />
+                      <StatusStamp status={p.status} />
                     </td>
-                    <td className="px-4 py-2 font-mono text-code text-ink-muted">
+                    <td className="px-4 py-2 text-[12px] tabular-nums text-ink-muted">
                       {p.sources.map((s, i) => (
                         <div key={i}>{s}</div>
                       ))}

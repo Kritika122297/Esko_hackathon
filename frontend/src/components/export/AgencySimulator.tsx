@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { CheckCircle2, Download, Loader2, Printer, ScanSearch, X, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Flag } from "@/components/shared/badges";
+import { Stamp } from "@/components/shared/badges";
 import { api } from "@/lib/api";
 import { SimulatorReport } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -95,33 +95,33 @@ export function AgencySimulatorButton({ sessionId }: { sessionId: string }) {
         ref={dialog}
         onClose={() => setOpen(false)}
         aria-labelledby="sim-h"
-        className="max-h-[calc(100vh-32px)] w-[min(760px,calc(100vw-32px))] overflow-y-auto rounded border border-line bg-stock p-0 text-ink shadow-lift backdrop:bg-ink/40"
+        className="max-h-[calc(100vh-32px)] w-[min(760px,calc(100vw-32px))] overflow-y-auto rounded-xl border border-line bg-paper p-0 text-ink shadow-lift bf-dialog"
       >
         <div className="flex items-start justify-between gap-3 border-b border-line px-5 py-4">
           <div>
-            <h2 id="sim-h" className="text-[18px] font-bold">Agency Simulator</h2>
+            <h2 id="sim-h" className="heading text-[21px]">Agency Simulator</h2>
             <p className="mt-0.5 text-[13px] text-ink-muted">
               Would a packaging studio accept this brief as it is? The score comes from code checks; the AI only adds what it still
               cannot tell.
             </p>
           </div>
-          <button onClick={() => setOpen(false)} className="grid h-8 w-8 shrink-0 place-items-center rounded hover:bg-ink/5" aria-label="Close">
+          <button onClick={() => setOpen(false)} className="grid h-8 w-8 shrink-0 place-items-center rounded hover:bg-ink/[0.06]" aria-label="Close">
             <X className="h-4 w-4" />
           </button>
         </div>
 
         <div className="space-y-5 px-5 py-4" aria-live="polite">
           {running && <p className="flex items-center gap-2 text-[13px] text-ink-muted"><Loader2 className="h-4 w-4 animate-spin" /> Checking the brief as a studio would…</p>}
-          {error && <p role="alert" className="rounded border border-stop/40 bg-stop-soft px-3 py-2 text-[13px]">{error}</p>}
+          {error && <p role="alert" className="rounded-md border border-stop/40 bg-stop-soft px-3 py-2 text-[13px]">{error}</p>}
           {report && !running && (
             <>
-              <div className={cn("flex flex-wrap items-center gap-5 rounded border p-4", ready ? "border-ok bg-ok-soft" : "border-line bg-ground")}>
+              <div className={cn("flex flex-wrap items-center gap-5 rounded-md border p-4", ready ? "border-mint-deep bg-mint-soft" : "border-line bg-desk")}>
                 <p className="figure text-[48px] leading-none text-ink">
                   {report.score}
                   <span className="text-[18px] text-ink-muted">/100</span>
                 </p>
                 <div className="space-y-1">
-                  <Flag tone={STATUS[report.status].tone} side="right" className="-ml-3">{STATUS[report.status].text}</Flag>
+                  <Stamp tone={STATUS[report.status].tone} className="-ml-3">{STATUS[report.status].text}</Stamp>
                   <p className="text-[13px] text-ink-2">{ready ? "Every check passed and the studio has no open questions. Hand it over." : report.designer_summary}</p>
                 </div>
               </div>
@@ -131,15 +131,15 @@ export function AgencySimulatorButton({ sessionId }: { sessionId: string }) {
                   <h3 id="sim-fail-h" className="meta mb-2 text-ink-muted">To fix · {failed.length}</h3>
                   <ul className="space-y-2">
                     {failed.map((c) => (
-                      <li key={c.id} className="flex gap-3 rounded border border-line p-3">
-                        <XCircle className={cn("mt-0.5 h-4 w-4 shrink-0", c.severity === "blocking" ? "text-stop" : "text-talker-deep")} aria-hidden />
+                      <li key={c.id} className="flex gap-3 rounded-md border border-line p-3">
+                        <XCircle className={cn("mt-0.5 h-4 w-4 shrink-0", c.severity === "blocking" ? "text-stop" : "text-canary-deep")} aria-hidden />
                         <div className="min-w-0 text-[13px]">
                           <p className="font-semibold text-ink">
                             {c.name} <span className="meta ml-1 text-ink-faint">{c.severity === "blocking" ? "Blocking" : "Warning"}</span>
                           </p>
                           <p className="text-ink-2">{c.detail}</p>
                           {c.suggestion && <p className="mt-0.5 text-ink"><b className="font-semibold">Fix:</b> {c.suggestion}</p>}
-                          {c.clause_id && <p className="mt-0.5 font-mono text-[10px] text-ink-faint">{c.clause_id}</p>}
+                          {c.clause_id && <p className="mt-0.5 text-[11px] tabular-nums text-ink-faint">{c.clause_id}</p>}
                         </div>
                       </li>
                     ))}
@@ -152,7 +152,7 @@ export function AgencySimulatorButton({ sessionId }: { sessionId: string }) {
                   <h3 id="sim-amb-h" className="meta mb-2 text-ink-muted">The studio would still ask · AI prepress operator</h3>
                   <ul className="space-y-1.5 text-[13px]">
                     {report.ambiguities.map((a) => (
-                      <li key={a.question} className="rounded bg-ground px-3 py-2">
+                      <li key={a.question} className="rounded-md bg-desk px-3 py-2">
                         <b className="font-semibold text-ink">{a.topic}:</b> <span className="text-ink-2">{a.question}</span>
                         {a.panel && <span className="meta ml-2 text-ink-faint">{a.panel}</span>}
                       </li>
@@ -170,7 +170,7 @@ export function AgencySimulatorButton({ sessionId }: { sessionId: string }) {
                   <ul className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
                     {passed.map((c) => (
                       <li key={c.id} className="flex gap-2 text-[13px]" title={c.detail}>
-                        <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-ok-deep" aria-hidden />
+                        <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-mint-deep" aria-hidden />
                         <span className="text-ink-2">{c.name}</span>
                       </li>
                     ))}

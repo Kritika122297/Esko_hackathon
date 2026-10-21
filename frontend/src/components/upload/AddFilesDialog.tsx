@@ -58,7 +58,7 @@ export function AddFilesButton({ className }: { className?: string }) {
         aria-haspopup="dialog"
         title={finalized ? "Finalized briefs take no new files. Reopen the brief for edits first." : undefined}
         className={cn(
-          "inline-flex h-9 items-center gap-2 rounded border bg-stock px-3 text-[13px] font-semibold transition-colors",
+          "pressable inline-flex h-9 items-center gap-2 rounded-md border bg-paper px-3 text-[13px] font-semibold transition-colors",
           finalized ? "border-line text-ink-muted hover:border-line-strong" : "border-line-strong text-ink hover:border-ink",
           className
         )}
@@ -70,29 +70,29 @@ export function AddFilesButton({ className }: { className?: string }) {
         ref={dialog}
         onClose={close}
         aria-labelledby="add-files-h"
-        className="w-[min(640px,calc(100vw-32px))] rounded border border-line bg-stock p-0 text-ink shadow-lift backdrop:bg-ink/40"
+        className="w-[min(640px,calc(100vw-32px))] rounded-xl border border-line bg-paper p-0 text-ink shadow-lift bf-dialog"
       >
         <div className="flex items-start justify-between gap-3 border-b border-line px-5 py-4">
           <div>
-            <h2 id="add-files-h" className="text-[18px] font-bold">
+            <h2 id="add-files-h" className="heading text-[21px]">
               Add files to {view.state.product_name}
             </h2>
             <p className="mt-0.5 text-[13px] text-ink-muted">
               Everything is read again and re-checked. Values you confirmed, answers and items passed to the agency are kept.
             </p>
           </div>
-          <button onClick={close} className="grid h-8 w-8 shrink-0 place-items-center rounded hover:bg-ink/5" aria-label="Close">
+          <button onClick={close} className="grid h-8 w-8 shrink-0 place-items-center rounded hover:bg-ink/[0.06]" aria-label="Close">
             <X className="h-4 w-4" />
           </button>
         </div>
         <div className="space-y-4 px-5 py-4">
           {problem && (
-            <p role="alert" className="rounded border border-stop/40 bg-stop-soft px-3 py-2 text-[13px] text-ink">
+            <p role="alert" className="rounded-md border border-stop/40 bg-stop-soft px-3 py-2 text-[13px] text-ink">
               <b className="font-semibold">Files were not added.</b> {problem}
             </p>
           )}
           {finalized && (
-            <div className="flex items-start gap-3 rounded border border-line bg-ground px-3 py-2.5 text-[13px]">
+            <div className="flex items-start gap-3 rounded-md border border-line bg-desk px-3 py-2.5 text-[13px]">
               <Lock className="mt-0.5 h-4 w-4 shrink-0 text-ink-muted" aria-hidden />
               <p className="text-ink">
                 <b className="font-semibold">This brief is finalized.</b> Files cannot be added to a finalized brief. Reopen it for edits, add
@@ -115,12 +115,13 @@ export function AddFilesButton({ className }: { className?: string }) {
             <FileDropzone
               files={files}
               disabled={!!busy}
+              compact
               onFilesSelected={(f) => setFiles((prev) => [...prev, ...f.filter((n) => !prev.some((p) => p.name === n.name))])}
               onFileRemoved={(i) => setFiles((prev) => prev.filter((_, k) => k !== i))}
             />
           )}
           {!finalized && replacing.length > 0 && (
-            <p className="rounded bg-talker-soft px-3 py-2 text-[13px]">
+            <p className="rounded-md bg-canary-soft px-3 py-2 text-[13px]">
               Replaces the current {replacing.length === 1 ? "version" : "versions"} of {replacing.join(", ")}.
             </p>
           )}
