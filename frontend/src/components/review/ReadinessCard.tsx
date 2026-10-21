@@ -49,7 +49,7 @@ export function ReadinessCard({ state }: { state: BriefState }) {
                 Open designer brief <ArrowRight className="h-4 w-4" />
               </Link>
             </Button>
-            <Button variant="onRail" size="sm" className="w-full" onClick={() => run("Reopening", (sid) => api.reopen(sid), "Brief reopened")}>
+            <Button variant="onRail" size="sm" className="w-full" disabled={!!busy} onClick={() => run("Reopening", (sid) => api.reopen(sid), "Brief reopened")}>
               <LockOpen className="h-3.5 w-3.5" /> Reopen for edits
             </Button>
           </>

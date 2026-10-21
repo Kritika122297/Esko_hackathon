@@ -120,10 +120,45 @@ class Question(BaseModel):
     original_question: Optional[str] = None
 
 
+AnswerKind = Literal["option", "custom", "agency", "unknown", "not_applicable"]
+
+
+class AnsweredQuestion(BaseModel):
+    """A question as it was asked and how it was answered, kept for the record after it closes."""
+
+    id: str
+    question: str
+    why: str
+    owner: Owner
+    priority: Literal["must_answer", "should_answer"]
+    ai_worded: bool = False
+    fields: List[str] = Field(default_factory=list)
+    issue_ids: List[str] = Field(default_factory=list)
+    options: List[QuestionOption] = Field(default_factory=list, description="The choices as offered, so the answer can be changed")
+    custom_field: Optional[str] = None
+    kind: AnswerKind
+    answer: str
+    option_id: Optional[str] = None
+    note: Optional[str] = None
+    at: str
+    by: str
+    # What the answer did, so changing it can undo exactly that and nothing a person did since.
+    previous: Dict[str, Optional[str]] = Field(default_factory=dict, description="Field values before the answer")
+    previous_confirmed: Dict[str, bool] = Field(default_factory=dict)
+    applied: Dict[str, Optional[str]] = Field(default_factory=dict, description="Field values the answer set")
+    na_fields: List[str] = Field(default_factory=list, description="Fields the answer marked not applicable")
+    acknowledged: List[str] = Field(default_factory=list, description="Issues the answer passed to the agency")
+
+    def as_question(self) -> Question:
+        return Question(id=self.id, issue_ids=list(self.issue_ids), fields=list(self.fields), question=self.question,
+                        why=self.why, owner=self.owner, priority=self.priority, options=list(self.options),
+                        custom_field=self.custom_field, ai_worded=self.ai_worded)
+
+
 class ChangeLogEntry(BaseModel):
     at: str
     by: str
-    action: Literal["edit", "confirm", "answer", "acknowledge", "reopen", "finalize", "analyze", "files", "undo", "not_applicable"]
+    action: Literal["edit", "confirm", "answer", "acknowledge", "reopen", "finalize", "analyze", "files", "undo", "not_applicable", "duplicate"]
     origin: Origin = "human"
     field: Optional[str] = None
     issue: Optional[str] = None
@@ -167,6 +202,9 @@ class BriefState(BaseModel):
     updated_at: str
     case: Case = "update"
     market: str = "US"
+    source_market: Optional[str] = Field(None, description="New-market case: the market the existing pack was made for")
+    source_session_id: Optional[str] = Field(None, description="The brief this one was duplicated from, if any")
+    name_override: Optional[str] = Field(None, description="Product name set by a person; files do not overwrite it")
     category: str = "food"
     standards: List[str] = Field(default_factory=list, description="Selected standards; empty = by market")
     company_clauses: List[Clause] = Field(default_factory=list, description="Rules from an uploaded company rulebook, accepted by a reviewer")
@@ -177,6 +215,7 @@ class BriefState(BaseModel):
     issues: List[Issue] = Field(default_factory=list)
     passed_checks: List[PassedCheck] = Field(default_factory=list)
     questions: List[Question] = Field(default_factory=list)
+    answered_questions: List[AnsweredQuestion] = Field(default_factory=list, description="Closed questions with their answers, oldest first")
     acknowledgements: Dict[str, str] = Field(default_factory=dict)
     change_log: List[ChangeLogEntry] = Field(default_factory=list)
     extraction_notes: List[str] = Field(default_factory=list)

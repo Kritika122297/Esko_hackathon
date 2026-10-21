@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
-from typing import List, Optional, Tuple
+import functools
+from typing import Callable, List, Optional, Tuple, TypeVar
+from urllib.parse import quote
 
 from fastapi import HTTPException
 from pydantic import BaseModel
@@ -27,15 +29,29 @@ class SessionView(BaseModel):
 
 
 def view(state: BriefState, ex: Extraction) -> SessionView:
-    pages = [PageView(**p.model_dump(), url=f"/api/sessions/{state.session_id}/pages/{p.image}") for p in ex.pages]
+    pages = [PageView(**p.model_dump(), url=f"/api/sessions/{state.session_id}/pages/{quote(p.image)}") for p in ex.pages]
     return SessionView(state=state, pages=pages, panels=ex.panels)
 
 
 def load(sid: str) -> Tuple[BriefState, CheckContext, Extraction]:
     loaded = store.load(sid)
     if loaded is None:
+        if sid in store.broken:
+            raise HTTPException(status_code=422, detail=store.broken[sid])
         raise HTTPException(status_code=404, detail=f"Session '{sid}' not found.")
     return loaded
+
+
+F = TypeVar("F", bound=Callable)
+
+
+def locked(fn: F) -> F:
+    """Runs a route that changes a brief while holding that brief's lock (the route takes `sid`)."""
+    @functools.wraps(fn)
+    def wrapper(*args, **kwargs):
+        with store.lock(kwargs["sid"]):
+            return fn(*args, **kwargs)
+    return wrapper  # type: ignore[return-value]
 
 
 def require_draft(state: BriefState) -> None:

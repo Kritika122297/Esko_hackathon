@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import { ChevronDown } from "lucide-react";
-import { BriefState, DesignAction, DesignerBrief, PageView, Panel } from "@/lib/types";
+import { BriefState, DesignAction, DesignerBrief, OpenQuestion, PageView, Panel } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { ArtworkViewer } from "@/components/shared/ArtworkViewer";
 import { ACTION_META, ActionFlag, OwnerTag, StatusFlag } from "@/components/shared/badges";
+import { SearchBox, matchesQuery } from "@/components/shared/SearchBox";
 
 const ORDER: DesignAction[] = ["change", "add", "remove", "unknown", "keep"];
 
@@ -92,14 +93,56 @@ function NutritionPanel({ brief, state }: { brief: DesignerBrief; state: BriefSt
   );
 }
 
+const PASSED_TEXT: Record<string, string> = { agency: "Passed to the agency", check: "Check on the pack" };
+
+/** One group of open questions, set out by owner, as in section 3 of the PDF. */
+function QuestionGroup({ id, title, lead, questions }: { id: string; title: string; lead: string; questions: OpenQuestion[] }) {
+  const owners = Array.from(new Set(questions.map((q) => q.owner))).sort();
+  return (
+    <section aria-labelledby={id}>
+      <h3 id={id} className="text-[16px] font-bold text-ink">
+        {title} <b className="figure ml-1 text-[18px]">{questions.length}</b>
+      </h3>
+      <p className="mb-3 text-[13px] text-ink-muted">{lead}</p>
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+        {owners.map((o) => (
+          <div key={o}>
+            <p className="mb-2 flex items-center gap-2 text-[13px] font-bold text-ink">
+              For <OwnerTag owner={o} />
+            </p>
+            <ol className="space-y-2">
+              {questions
+                .filter((q) => q.owner === o)
+                .map((q) => (
+                  <li key={q.issue_id} className="rounded bg-ground p-3">
+                    <p className="text-[14px] font-bold leading-snug text-ink">{q.question}</p>
+                    {q.status !== "open" && <p className="meta mt-1 text-ink-muted">{PASSED_TEXT[q.status] ?? q.status}</p>}
+                    <p className="mt-1 line-clamp-3 text-[13px] leading-relaxed text-ink-muted">
+                      {q.status === "agency" ? q.detail.split(" — ").slice(-1)[0] : q.detail}
+                    </p>
+                  </li>
+                ))}
+            </ol>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 export function DesignerBriefView({ brief, state, pages, panels }: { brief: DesignerBrief; state: BriefState; pages: PageView[]; panels: Panel[] }) {
   const [action, setAction] = useState<DesignAction | "all">("all");
+  const [query, setQuery] = useState("");
   const panelActions: Record<string, DesignAction[]> = {};
   brief.panels.forEach((p) => (panelActions[p.panel] = p.items.map((i) => i.action)));
-  const items = brief.items.filter((i) => action === "all" || i.action === action);
+  const inFilter = brief.items.filter((i) => action === "all" || i.action === action);
+  const items = inFilter.filter((i) => matchesQuery(query, i.item, i.instruction));
+  const searching = query.trim().length > 0;
   const panelLabel = (id?: string | null) => panels.find((p) => p.id === id)?.label ?? (id ? id.replace(/_/g, " ") : "Whole pack");
   const pendingNutrition = brief.nutrition.filter((n) => n.status !== "confirmed").length;
-  const owners = Array.from(new Set(brief.open_questions.map((q) => q.owner)));
+  const waiting = brief.open_questions.filter((q) => q.status === "open");
+  const passed = brief.open_questions.filter((q) => q.status !== "open");
+  const decisions = brief.decisions ?? [];
 
   return (
     <article className="ticket mx-auto max-w-[1240px] space-y-10 px-5 py-7 md:px-10 md:py-10">
@@ -117,7 +160,7 @@ export function DesignerBriefView({ brief, state, pages, panels }: { brief: Desi
           <dt className="text-ink-muted">Document</dt>
           <dd className="font-semibold text-ink">Packaging design brief</dd>
           <dt className="text-ink-muted">Market</dt>
-          <dd className="font-semibold text-ink">{brief.market}</dd>
+          <dd className="font-semibold text-ink">{brief.source_market ? `${brief.source_market} → ${brief.market}` : brief.market}</dd>
           <dt className="text-ink-muted">Situation</dt>
           <dd className="font-semibold text-ink">{brief.case}</dd>
           <dt className="text-ink-muted">Status</dt>
@@ -159,12 +202,41 @@ export function DesignerBriefView({ brief, state, pages, panels }: { brief: Desi
             );
           })}
         </div>
+        <div className="no-print mb-4 flex flex-wrap items-center gap-x-3 gap-y-1">
+          <SearchBox
+            id="design-item-search"
+            label="Search design actions"
+            value={query}
+            onChange={setQuery}
+            placeholder="Search item or instruction"
+            count={items.length}
+            noun={["item", "items"]}
+            className="w-full max-w-sm"
+          />
+          {searching && (
+            <p className="text-xs text-ink-muted" aria-hidden>
+              Showing {items.length} of {inFilter.length}
+            </p>
+          )}
+        </div>
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
           <div className="lg:sticky lg:top-24 lg:self-start print:static">
             <ArtworkViewer pages={pages} panels={panels} panelActions={panelActions} height="max-h-[460px]" />
             <p className="mt-2 text-xs text-ink-muted">Annotated layout: each panel shows how many items change, are added, removed or kept there.</p>
           </div>
           <ol className="space-y-2" aria-label="Design actions">
+            {items.length === 0 && (
+              <li className="rounded border border-dashed border-line-strong p-6 text-center">
+                <p className="text-[14px] font-semibold text-ink">
+                  {searching ? `No item matches “${query.trim()}”.` : "No item in this view."}
+                </p>
+                {searching && (
+                  <button onClick={() => setQuery("")} className="mt-2 text-[13px] font-semibold text-rail underline decoration-1 hover:decoration-2">
+                    Clear search
+                  </button>
+                )}
+              </li>
+            )}
             {items.map((i, k) => (
               <li key={`${i.item}-${k}`} className="ticket anim-rise overflow-hidden" style={{ animationDelay: `${Math.min(k, 10) * 25}ms` }}>
                 <div className="flex items-start justify-between gap-3 pr-4 pt-3">
@@ -204,7 +276,7 @@ export function DesignerBriefView({ brief, state, pages, panels }: { brief: Desi
         </div>
       </Section>
 
-      <div className="grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,1fr)_340px]">
+      <div className={cn("grid grid-cols-1 gap-10", brief.nutrition.length > 0 && "lg:grid-cols-[minmax(0,1fr)_340px]")}>
         <Section id="copy-h" title="Approved copy" aside="Mandatory content, as it should print">
           <dl className="divide-y divide-line border-y border-line">
             {brief.final_copy.map((c) => (
@@ -218,41 +290,61 @@ export function DesignerBriefView({ brief, state, pages, panels }: { brief: Desi
             ))}
           </dl>
         </Section>
-        <Section id="nf-h" title="Nutrition Facts" aside={pendingNutrition ? `${pendingNutrition} to confirm` : "all confirmed"}>
-          <NutritionPanel brief={brief} state={state} />
-          {pendingNutrition > 0 && (
-            <p className="mt-2 flex items-center gap-2 text-xs text-ink-muted">
-              <span className="inline-block h-3 w-5 bg-talker-soft ring-1 ring-talker" aria-hidden /> Highlighted values still need confirmation.
-            </p>
-          )}
-        </Section>
+        {brief.nutrition.length > 0 && (
+          <Section id="nf-h" title="Nutrition Facts" aside={pendingNutrition ? `${pendingNutrition} to confirm` : "all confirmed"}>
+            <NutritionPanel brief={brief} state={state} />
+            {pendingNutrition > 0 && (
+              <p className="mt-2 flex items-center gap-2 text-xs text-ink-muted">
+                <span className="inline-block h-3 w-5 bg-talker-soft ring-1 ring-talker" aria-hidden /> Highlighted values still need confirmation.
+              </p>
+            )}
+          </Section>
+        )}
       </div>
 
-      <Section id="oq-h" title="Open questions for the agency" aside={`${brief.open_questions.length} item${brief.open_questions.length === 1 ? "" : "s"}`}>
+      <Section id="oq-h" title="Open questions" aside={`${waiting.length} to decide · ${passed.length} passed on`}>
         {brief.open_questions.length === 0 ? (
           <p className="text-[14px] text-ink-muted">None. Every decision has been made.</p>
         ) : (
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-            {owners.map((o) => (
-              <div key={o}>
-                <p className="mb-2 flex items-center gap-2 text-[13px] font-bold text-ink">
-                  For <OwnerTag owner={o} />
-                </p>
-                <ol className="space-y-2">
-                  {brief.open_questions
-                    .filter((q) => q.owner === o)
-                    .map((q) => (
-                      <li key={q.issue_id} className="rounded bg-ground p-3">
-                        <p className="text-[14px] font-bold leading-snug text-ink">{q.question}</p>
-                        <p className="mt-1 line-clamp-3 text-[13px] leading-relaxed text-ink-muted">{q.detail}</p>
-                      </li>
-                    ))}
-                </ol>
-              </div>
-            ))}
+          <div className="space-y-8">
+            {waiting.length > 0 ? (
+              <QuestionGroup id="oq-open-h" title="Still to decide" lead="Decisions the brief is still waiting on." questions={waiting} />
+            ) : (
+              <p className="text-[14px] text-ink-muted">Nothing is waiting. Every decision is made or passed to the agency.</p>
+            )}
+            {passed.length > 0 && (
+              <QuestionGroup
+                id="oq-passed-h"
+                title="Passed to the agency or to check on the pack"
+                lead="Not blocking. The agency resolves these, or checks them on the printed proof."
+                questions={passed}
+              />
+            )}
           </div>
         )}
       </Section>
+
+      {decisions.length > 0 && (
+        <Section id="dec-h" title="Decisions made during review" aside={`${decisions.length} answered`}>
+          <ol className="divide-y divide-line/70 border-y border-line">
+            {decisions.map((d, i) => (
+              <li key={i} className="grid grid-cols-1 gap-x-4 gap-y-0.5 py-2 text-[13px] md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
+                <p className="font-semibold leading-snug text-ink">{d.question}</p>
+                <p className="leading-snug text-ink-2">
+                  <span className="sr-only">Answer: </span>
+                  {d.answer}
+                </p>
+                <p className="flex items-center gap-2 text-xs text-ink-muted md:justify-end">
+                  <OwnerTag owner={d.owner} />
+                  <span className="tabular-nums">
+                    {d.by} · {d.at.slice(0, 16).replace("T", " ")}
+                  </span>
+                </p>
+              </li>
+            ))}
+          </ol>
+        </Section>
+      )}
 
       <div className="space-y-3">
         <Fold title="Proof: where every value came from" count={brief.proof.length}>

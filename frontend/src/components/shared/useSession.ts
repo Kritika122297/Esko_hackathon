@@ -6,6 +6,7 @@ import { useBriefStore } from "@/store/briefStore";
 /**
  * Loads the persisted session once on mount; pages render nothing until it is known.
  * A `?session=<id>` query parameter opens that session directly (shareable demo links).
+ * While `view` is null, pages render <SessionPending/>, which shows the load failure and a retry when loading failed.
  */
 export function useSession() {
   const { sessionId, view, load } = useBriefStore();

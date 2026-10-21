@@ -358,7 +358,8 @@ def read_artwork(ex: Extraction) -> Tuple[Dict[str, List[Candidate]], ArtworkFac
         if not _inside([f], nf_box):
             by_panel.setdefault(f.panel or "?", []).append(f)
     for panel, frs in by_panel.items():
-        frs = sorted(frs, key=lambda f: (f.bbox[1], f.bbox[0]))
+        # AI OCR text has no position; it keeps its reading order (Python's sort is stable).
+        frs = sorted(frs, key=lambda f: (f.bbox[1], f.bbox[0]) if f.bbox else (0.0, 0.0))
         text = " ".join(f.text for f in frs)
         for claim, pat in CLAIM_PATTERNS:
             for m in re.finditer(pat, text, re.IGNORECASE):
@@ -393,6 +394,7 @@ def read_artwork(ex: Extraction) -> Tuple[Dict[str, List[Candidate]], ArtworkFac
     # EU-style front-of-pack reference-intake icons ("Fat 3.8g 4%") outside the nutrition panel
     ri_words = {"calories", "energy", "fat", "saturates", "sugars", "salt"}
     for panel, frs in by_panel.items():
+        frs = [f for f in frs if f.bbox]  # the icon test needs positions
         labels = [f for f in frs if f.text.strip().lower() in ri_words]
         if len({f.text.strip().lower() for f in labels}) >= 3:
             x0 = min(f.bbox[0] for f in labels) - 6

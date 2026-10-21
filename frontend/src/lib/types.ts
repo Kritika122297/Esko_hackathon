@@ -103,6 +103,27 @@ export interface Question {
   original_question?: string | null;
 }
 
+export type AnswerKind = "option" | "custom" | "agency" | "unknown" | "not_applicable";
+
+export interface AnsweredQuestion {
+  id: string;
+  question: string;
+  why: string;
+  owner: string;
+  priority: "must_answer" | "should_answer";
+  ai_worded: boolean;
+  fields: string[];
+  issue_ids: string[];
+  options: QuestionOption[];
+  custom_field?: string | null;
+  kind: AnswerKind;
+  answer: string;
+  option_id?: string | null;
+  note?: string | null;
+  at: string;
+  by: string;
+}
+
 export interface ChangeLogEntry {
   at: string;
   by: string;
@@ -135,6 +156,11 @@ export interface BriefState {
   updated_at: string;
   case: CaseType;
   market: string;
+  /** New-market case: the market the existing pack was made for. */
+  source_market?: string | null;
+  /** The brief this one was duplicated from, if any. */
+  source_session_id?: string | null;
+  category?: string;
   status: "draft" | "finalized";
   product_name: string;
   files: { name: string; kind: string; size: number; pages?: number | null }[];
@@ -142,6 +168,7 @@ export interface BriefState {
   issues: Issue[];
   passed_checks: PassedCheck[];
   questions: Question[];
+  answered_questions: AnsweredQuestion[];
   acknowledgements: Record<string, string>;
   change_log: ChangeLogEntry[];
   extraction_notes: string[];
@@ -196,6 +223,7 @@ export interface ProofRow {
 export interface DesignerBrief {
   product: string;
   market: string;
+  source_market?: string | null;
   case: string;
   status: string;
   updated_at: string;
@@ -205,9 +233,39 @@ export interface DesignerBrief {
   panels: { panel: string; label: string; bbox?: number[] | null; items: DesignItem[] }[];
   final_copy: ProofRow[];
   nutrition: { label: string; amount: string | null; dv: string | null; status: string }[];
-  open_questions: { question: string; owner: string; detail: string; issue_id: string }[];
+  open_questions: OpenQuestion[];
   proof: ProofRow[];
   change_log: ChangeLogEntry[];
+  /** Questions answered during review. */
+  decisions: Decision[];
+  /** AI overview; only filled for file exports, null in the preview. */
+  ai?: BriefSummary | null;
+}
+
+/** "open": still to decide; "agency": passed to the agency as an open question; "check": verify on the pack. */
+export type OpenQuestionStatus = "open" | "agency" | "check";
+
+export interface OpenQuestion {
+  question: string;
+  owner: string;
+  detail: string;
+  issue_id: string;
+  status: OpenQuestionStatus;
+}
+
+export interface Decision {
+  question: string;
+  answer: string;
+  owner: string;
+  kind: string;
+  by: string;
+  at: string;
+}
+
+export interface BriefSummary {
+  summary: string;
+  designer_notes: string[];
+  model: string;
 }
 
 export interface ImpactPreview {
@@ -231,6 +289,9 @@ export interface ProjectSummary {
   session_id: string;
   product_name: string;
   market: string;
+  source_market?: string | null;
+  source_session_id?: string | null;
+  category?: string;
   case: CaseType;
   status: "draft" | "finalized";
   created_at: string;
@@ -252,18 +313,51 @@ export interface ChatCitation {
   label: string;
 }
 
+export type ChatScope = "brief" | "general" | "both";
+
+/** What a prepared change would do, computed by code on a copy of the brief. */
+export interface ChatActionImpact {
+  resolved: string[];
+  introduced: string[];
+  readiness_before: number;
+  readiness_after: number;
+  blocking_before: number;
+  blocking_after: number;
+}
+
+/** A change the assistant prepared. Nothing happens until a person applies it. */
+export interface ChatAction {
+  id: string;
+  type: "edit_field" | "answer_question" | "not_applicable" | "pass_to_agency" | "undo";
+  params: Record<string, string>;
+  label: string;
+  detail?: string | null;
+  impact?: ChatActionImpact | null;
+  status: "proposed" | "applied" | "cancelled" | "failed";
+  result?: string | null;
+}
+
+export interface ChatActionResult {
+  action: ChatAction;
+  view: SessionView | null;
+}
+
 export interface ChatAnswer {
   answer: string;
+  scope?: ChatScope;
   citations: ChatCitation[];
   suggestions: string[];
+  actions?: ChatAction[];
 }
 
 export interface ChatMessageOut {
   role: "user" | "assistant";
   text: string;
   at: string;
+  scope?: ChatScope;
   citations: ChatCitation[];
   suggestions: string[];
+  actions?: ChatAction[];
 }
 
 export interface RulePack {
@@ -288,6 +382,24 @@ export interface ChecklistField {
   severity: string;
   clauses: string[];
   or?: string[];
+}
+
+/** Product categories, mirroring backend/app/guidelines/categories.json. The id is stored; the label is shown. */
+export const PRODUCT_CATEGORIES = [
+  { id: "food", label: "Food & beverage" },
+  { id: "pet_food", label: "Pet food" },
+  { id: "cosmetics", label: "Cosmetics & personal care" },
+  { id: "pharma", label: "Pharmaceuticals" },
+  { id: "medical_device", label: "Medical devices" },
+  { id: "household", label: "Household & cleaning products" },
+  { id: "retail", label: "Retail & e-commerce goods" },
+  { id: "industrial", label: "Industrial & commercial" },
+] as const;
+
+export type ProductCategory = (typeof PRODUCT_CATEGORIES)[number]["id"];
+
+export function categoryLabel(id?: string | null): string {
+  return PRODUCT_CATEGORIES.find((c) => c.id === id)?.label ?? id ?? "";
 }
 
 export interface StandardsOptions {

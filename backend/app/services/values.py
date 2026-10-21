@@ -10,28 +10,55 @@ from app.services.catalog import NUTRIENT_BY_KEY
 G_PER_OZ = 28.349523125
 
 
-def parse_amount(text: Optional[str]) -> Tuple[Optional[float], Optional[str]]:
-    """'15g' -> (15.0, 'g'); '2.2%*' -> (2.2, '%'); '85' -> (85.0, None)."""
+MASS = {"mcg": 1e-6, "mg": 1e-3, "g": 1.0, "kg": 1000.0, "oz": G_PER_OZ, "lb": 453.59237}
+_AMOUNT = re.compile(r"(\d+(?:\.\d+)?)\s*(fl\.?\s*oz|mcg|mg|kg|g|kcal|kj|oz|lbs?|ml|l|%)?(?![a-z])")
+_LB_OZ = re.compile(r"(\d+(?:\.\d+)?)\s*lbs?\.?\s+(\d+(?:\.\d+)?)\s*oz\b")
+
+
+def _normalise_numbers(text: str) -> str:
+    """'1,000 g' -> '1000 g' (thousands); '3,5 g' -> '3.5 g' (European decimal comma)."""
+    t = re.sub(r"(\d),(\d{3})(?!\d)", r"\1\2", text)
+    return re.sub(r"(\d),(\d)", r"\1.\2", t)
+
+
+def amounts(text: Optional[str]) -> List[Tuple[float, Optional[str]]]:
+    """Every amount in the text, in order. '1 LB 4 OZ (567g)' -> [(20.0, 'oz'), (567.0, 'g')]; 'fl oz' is volume."""
     if text is None:
-        return None, None
-    t = str(text).strip().lower().replace("µg", "mcg").replace(",", "")
-    m = re.search(r"(<\s*)?(\d+(?:\.\d+)?)\s*(mcg|mg|kg|g|kcal|kj|oz|lb|ml|l|%)?", t)
-    if not m:
-        return None, None
-    return float(m.group(2)), m.group(3)
+        return []
+    t = _normalise_numbers(str(text).strip().lower().replace("µg", "mcg"))
+    found: List[Tuple[int, float, Optional[str]]] = []
+    for m in _LB_OZ.finditer(t):
+        found.append((m.start(), float(m.group(1)) * 16 + float(m.group(2)), "oz"))
+    t = _LB_OZ.sub(lambda m: " " * len(m.group(0)), t)  # same length, so positions stay comparable
+    for m in _AMOUNT.finditer(t):
+        unit = m.group(2)
+        if unit:
+            unit = "fl oz" if unit.startswith("fl") else ("lb" if unit.startswith("lb") else unit)
+        found.append((m.start(), float(m.group(1)), unit))
+    return [(v, u) for _, v, u in sorted(found)]
+
+
+def parse_amount(text: Optional[str]) -> Tuple[Optional[float], Optional[str]]:
+    """'15g' -> (15.0, 'g'); '2.2%*' -> (2.2, '%'); '85' -> (85.0, None); '3,5 g' -> (3.5, 'g')."""
+    found = amounts(text)
+    return found[0] if found else (None, None)
 
 
 def amount_in(text: Optional[str], unit: str) -> Optional[float]:
-    """Amount converted to the requested unit when the text states a compatible unit."""
-    value, u = parse_amount(text)
-    if value is None:
+    """Amount converted to the requested unit. A figure stated in that unit wins over a converted one:
+    'NET WT 16.9 OZ (480g)' in grams is the declared 480, not 16.9 oz converted."""
+    found = amounts(text)
+    if not found:
         return None
-    u = u or unit
-    mass = {"mcg": 1e-6, "mg": 1e-3, "g": 1.0, "kg": 1000.0, "oz": G_PER_OZ, "lb": 453.59237}
-    if u in mass and unit in mass:
-        return value * mass[u] / mass[unit]
-    if u == unit:
-        return value
+    for value, u in found:
+        if u == unit:
+            return value
+    for value, u in found:
+        u = u or unit
+        if u in MASS and unit in MASS:
+            return value * MASS[u] / MASS[unit]
+        if u == unit:
+            return value
     return None
 
 

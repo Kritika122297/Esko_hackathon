@@ -27,9 +27,10 @@ def options() -> dict:
 
 
 @router.post("/company-rulebook")
-async def company_rulebook(file: UploadFile = File(...)) -> dict:
-    """Reads a company rulebook and proposes rules, each quoting the sentence it came from. Nothing is applied yet."""
-    data = await file.read()
+def company_rulebook(file: UploadFile = File(...)) -> dict:
+    """Reads a company rulebook and proposes rules, each quoting the sentence it came from. Nothing is applied yet.
+    A plain (sync) route: FastAPI runs it in a worker thread, so the AI call does not stall other requests."""
+    data = file.file.read(8 * 1024 * 1024 + 1)  # never read more than the limit
     if len(data) > 8 * 1024 * 1024:
         raise HTTPException(status_code=413, detail="The rulebook is larger than 8 MB.")
     try:

@@ -41,8 +41,9 @@ Other tools summarise files; BriefForge checks them. All four of these are core 
 - Reads dieline panels from crease lines and guide labels, filters printing-guide text, and detects text hidden under later artwork.
 - About 30 deterministic checks (nutrition math, %DV, serving math, ingredient order, claims vs ingredients, allergen wording, US label rules, barcode check digit, artwork leftovers).
 - Change Impact Simulator: previews what an edit would resolve or introduce, and where else the old value appears, before saving.
-- Optional AI through a provider-neutral layer (currently Gemini `gemini-3.8-flash`): a vision cross-check of printed values and a second opinion on claims. All AI output is validated by code. The product must work fully with AI switched off.
-- Market rules exist only for the US (FDA). An EU option exists in the UI, but EU rules are not implemented.
+- Optional AI through a provider-neutral layer (Gemini or any OpenAI-compatible API such as Groq, set per job): vision cross-check of printed values, OCR of scans, rule and claims review, plain-language question wording, company-rulebook import, the assistant, and the export summary. All AI output is validated by code. The product must work fully with AI switched off.
+- Label rules come from draft rule packs for the US, the EU (and FR, DE, ES, IT, NL) and India, per product category (food, pet food, cosmetics, medicines, medical devices, household). Retail and industrial goods run on general checks only. The packs cite their sources but are drafts that need Legal review.
+- The three situations behave differently: a pack refresh compares artwork and sheet; a new-market adaptation lets the new market's sheet win and checks carried-over copy; a new product treats any artwork as a reference only.
 - Terminology: field statuses are Confirmed / Needs review / Missing; issue severities are Blocking / Warning / Info; issue kinds are Definite error / Likely problem / Needs human check; design actions are Keep / Change / Add / Remove / Unknown.
 - Undecided: product name and tagline are current but not confirmed as binding (see Brand Commitments).
 
@@ -54,7 +55,7 @@ Other tools summarise files; BriefForge checks them. All four of these are core 
 ## Evidence on Hand
 
 - Esko-provided sample files in `samples/`: `DancingFish_Granola_Berry_US_Carton.pdf` and `DancingFish_Granola_BerryCrunch_US_Content_Sheet.xlsx`. These are the only real evidence.
-- `backend/tests/expected_findings.json`: the planted errors in the sample and the check that catches each; the test suite (38 tests) proves them.
+- `backend/tests/expected_findings.json`: the planted errors in the sample and the check that catches each; the backend test suite (115 tests) proves them.
 - **Must not be fabricated:** customers, testimonials, usage numbers, accuracy percentages, time-saved claims, pricing, deployments or partnerships.
 
 ## Product Principles

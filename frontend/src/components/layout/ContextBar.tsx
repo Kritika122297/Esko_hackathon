@@ -57,7 +57,9 @@ export function ContextBar() {
       <div className="mx-auto flex w-full max-w-[1600px] flex-wrap items-center justify-between gap-x-6 gap-y-2 px-4 py-3 md:px-6">
         <div className="flex min-w-0 flex-wrap items-center gap-2">
           <p className="truncate text-[17px] font-bold text-ink">{s.product_name}</p>
-          <span className="rounded border border-line bg-stock px-2 py-0.5 text-xs font-semibold">Market {s.market}</span>
+          <span className="rounded border border-line bg-stock px-2 py-0.5 text-xs font-semibold">
+            Market {s.source_market ? `${s.source_market} → ${s.market}` : s.market}
+          </span>
           <span className="rounded border border-line bg-stock px-2 py-0.5 text-xs font-semibold">{CASE_TEXT[s.case] ?? s.case}</span>
           <span className={s.status === "finalized" ? "rounded bg-rail px-2 py-0.5 text-xs font-semibold text-white" : "rounded border border-line bg-stock px-2 py-0.5 text-xs font-semibold"}>
             {s.status === "finalized" ? "Finalized" : "Draft"}

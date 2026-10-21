@@ -3,19 +3,31 @@
 from __future__ import annotations
 
 import json
+import logging
+import os
 import re
 import shutil
 import uuid
+from contextlib import contextmanager
 from pathlib import Path
-from threading import RLock
-from typing import Dict, Optional, Tuple
+from threading import Lock, RLock
+from typing import Dict, Iterator, Optional, Tuple
 
 from app.config import settings
 from app.models.brief import BriefState
 from app.models.extraction import Extraction
 from app.services.checks import CheckContext
 
+logger = logging.getLogger(__name__)
+
 _SAFE_ID = re.compile(r"^[a-f0-9]{12}$")
+
+
+def _write_atomic(path: Path, text: str) -> None:
+    """Writes to a temporary file and swaps it in, so a crash never leaves a half-written state file."""
+    tmp = path.with_name(f".{path.name}.tmp")
+    tmp.write_text(text, encoding="utf-8")
+    os.replace(tmp, path)
 
 
 class SessionStore:
@@ -23,6 +35,8 @@ class SessionStore:
         self.root = root
         self._lock = RLock()
         self._cache: Dict[str, Tuple[BriefState, CheckContext, Extraction]] = {}
+        self._session_locks: Dict[str, Lock] = {}
+        self.broken: Dict[str, str] = {}  # session id -> why it could not be read
 
     def new_id(self) -> str:
         return uuid.uuid4().hex[:12]
@@ -32,14 +46,24 @@ class SessionStore:
             raise KeyError(sid)
         return self.root / sid
 
+    @contextmanager
+    def lock(self, sid: str) -> Iterator[None]:
+        """One change at a time per brief. Cached states are shared objects mutated in place, so two requests
+        on the same brief (a double click, an edit during an upload) must not interleave."""
+        with self._lock:
+            lk = self._session_locks.setdefault(sid, Lock())
+        with lk:
+            yield
+
     def save(self, state: BriefState, ctx: CheckContext, ex: Extraction) -> None:
         with self._lock:
             d = self.dir(state.session_id)
             d.mkdir(parents=True, exist_ok=True)
-            (d / "state.json").write_text(state.model_dump_json(indent=1), encoding="utf-8")
-            (d / "context.json").write_text(ctx.model_dump_json(), encoding="utf-8")
-            (d / "extraction.json").write_text(ex.model_dump_json(), encoding="utf-8")
+            _write_atomic(d / "context.json", ctx.model_dump_json())
+            _write_atomic(d / "extraction.json", ex.model_dump_json())
+            _write_atomic(d / "state.json", state.model_dump_json(indent=1))  # last: it marks the session complete
             self._cache[state.session_id] = (state, ctx, ex)
+            self.broken.pop(state.session_id, None)
 
     def load(self, sid: str) -> Optional[Tuple[BriefState, CheckContext, Extraction]]:
         with self._lock:
@@ -51,12 +75,16 @@ class SessionStore:
                 return None
             if not (d / "state.json").exists():
                 return None
-            state = BriefState.model_validate(json.loads((d / "state.json").read_text(encoding="utf-8")))
-            ctx = CheckContext.model_validate(json.loads((d / "context.json").read_text(encoding="utf-8")))
-            ex = Extraction.model_validate(json.loads((d / "extraction.json").read_text(encoding="utf-8")))
+            try:
+                state = BriefState.model_validate(json.loads((d / "state.json").read_text(encoding="utf-8")))
+                ctx = CheckContext.model_validate(json.loads((d / "context.json").read_text(encoding="utf-8")))
+                ex = Extraction.model_validate(json.loads((d / "extraction.json").read_text(encoding="utf-8")))
+            except (OSError, ValueError) as err:  # damaged or from an incompatible version: skip, do not break others
+                logger.warning("Session %s could not be read: %s", sid, str(err)[:200])
+                self.broken[sid] = "The saved brief is damaged or from an older version and cannot be opened."
+                return None
             self._cache[sid] = (state, ctx, ex)
             return self._cache[sid]
-
 
     def load_chat(self, sid: str) -> list:
         path = self.dir(sid) / "chat.json"
@@ -69,7 +97,7 @@ class SessionStore:
 
     def save_chat(self, sid: str, messages: list) -> None:
         with self._lock:
-            (self.dir(sid) / "chat.json").write_text(json.dumps(messages, ensure_ascii=False), encoding="utf-8")
+            _write_atomic(self.dir(sid) / "chat.json", json.dumps(messages, ensure_ascii=False))
 
     def list_ids(self) -> list[str]:
         if not self.root.exists():
@@ -79,6 +107,7 @@ class SessionStore:
     def delete(self, sid: str) -> None:
         with self._lock:
             self._cache.pop(sid, None)
+            self.broken.pop(sid, None)
             shutil.rmtree(self.dir(sid), ignore_errors=True)
 
 

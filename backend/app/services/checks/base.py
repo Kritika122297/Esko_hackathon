@@ -25,7 +25,8 @@ class CheckContext(BaseModel):
 class Ctx:
     def __init__(self, state: BriefState, saved: CheckContext):
         self.state = state
-        self.art = saved.artwork
+        # New product: any artwork is a reference (often a sibling product), so artwork checks do not apply.
+        self.art = ArtworkFacts() if state.case == "new_product" else saved.artwork
         self.sheet = saved.sheet
         self.column = saved.nutrition_column
         self.issues: List[Issue] = []

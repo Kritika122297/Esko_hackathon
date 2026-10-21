@@ -73,13 +73,13 @@ class LLM:
             return bool(self.key) or "localhost" in self.base_url or "127.0.0.1" in self.base_url
         return False
 
-    def json(self, prompt: str, images: Optional[List[bytes]] = None) -> Any:
+    def json(self, prompt: str, images: Optional[List[bytes]] = None, temperature: float = 0) -> Any:
         if not self.enabled:
             raise LLMError("AI provider not configured")
         call = self._gemini if self.provider == "gemini" else self._openai
         for attempt in (1, 2):  # one retry for a busy provider or an empty/cut-off reply
             try:
-                return call(prompt, images or [])
+                return call(prompt, images or [], temperature)
             except Exception as err:
                 transient = any(code in str(err) for code in ("503", "429", "500", "502", "504"))                     or "did not return JSON" in str(err) or isinstance(err, (httpx.TimeoutException, httpx.TransportError))
                 if attempt == 2 or not transient:
@@ -87,7 +87,7 @@ class LLM:
                 logger.info("LLM %s retrying after: %s", self.role, str(err)[:80])
                 time.sleep(2)
 
-    def _gemini(self, prompt: str, images: List[bytes]) -> Any:
+    def _gemini(self, prompt: str, images: List[bytes], temperature: float = 0) -> Any:
         from google import genai
         from google.genai import types
 
@@ -97,16 +97,16 @@ class LLM:
         resp = client.models.generate_content(
             model=self.model,
             contents=parts,
-            config=types.GenerateContentConfig(response_mime_type="application/json", temperature=0),
+            config=types.GenerateContentConfig(response_mime_type="application/json", temperature=temperature),
         )
         return _parse_json(resp.text or "")
 
-    def _openai(self, prompt: str, images: List[bytes]) -> Any:
+    def _openai(self, prompt: str, images: List[bytes], temperature: float = 0) -> Any:
         content: List[dict] = [{"type": "text", "text": prompt}]
         for img in images:
             content.append({"type": "image_url",
                             "image_url": {"url": "data:image/png;base64," + base64.b64encode(img).decode()}})
-        body = {"model": self.model, "temperature": 0, "messages": [{"role": "user", "content": content}],
+        body = {"model": self.model, "temperature": temperature, "messages": [{"role": "user", "content": content}],
                 "response_format": {"type": "json_object"}, "max_tokens": settings.LLM_MAX_TOKENS}
         if "gpt-oss" in self.model:  # reasoning models: keep thinking short so the answer is not cut off
             body["reasoning_effort"] = "low"
@@ -130,6 +130,16 @@ def get_llm(role: str) -> LLM:
     if role not in _by_role:
         _by_role[role] = LLM(role)
     return _by_role[role]
+
+
+def chain(first: str = "chat") -> List[LLM]:
+    """Every configured connection, `first` role first, without duplicates. Free tiers limit tokens per minute
+    per model, so a job whose model is busy can move to an idle one."""
+    out: List[LLM] = []
+    for m in (get_llm(first), *(get_llm(r) for r in ROLES if r != first), llm):
+        if m.enabled and all((m.provider, m.model, m.key, m.base_url) != (o.provider, o.model, o.key, o.base_url) for o in out):
+            out.append(m)
+    return out
 
 
 def any_enabled() -> bool:

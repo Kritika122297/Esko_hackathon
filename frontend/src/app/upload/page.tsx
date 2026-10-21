@@ -7,14 +7,29 @@ import { Button } from "@/components/ui/button";
 import { FileDropzone } from "@/components/upload/FileDropzone";
 import { ErrorBanner, PageHead, fmtElapsed } from "@/components/shared/Notice";
 import { api } from "@/lib/api";
-import { CaseType, ChecklistField, RulebookProposal, RulesSummary, StandardsOptions } from "@/lib/types";
+import { CaseType, ChecklistField, PRODUCT_CATEGORIES, RulebookProposal, RulesSummary, StandardsOptions } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useBriefStore } from "@/store/briefStore";
 
-const CASES: { id: CaseType; title: string; text: string }[] = [
-  { id: "update", title: "Refresh an existing pack", text: "Current artwork plus content sheet. Compare them and update." },
-  { id: "new_market", title: "Adapt to a new market", text: "An existing pack from another country, made ready for this one." },
-  { id: "new_product", title: "New product", text: "Spec sheet or notes only; there is no artwork yet." },
+const CASES: { id: CaseType; title: string; text: string; effect: string }[] = [
+  {
+    id: "update",
+    title: "Refresh an existing pack",
+    text: "Current artwork plus content sheet. Compare them and update.",
+    effect: "Where the artwork and the sheet disagree, you are asked which is right.",
+  },
+  {
+    id: "new_market",
+    title: "Adapt to a new market",
+    text: "An existing pack from another country, made ready for this one.",
+    effect: "The new market's sheet wins; differences from the old pack become design changes. Copy only the old pack has is checked with you.",
+  },
+  {
+    id: "new_product",
+    title: "New product",
+    text: "Spec sheet or notes only; there is no artwork yet.",
+    effect: "Any artwork is a reference only: its text is not used and every item is new copy to place.",
+  },
 ];
 
 const STAGES = [
@@ -209,12 +224,18 @@ function Processing() {
 export default function UploadPage() {
   const router = useRouter();
   const { start, busy, errorDetail, clearError, load } = useBriefStore();
-  const duplicate = (errorDetail as { existing?: string; product_name?: string } | null)?.existing
-    ? (errorDetail as { existing: string; product_name: string })
-    : null;
   const [files, setFiles] = useState<File[]>([]);
+  // The duplicate banner belongs to an upload made on this page with these files, never to an older error.
+  const [attempted, setAttempted] = useState(false);
+  const duplicate =
+    attempted && files.length > 0 && (errorDetail as { existing?: string; product_name?: string } | null)?.existing
+      ? (errorDetail as { existing: string; product_name: string })
+      : null;
+  // Changing the files starts a new attempt.
+  useEffect(() => setAttempted(false), [files]);
   const [caseType, setCaseType] = useState<CaseType>("update");
   const [market, setMarket] = useState("US");
+  const [sourceMarket, setSourceMarket] = useState("");
   const [category, setCategory] = useState("food");
   const [chosen, setChosen] = useState<string[]>([]);
   const [options, setOptions] = useState<StandardsOptions | null>(null);
@@ -256,7 +277,9 @@ export default function UploadPage() {
   const company = proposal ? { filename: proposal.filename, rules: proposal.rules.filter((r) => accepted.has(r.id)) } : undefined;
 
   const analyze = async (allowDuplicate = false) => {
-    const ok = await start(() => api.upload(files, caseType, market, allowDuplicate, category, chosen, company), BUSY_LABEL);
+    if (!files.length) return;
+    setAttempted(true);
+    const ok = await start(() => api.upload(files, caseType, market, allowDuplicate, category, chosen, company, sourceMarket), BUSY_LABEL);
     if (ok) router.push("/analysis");
   };
   const openExisting = async (sid: string) => {
@@ -310,10 +333,32 @@ export default function UploadPage() {
                   </span>
                 </span>
                 <span className="text-[13px] leading-snug text-ink-muted">{c.text}</span>
+                <span className="mt-1 border-t border-line pt-1.5 text-xs leading-snug text-ink-2">{c.effect}</span>
               </label>
             ))}
           </div>
           <div className="mt-3 flex flex-wrap items-center gap-3">
+            {caseType === "new_market" && (
+              <>
+                <label htmlFor="source-market" className="text-sm font-semibold text-ink">
+                  Current pack is for
+                </label>
+                <select
+                  id="source-market"
+                  value={sourceMarket}
+                  onChange={(e) => setSourceMarket(e.target.value)}
+                  className="h-9 w-full rounded border border-line-strong bg-stock px-2 text-sm font-medium sm:w-auto"
+                >
+                  <option value="">Not sure</option>
+                  {(options?.markets ?? []).filter((m) => m.code !== market).map((m) => (
+                    <option key={m.code} value={m.code}>
+                      {m.label}
+                    </option>
+                  ))}
+                </select>
+                <span aria-hidden className="text-ink-faint">→</span>
+              </>
+            )}
             <label htmlFor="market" className="text-sm font-semibold text-ink">
               Target market
             </label>
@@ -329,7 +374,7 @@ export default function UploadPage() {
               Product category
             </label>
             <select id="category" value={category} onChange={(e) => setCategory(e.target.value)} className="h-9 w-full rounded border border-line-strong bg-stock px-2 text-sm font-medium sm:w-auto">
-              {(options?.categories ?? [{ id: "food", label: "Food & beverage", has_rules: true }]).map((c) => (
+              {(options?.categories ?? PRODUCT_CATEGORIES.map((c) => ({ ...c, has_rules: true }))).map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.label}
                   {c.has_rules ? "" : " (general checks only)"}

@@ -27,29 +27,88 @@ ALLERGEN_WORDS: Dict[str, Tuple[str, str]] = {
 EU_ALLERGEN_WORDING = ("cereals containing gluten", "may contain nuts", "contain nuts")
 
 
+# Plant products named after dairy; their "milk", "butter" or "cream" is not animal-derived or a milk allergen.
+PLANT_LOOKALIKES = re.compile(
+    r"\b(?:coconut|almond|oat|soy|soya|rice|cashew|hemp|pea|plant|nut|peanut|hazelnut|macadamia|apple|cocoa|cacao|"
+    r"shea|mango|kokum|sunflower|seed)\s+(?:milk|butter|cream|drink)s?\b|\bcream of tartar\b|\bmilk thistle\b|"
+    r"\bbutter(?:nut|milk\s+squash)\b", re.I)
+SPELLINGS = {"soy": r"soy(?:a|beans?)?", "egg": r"eggs?", "fish": r"fish(?:es)?", "gelatin": r"gelatine?s?",
+             "casein": r"casein(?:ates?)?", "milk": r"milk(?:fat|s)?", "butter": r"butter(?:fat|oil|s)?",
+             "anchovy": r"anchov(?:y|ies)", "lactose": r"lactose", "whey": r"wheys?", "cream": r"creams?"}
+
+
+def _word_re(word: str) -> str:
+    """Whole word with its plural, so 'egg' matches 'eggs' but not 'eggplant'."""
+    return rf"\b(?:{SPELLINGS.get(word) or re.escape(word) + '(?:s|es)?'})\b"
+
+
+def _without_lookalikes(text: str) -> str:
+    return PLANT_LOOKALIKES.sub(" ", text)
+
+
 def _has(word: str, text: str) -> bool:
-    return re.search(rf"\b{re.escape(word)}", text.lower()) is not None
+    return re.search(_word_re(word), _without_lookalikes(text.lower())) is not None
 
 
 def _allergens_in(text: str) -> List[str]:
     found = []
     low = text.lower()
+    plain = _without_lookalikes(low)
     for word, (name, _) in ALLERGEN_WORDS.items():
-        if re.search(rf"\b{word}", low) and name not in found:
+        # 'almond milk' still contains almonds; only the dairy words skip plant look-alikes.
+        hay = plain if word == "milk" else low
+        if re.search(_word_re(word), hay) and name not in found:
             found.append(name)
     return found
 
 
+def _decided(ctx: Ctx, key: str) -> bool:
+    f = ctx.f(key)
+    return bool(f and f.user_confirmed)
+
+
 def _claim_sources(ctx: Ctx, pattern: str) -> List[SourceRef]:
+    """Where the brief makes a claim. Once a reviewer has decided a field, only the decided value counts:
+    what the old artwork still prints is then a designer task (see _removed_claims), not an open question."""
     out: List[SourceRef] = []
-    for claim, srcs in ctx.art.claims.items():
-        if re.search(pattern, claim, re.I):
-            out += srcs
+    if not _decided(ctx, "claims"):
+        for claim, srcs in ctx.art.claims.items():
+            if re.search(pattern, claim, re.I):
+                out += srcs
     for key in ("claims", "dietary_info"):
+        if _decided(ctx, key):
+            value = ctx.v(key) or ""
+            if re.search(pattern, value, re.I):
+                out.append(SourceRef(file="Reviewer", kind="user", snippet=value[:200]))
+            continue
         for value, src in ctx.all_values(key):
             if re.search(pattern, value, re.I) and src.kind != "pdf":
                 out.append(src)
     return out
+
+
+REMOVABLE_CLAIMS = ((r"\bvegan", "vegan"), (r"no\s+added\s+sugar", "No Added Sugar"), (r"gluten[\s-]*free", "gluten-free"))
+
+
+def _removed_claims(ctx: Ctx) -> None:
+    """A claim the reviewer took out of the claim list but the current artwork still prints: tell the designer."""
+    if not _decided(ctx, "claims"):
+        return
+    kept = (ctx.v("claims") or "") + " " + (ctx.v("dietary_info") or "")
+    for pattern, name in REMOVABLE_CLAIMS:
+        if re.search(pattern, kept, re.I):
+            continue
+        printed = [s for c, srcs in ctx.art.claims.items() if re.search(pattern, c, re.I) for s in srcs]
+        printed += [src for v, src in ctx.all_values("claims") + ctx.all_values("dietary_info")
+                    if src.kind == "pdf" and re.search(pattern, v, re.I)]
+        if printed:
+            slug = re.sub(r"[^a-z]+", "_", name.lower()).strip("_")
+            ctx.add("claim.removed", slug, severity="info", kind="definite", category="claim",
+                    title=f"Remove the {name} claim from the artwork",
+                    description=f"The approved claim list no longer includes '{name}', but the current artwork still "
+                                "shows it (as text or a logo).",
+                    suggestion=f"Remove every '{name}' mention and mark from the pack.",
+                    fields=["claims"], evidence=printed[:3], owner="Agency", design_action="remove", resolution="design")
 
 
 def _ingredient_lists(ctx: Ctx) -> List[Tuple[str, SourceRef]]:
@@ -65,9 +124,9 @@ def _matches(words, lists) -> Dict[str, List[SourceRef]]:
     out: Dict[str, List[SourceRef]] = {}
     for text, src in lists:
         for item in split_ingredients(text):
-            low = item.lower()
+            low = _without_lookalikes(item.lower())
             for w in words:
-                if re.search(rf"\b{re.escape(w)}", low):
+                if re.search(_word_re(w), low):
                     out.setdefault(item if "(" in item else w, []).append(src)
                     break
     return out
@@ -78,6 +137,7 @@ def check_claims(ctx: Ctx) -> None:
     claims_text = (ctx.v("claims") or "")
     vegan_src = _claim_sources(ctx, r"\bvegan")
     nas_src = _claim_sources(ctx, r"no\s+added\s+sugar")
+    _removed_claims(ctx)
 
     animal = _matches(ANIMAL_DERIVED, lists)
     if vegan_src and animal:

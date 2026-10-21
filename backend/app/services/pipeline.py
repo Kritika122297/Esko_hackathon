@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import re
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import List, Tuple
@@ -33,21 +34,39 @@ def read_files(paths: List[Tuple[Path, str]], session_dir: Path) -> Extraction:
         except Exception as err:  # a broken file must not stop the others
             logger.exception("Failed to read %s", name)
             ex = Extraction()
-            ex.notes.append(f"{name}: could not be read ({err}).")
+            ex.notes.append(f"{name}: could not be read ({_plain_error(err)}).")
             parts.append(ex)
     return merge_extractions(parts)
+
+
+def _plain_error(err: Exception) -> str:
+    """The reason without server folder paths (they are logged, not shown)."""
+    text = re.sub(r"(?:[A-Za-z]:)?[\\/][^\s'\"]*[\\/]([^\\/\s'\"]+)", r"\1", str(err))
+    return " ".join(text.split())[:160] or err.__class__.__name__
 
 
 def analyze(state: BriefState, ex: Extraction) -> CheckContext:
     sheet_cands, sheet = read_sheets(ex)
     art_cands, art = read_artwork(ex)
     fields, column = build_fields(sheet_cands, sheet, art_cands, art)
+    kept = 0
+    if state.case == "new_product" and art.has_artwork:
+        # The artwork of a new product is a reference (a sibling or a mood board), not its copy. What only the
+        # artwork says stays visible as an alternative, but does not fill the brief.
+        for f in fields:
+            if f.value and f.sources and all(s.kind in ("pdf", "ai") for s in f.sources):
+                f.notes.append(f"Seen on the reference artwork: '{f.value[:120]}'. Not used, because this is a new product.")
+                f.value, f.sources = None, []
+                kept += 1
     state.fields = fields
     state.extraction_notes = list(ex.notes)
+    if state.case == "new_product" and art.has_artwork and kept:
+        state.extraction_notes.append(f"New product: {plural(kept, 'value')} seen only on the reference artwork "
+                                      "were not used. Pick one in the workbench if it is right.")
     if column:
         state.extraction_notes.append(f"Nutrition values taken from content-sheet column '{column}' "
                                       "(the column that matches the artwork).")
-    if art.has_artwork and not art.front_panel_id:
+    if art.has_artwork and not art.front_panel_id and state.case != "new_product":
         state.extraction_notes.append("Front panel (PDP) could not be identified; placement checks were skipped.")
     market = state.value("market")
     if market and state.market == "US" and market.lower() not in ("us", "usa", "united states"):
@@ -61,7 +80,7 @@ def recompute(state: BriefState, saved: CheckContext) -> BriefState:
     required = requirements(state.market, state.category, state.standards or None, state.company_clauses)
     for f in state.fields:
         f.mandatory = f.key in required
-    art = saved.artwork.has_artwork
+    art = saved.artwork.has_artwork and state.case != "new_product"  # a reference artwork is not searched for copy
     for f in state.fields:
         if f.value:
             f.absence = None
@@ -100,7 +119,9 @@ def recompute(state: BriefState, saved: CheckContext) -> BriefState:
 
     name = state.value("product_name") or state.value("statement_of_identity")
     brand = state.value("brand")
-    if name:
+    if state.name_override:
+        state.product_name = state.name_override
+    elif name:
         state.product_name = f"{brand} {name}" if brand and brand.lower() not in name.lower() else name
 
     state.questions = build_questions(state, saved)

@@ -107,7 +107,7 @@ def run_ai(state: BriefState, saved: CheckContext, ex: Extraction, session_dir: 
 
 def vision_crosscheck(state: BriefState, saved: CheckContext, ex: Extraction, session_dir: Path):
     pdf_pages = [p for p in ex.pages if p.file.lower().endswith(".pdf")]
-    if not pdf_pages:
+    if not pdf_pages or state.case == "new_product":  # a reference artwork is not cross-checked
         return None
     page = pdf_pages[0]
     rows: List[str] = []

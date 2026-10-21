@@ -1,5 +1,5 @@
 import {
-  CaseType, ChatAnswer, ChatMessageOut, ChecklistField, DesignerBrief, ImpactPreview, ProjectSummary, RulesSummary, SessionView,
+  CaseType, ChatActionResult, ChatAnswer, ChatMessageOut, ChecklistField, DesignerBrief, ImpactPreview, ProjectSummary, RulesSummary, SessionView,
   StandardsOptions, RulebookProposal,
 } from "./types";
 
@@ -16,7 +16,7 @@ export class ApiError extends Error {
   }
 }
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
+async function send(path: string, init?: RequestInit): Promise<Response> {
   let res: Response;
   try {
     res = await fetch(`${API}${path}`, init);
@@ -36,8 +36,30 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     }
     throw new ApiError(res.status, message, detail);
   }
+  return res;
+}
+
+async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const res = await send(path, init);
   return (await res.json()) as T;
 }
+
+/** File name from a Content-Disposition header (RFC 5987 `filename*` first, then `filename`). */
+function dispositionName(header: string | null): string | null {
+  if (!header) return null;
+  const star = header.match(/filename\*\s*=\s*(?:UTF-8|utf-8)''([^;]+)/);
+  if (star) {
+    try {
+      return decodeURIComponent(star[1].trim().replace(/^"|"$/g, ""));
+    } catch {
+      /* fall through to the plain name */
+    }
+  }
+  const plain = header.match(/filename\s*=\s*("([^"]*)"|[^;]+)/);
+  return plain ? (plain[2] ?? plain[1]).trim() : null;
+}
+
+export type AnswerBody = { kind?: "unknown" | "not_applicable"; option_id?: string; custom_value?: string; note?: string };
 
 const json = (body: unknown): RequestInit => ({
   method: "POST",
@@ -65,11 +87,12 @@ export const api = {
   },
 
   upload: (files: File[], caseType: CaseType, market: string, allowDuplicate = false, category = "food", standards: string[] = [],
-           company?: { filename: string; rules: object[] }) => {
+           company?: { filename: string; rules: object[] }, sourceMarket = "") => {
     const form = new FormData();
     files.forEach((f) => form.append("files", f));
     form.append("case", caseType);
     form.append("market", market);
+    if (caseType === "new_market" && sourceMarket) form.append("source_market", sourceMarket);
     form.append("category", category);
     form.append("standards", standards.join(","));
     if (company && company.rules.length) {
@@ -79,6 +102,11 @@ export const api = {
     form.append("allow_duplicate", String(allowDuplicate));
     return request<SessionView>("/sessions", { method: "POST", body: form });
   },
+
+  /** A new brief for another market from this brief's files, checked against that market's rules. */
+  duplicateMarket: (sid: string, targetMarket: string, category?: string, productNameOverride?: string) =>
+    request<SessionView>(`/sessions/${sid}/duplicate-market`,
+      json({ target_market: targetMarket, category: category || null, product_name_override: productNameOverride || null })),
 
   addFiles: (sid: string, files: File[]) => {
     const form = new FormData();
@@ -107,8 +135,11 @@ export const api = {
   confirmField: (sid: string, key: string) =>
     request<SessionView>(`/sessions/${sid}/fields/${key}/confirm`, json({})),
 
-  answer: (sid: string, qid: string, body: { option_id?: string; custom_value?: string; note?: string }) =>
+  answer: (sid: string, qid: string, body: AnswerBody) =>
     request<SessionView>(`/sessions/${sid}/questions/${encodeURIComponent(qid)}/answer`, json(body)),
+
+  changeAnswer: (sid: string, qid: string, body: AnswerBody) =>
+    request<SessionView>(`/sessions/${sid}/questions/${encodeURIComponent(qid)}/change`, json(body)),
 
   acknowledge: (sid: string, iid: string, note: string) =>
     request<SessionView>(`/sessions/${sid}/issues/${encodeURIComponent(iid)}/acknowledge`, json({ note })),
@@ -124,10 +155,20 @@ export const api = {
 
   chat: (sid: string, message: string) => request<ChatAnswer>(`/sessions/${sid}/chat`, json({ message })),
   chatHistory: (sid: string) => request<ChatMessageOut[]>(`/sessions/${sid}/chat`),
+  applyChatAction: (sid: string, aid: string) =>
+    request<ChatActionResult>(`/sessions/${sid}/chat/actions/${aid}/apply`, json({})),
+  cancelChatAction: (sid: string, aid: string) =>
+    request<ChatActionResult>(`/sessions/${sid}/chat/actions/${aid}/cancel`, json({})),
   clearChat: async (sid: string) => {
     await fetch(`${API}/sessions/${sid}/chat`, { method: "DELETE" });
   },
 
   designerBrief: (sid: string) => request<DesignerBrief>(`/sessions/${sid}/designer-brief`),
   exportUrl: (sid: string, fmt: "docx" | "pdf") => `${API}/sessions/${sid}/export/${fmt}`,
+  /** Fetches an export as a file; errors arrive as ApiError instead of a page of raw JSON. */
+  exportFile: async (sid: string, fmt: "docx" | "pdf") => {
+    const res = await send(`/sessions/${sid}/export/${fmt}`);
+    const blob = await res.blob();
+    return { blob, filename: dispositionName(res.headers.get("Content-Disposition")) ?? `Design_Brief.${fmt}` };
+  },
 };

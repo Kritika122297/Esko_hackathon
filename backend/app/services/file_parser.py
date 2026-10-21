@@ -16,6 +16,11 @@ from app.models.extraction import ExcelRow, ExcelTable, Extraction, Fragment, Pa
 
 logger = logging.getLogger(__name__)
 
+# Limits that keep one odd file from exhausting the server. Content sheets and cartons are far smaller.
+MAX_SHEET_ROWS, MAX_SHEET_COLS = 5000, 60
+MAX_PDF_PAGES = 30
+MAX_RENDER_PIXELS = 40_000_000  # per page; the render DPI drops for very large pages
+
 # Printing-guide phrases found on dielines. Their colour/font is learned per file so that
 # related guide marks (registration codes, layer names) are removed as well.
 GUIDE_PHRASES = (
@@ -323,11 +328,17 @@ def parse_pdf(path: Path, file_name: str, session_dir: Path, id_prefix: str) -> 
     render_dir = session_dir / "renders"
     render_dir.mkdir(parents=True, exist_ok=True)
     n = 0
+    if doc.page_count > MAX_PDF_PAGES:
+        ex.notes.append(f"{file_name}: only the first {MAX_PDF_PAGES} of {doc.page_count} pages were read.")
     try:
         for page in doc:
+            if page.number >= MAX_PDF_PAGES:
+                break
             page_no = page.number + 1
             image_name = f"{Path(file_name).stem}_p{page_no}.png"
-            page.get_pixmap(dpi=settings.RENDER_DPI, alpha=False).save(str(render_dir / image_name))
+            area_in2 = max(page.rect.width * page.rect.height, 1.0) / (72.0 * 72.0)
+            dpi = min(settings.RENDER_DPI, max(int((MAX_RENDER_PIXELS / area_in2) ** 0.5), 18))
+            page.get_pixmap(dpi=dpi, alpha=False).save(str(render_dir / image_name))
             ex.pages.append(PageInfo(file=file_name, page=page_no, width=page.rect.width, height=page.rect.height, image=image_name))
 
             spans: List[dict] = []
@@ -383,7 +394,7 @@ def parse_pdf(path: Path, file_name: str, session_dir: Path, id_prefix: str) -> 
 
             if not spans:  # scanned page: nothing to read in the PDF itself
                 n += _ocr_fragments(ex, render_dir / image_name, file_name, page_no, id_prefix, n,
-                                    72.0 / settings.RENDER_DPI, panels)
+                                    72.0 / dpi, panels)
 
             guides = sum(1 for s in spans if (s["color"], s["font"]) in guide_styles)
             if guides:
@@ -410,7 +421,8 @@ def _is_highlight(cell) -> bool:
         rgb = str(cell.fill.fgColor.rgb or "")[-6:].upper()
     except Exception:
         return False
-    if not rgb or rgb in ("FFFFFF", "000000"):
+    # Theme and indexed colours have no RGB (openpyxl returns an error text); they are not review highlights.
+    if not re.fullmatch(r"[0-9A-F]{6}", rgb) or rgb in ("FFFFFF", "000000"):
         return False
     r, g, b = int(rgb[0:2], 16), int(rgb[2:4], 16), int(rgb[4:6], 16)
     # Yellow / amber review highlights: strong red+green, weaker blue.
@@ -447,8 +459,17 @@ def parse_excel(path: Path, file_name: str, id_prefix: str) -> Extraction:
     for ws in wb.worksheets:
         section: Optional[str] = None
         table_mode: Optional[dict] = None
-        max_col = ws.max_column
-        for row in ws.iter_rows(min_row=1, max_row=ws.max_row):
+        # ws.max_row/max_column count formatted but empty cells; one stray cell far away would make the loop
+        # visit millions of cells. Use the cells that hold a value, within a generous limit.
+        used = [k for k, c in ws._cells.items() if c.value not in (None, "")]  # noqa: SLF001
+        if not used:
+            continue
+        last_row, max_col = max(r for r, _ in used), max(c for _, c in used)
+        if last_row > MAX_SHEET_ROWS or max_col > MAX_SHEET_COLS:
+            ex.notes.append(f"{file_name} / {ws.title}: only the first {MAX_SHEET_ROWS} rows and {MAX_SHEET_COLS} "
+                            "columns were read.")
+            last_row, max_col = min(last_row, MAX_SHEET_ROWS), min(max_col, MAX_SHEET_COLS)
+        for row in ws.iter_rows(min_row=1, max_row=last_row, max_col=max_col):
             cells = list(row)
             first = cells[0] if cells else None
             values = [_cell_text(c.value) for c in cells]
@@ -593,7 +614,8 @@ def parse_image(path: Path, file_name: str, session_dir: Path, id_prefix: str = 
     render_dir = session_dir / "renders"
     render_dir.mkdir(parents=True, exist_ok=True)
     with Image.open(str(path)) as img:
-        image_name = f"{Path(file_name).stem}_p1.png"
+        # The extension is part of the name: 'label.png' must not overwrite the render of 'label.pdf'.
+        image_name = f"{Path(file_name).stem}_{Path(file_name).suffix.lstrip('.').lower()}_p1.png"
         img.convert("RGB").save(str(render_dir / image_name), format="PNG")
         ex.pages.append(PageInfo(file=file_name, page=1, width=float(img.width), height=float(img.height), image=image_name))
     if not _ocr_fragments(ex, render_dir / image_name, file_name, 1, id_prefix, 0, 1.0, []):

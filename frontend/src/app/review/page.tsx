@@ -8,7 +8,7 @@ import { IssuesList } from "@/components/analysis/IssuesList";
 import { BriefEditor } from "@/components/review/BriefEditor";
 import { ReadinessCard } from "@/components/review/ReadinessCard";
 import { ArtworkViewer } from "@/components/shared/ArtworkViewer";
-import { ErrorBanner, Loading, NoSession, PageHead } from "@/components/shared/Notice";
+import { ErrorBanner, NoSession, PageHead, SessionPending } from "@/components/shared/Notice";
 import { useSession } from "@/components/shared/useSession";
 import { cn } from "@/lib/utils";
 import { useBriefStore } from "@/store/briefStore";
@@ -29,7 +29,7 @@ export default function ReviewPage() {
 
   if (!ready) return null;
   if (!sessionId) return <NoSession />;
-  if (!view) return <Loading />;
+  if (!view) return <SessionPending />;
   const s = view.state;
 
   return (

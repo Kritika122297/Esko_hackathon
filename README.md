@@ -28,13 +28,18 @@ It also shows the checks that **passed** (barcode check digit, fat breakdown, al
 ## The workflow
 
 0. **Projects**: every brief on the server, with readiness and blocking counts. Open, delete, or start a new one; each upload is its own brief.
-1. **New brief**: choose the situation (update existing pack / new market / new product) and the market, then upload the product's files.
+1. **New brief**: choose the situation, the market and the product category, then upload the product's files. The situation changes how the files are treated:
+   - *Refresh an existing pack*: the artwork and the content sheet are compared; where they disagree, someone decides which is right.
+   - *Adapt to a new market*: the new market's content sheet wins. Where the old pack differs, that becomes a designer change instead of a question, and copy that only the old pack has is checked with the owner for the new market.
+   - *New product*: an uploaded artwork is a reference only. Its text does not fill the brief, artwork-only checks do not run, and every item is new copy to place.
 2. **Findings**: what was read and what the checks found, with evidence highlighted on the artwork.
-3. **Questions**: only real decisions, grouped by who can answer (R&D, Legal, Supply Chain, Brand), each with "why am I asked this?" and one-click answers computed by code from your own files.
+3. **Questions**: only real decisions, grouped by who can answer (R&D, Legal, Supply Chain, Brand), each with "why am I asked this?", one-click answers computed by code from your own files, "I don't know" and "Not applicable". Answered questions move to their own tab, where any answer can be changed; the old answer is undone first.
 4. **Workbench**: artwork, editable brief and findings side by side. Click a value to see its source on the box. "Preview impact" shows what a change would fix or break before saving (Change Impact Simulator). The readiness dashboard and the finalize gate: blocking items must be answered or passed to the agency as open questions.
-5. **Designer brief**: Keep / Change / Add / Remove / Unknown, an annotated box layout, approved copy, Nutrition Facts, open questions, proof table, change log. Export to PDF or DOCX.
+5. **Designer brief**: Keep / Change / Add / Remove / Unknown, an annotated box layout, approved copy, nutrition (only where the category needs it), open questions, decisions and sources. The PDF and DOCX open with a one-page summary written by AI from the checked brief; every number in it is verified against the brief by code.
 
-Every brief also has **Ask about this brief**, a chat panel that answers only from that brief's own data (values and their sources, findings, questions and owners) and links each answer to the cited field or finding. With an AI provider configured the wording is generated and every citation is checked by code; without one, or if the provider fails, built-in answers cover status, blockers, missing data, file conflicts, owners and any field.
+Projects, questions, findings, workbench fields and the designer brief can all be searched.
+
+Every brief also has an **Assistant**: a chat panel that answers general questions (packaging, labelling, how to use the tool) naturally, but takes every statement about this product from the brief's own data and links it to the cited field or finding. Every citation is checked by code. When the chat model is busy it moves to another configured model; with no AI available, built-in answers cover status, blockers, missing data, file conflicts, owners and any field.
 
 ## How uncertainty is handled
 
@@ -54,9 +59,11 @@ FastAPI (Python)
   ├─ Readers        PyMuPDF: text with positions, page renders, dieline grid, hidden-text detection
   │                 openpyxl: label/value/note groups, highlighted cells, nutrition tables
   ├─ Extract+merge  rules turn fragments into candidates with proof; sources compared field by field
-  ├─ Checks         plain Python: math, claims, allergens, US rules, artwork hygiene (~30 checks)
+  ├─ Checks         plain Python: math, claims, allergens, artwork hygiene, and label rules from
+  │                 rule packs per market and category (US, EU, India; food, cosmetics, medicines, ...)
   ├─ Questions      ranked, merged per field, answers re-run all checks
-  ├─ AI (optional)  vision cross-check of printed values + second opinion on claims, validated by code
+  ├─ AI (optional)  vision cross-check, OCR, rule and claims review, question wording, rulebook import,
+  │                 assistant and export summary; every output validated by code, never blocking
   ├─ Designer brief Keep / Change / Add / Remove / Unknown, PDF + DOCX export
   └─ Sessions       JSON on disk per session (backend/uploads/<id>/)
 ```

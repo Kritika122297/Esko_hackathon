@@ -35,6 +35,12 @@ def check_conflicts(ctx: Ctx) -> None:
         groups = group_candidates(f.key, f.candidates)
         if len(groups) < 2:
             continue
+        if ctx.state.case in ("new_market", "new_product"):
+            # The artwork is the old pack (or a reference): where it differs from the new spec, that is the change
+            # the designer makes, not a question. Only specs that disagree with each other are a conflict.
+            groups = [g for g in groups if any(c.source.kind not in ("pdf", "ai") for c in g)]
+            if len(groups) < 2:
+                continue
         reps = [g[0] for g in groups]
         lines = [f"{src_label(c.source)}: '{c.value}'" for c in reps]
         desc = f"The files give different values for {f.label.lower()}. " + " | ".join(lines) + "."
@@ -89,9 +95,12 @@ def check_missing(ctx: Ctx) -> None:
         cited = [c.id for c, _ in pairs]
         owner = pairs[0][1].owner
         note = next((n for n in f.notes), "")
+        # The strictest clause decides: one 'blocking' requirement blocks; only 'warning' ones warn.
+        severity = "blocking" if any(r.severity == "blocking" for _, r in pairs) else (
+            "warning" if any(r.severity == "warning" for _, r in pairs) else "info")
         ctx.add(
             "missing", fd.key,
-            severity="blocking",
+            severity=severity,
             kind="definite",
             category="missing",
             title=f"Missing: {fd.label}",
@@ -148,6 +157,39 @@ def check_assumptions(ctx: Ctx) -> None:
             evidence=[src],
             owner=fd.owner,
         )
+
+
+CARRYOVER_SKIP = {"brand", "product_name", "flavour", "other_marks"}  # identity, rarely market-specific
+
+
+def check_carryover(ctx: Ctx) -> None:
+    """New market: a printed value that only the old pack provides may not be right for the new market."""
+    st = ctx.state
+    if st.case != "new_market":
+        return
+    old = f"{st.source_market} pack" if st.source_market else "existing pack"
+    covered = {k for i in ctx.issues if i.severity in ("blocking", "warning") for k in i.fields}
+    carried = [f for f in st.fields
+               if f.value and f.on_artwork and f.mandatory and not f.user_confirmed and f.key not in covered
+               and f.key not in CARRYOVER_SKIP and f.sources and all(s.kind in ("pdf", "ai") for s in f.sources)]
+    nutrition = [f for f in carried if f.key in NUTRIENT_BY_KEY or f.key == "calories" or f.key.endswith("_dv")]
+    for f in carried:
+        if f in nutrition:
+            continue
+        fd = FIELD_BY_KEY[f.key]
+        ctx.add("carryover", f.key, severity="warning", kind="needs_human", category="market_rule",
+                title=f"Check for {st.market}: {fd.label}",
+                description=f"'{f.value[:160]}' comes only from the {old}. No file for the {st.market} market "
+                            f"provides it, so confirm it is correct there before it is printed.",
+                suggestion=f"Confirm it, or replace it with the {st.market} copy.",
+                fields=[f.key], evidence=f.sources[:2], owner=fd.owner)
+    if nutrition:  # one decision for the whole panel instead of a dozen questions
+        ctx.add("carryover", "nutrition", severity="warning", kind="needs_human", category="market_rule",
+                title=f"Check for {st.market}: nutrition values from the {old}",
+                description=f"{len(nutrition)} nutrition values come only from the {old}. Nutrition is declared "
+                            f"differently between markets, so R&D should confirm them for {st.market}.",
+                suggestion=f"Confirm the values, or provide the {st.market} nutrition table.",
+                fields=[f.key for f in nutrition], evidence=nutrition[0].sources[:2], owner="R&D")
 
 
 def check_sheet_table(ctx: Ctx) -> None:

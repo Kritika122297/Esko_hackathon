@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import { DesignAction, FieldStatus, IssueKind, Severity } from "@/lib/types";
+import { DesignAction, FieldStatus, IssueKind, Severity, categoryLabel } from "@/lib/types";
 
 type Tone = "review" | "stop" | "ok" | "outline" | "ink" | "muted";
 
@@ -68,6 +68,25 @@ export function KindLabel({ kind, ai }: { kind: IssueKind; ai?: boolean }) {
       {ai && <span className="text-ink-faint"> · AI suggestion</span>}
     </span>
   );
+}
+
+/** Market code as a small bordered pill; 'EU → US' for a brief adapted from another market. */
+export function MarketChip({ market, from, className }: { market: string; from?: string | null; className?: string }) {
+  return (
+    <span
+      className={cn("inline-flex h-5 items-center rounded border border-line-strong bg-stock px-1.5 font-mono text-[11px] font-semibold uppercase text-ink", className)}
+      title={from ? `Adapted from the ${from} brief for ${market}` : `Market: ${market}`}
+    >
+      {from ? `${from} → ${market}` : market}
+    </span>
+  );
+}
+
+/** Product category as a muted pill; nothing when there is none. */
+export function CategoryChip({ category, className }: { category?: string | null; className?: string }) {
+  const label = categoryLabel(category);
+  if (!label) return null;
+  return <span className={cn("inline-flex h-5 items-center rounded-full bg-ground px-2 text-[11px] font-semibold text-ink-2", className)}>{label}</span>;
 }
 
 export function OwnerTag({ owner, className }: { owner: string; className?: string }) {

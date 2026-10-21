@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import hashlib
+import json
 import re
 from typing import Dict, List
 
@@ -11,6 +13,18 @@ from app.services.merge import group_candidates
 from app.services.values import amount_in, fmt_num, ingredient_name, parse_amount, split_ingredients
 
 SEVERITY_RANK = {"blocking": 0, "warning": 1, "info": 2}
+
+
+def _without_claim(state, pattern: str) -> Dict[str, str]:
+    """Updates that take a claim out everywhere the brief makes it: the claim list and the dietary statement.
+    Removing it from the list alone leaves 'suitable for vegans' in the copy, and the check would rightly stay open."""
+    updates = {"claims": _remove_claims(state.value("claims") or "", pattern)}
+    diet = state.value("dietary_info") or ""
+    if re.search(pattern, diet, re.I):
+        cleaned = re.sub(rf"\s*\(\s*{pattern}s?\s*\)", "", diet, flags=re.I)
+        sentences = re.split(r"(?<=[.!?])\s+", cleaned)
+        updates["dietary_info"] = " ".join(x for x in sentences if not re.search(pattern, x, re.I)).strip()
+    return updates
 
 
 def _remove_claims(claims: str, pattern: str) -> str:
@@ -24,7 +38,10 @@ def _source_label(src) -> str:
 
 
 def _opt(i: int, label: str, updates: Dict[str, str] | None = None, ack: bool = False, rec: bool = False) -> QuestionOption:
-    return QuestionOption(id=f"o{i}", label=label, updates=updates or {}, acknowledge=ack, recommended=rec)
+    """The id comes from what the option does, not its position, so a choice made on screen still means the
+    same answer after a re-check reorders or adds options. (`i` only orders options for display.)"""
+    digest = hashlib.sha1(json.dumps([label, updates or {}, ack], sort_keys=True).encode()).hexdigest()[:8]
+    return QuestionOption(id=f"o-{digest}", label=label, updates=updates or {}, acknowledge=ack, recommended=rec)
 
 
 def _ack(i: int, who: str) -> QuestionOption:
@@ -91,16 +108,18 @@ def _question_for(issue: Issue, state: BriefState, saved) -> Question | None:
         opts.append(_ack(2, "R&D"))
         q_text = "Should the %Daily Value figures be recalculated from the amounts?"
     elif check == "claim.vegan_animal":
-        opts.append(_opt(1, "Remove the vegan claim (keep the recipe)", {"claims": _remove_claims(v("claims") or "", r"vegan")}, rec=True))
+        upd = _without_claim(state, r"\bvegan")
+        where = " and the dietary statement" if "dietary_info" in upd else ""
+        opts.append(_opt(1, f"Remove the vegan claim from the claim list{where} (keep the recipe)", upd, rec=True))
         opts.append(_ack(2, "R&D (reformulation without honey)"))
         q_text = "The recipe contains honey. Should the vegan claim be removed?"
     elif check == "claim.vegan_cholesterol":
         opts.append(_opt(1, "Cholesterol is 0mg (correct the panel)", {"cholesterol": "0mg", dv_key("cholesterol"): "0%"}, rec=True))
-        opts.append(_opt(2, "Remove the vegan claim", {"claims": _remove_claims(v("claims") or "", r"vegan")}))
+        opts.append(_opt(2, "Remove the vegan claim", _without_claim(state, r"\bvegan")))
         q_text = f"Cholesterol is declared as {v('cholesterol')} on a vegan product. Which is correct?"
         custom = "cholesterol"
     elif check == "claim.no_added_sugar":
-        opts.append(_opt(1, "Remove the 'No Added Sugar' claim", {"claims": _remove_claims(v("claims") or "", r"no added sugar")}, rec=True))
+        opts.append(_opt(1, "Remove the 'No Added Sugar' claim", _without_claim(state, r"no\s+added\s+sugar"), rec=True))
         opts.append(_ack(2, "Legal"))
         q_text = "Honey and coconut sugar are added. Should 'No Added Sugar' be removed?"
     elif check == "claim.added_sugars_zero":
@@ -152,6 +171,17 @@ def _question_for(issue: Issue, state: BriefState, saved) -> Question | None:
         opts.append(_ack(2, issue.owner))
         q_text = f"Is {FIELD_BY_KEY[key].label.lower()} '{val}' correct?"
         custom = key
+    elif check == "carryover" and key and len(issue.fields) > 1:
+        updates = {k: v(k) for k in issue.fields if v(k)}
+        opts.append(_opt(1, f"Confirm all {len(updates)} values for {state.market}", updates))
+        opts.append(_ack(2, issue.owner))
+        q_text = f"Are the nutrition values from the old pack right for {state.market}?"
+    elif check == "carryover" and key:
+        val = v(key)
+        opts.append(_opt(1, f"Confirm '{val}' for {state.market}", {key: val or ""}))
+        opts.append(_ack(2, issue.owner))
+        q_text = f"Is the {FIELD_BY_KEY[key].label.lower()} from the old pack right for {state.market}?"
+        custom = key
     elif check == "claim.artwork_only":
         extra = re.findall(r"'([^']+)'", issue.description)
         claims = v("claims") or ""
@@ -202,7 +232,6 @@ def build_questions(state: BriefState, saved) -> List[Question]:
             labels = {o.label for o in existing.options}
             for o in q.options:
                 if o.label not in labels:
-                    o.id = f"o{len(existing.options) + 1}"
                     existing.options.append(o)
             continue
         if q.custom_field:

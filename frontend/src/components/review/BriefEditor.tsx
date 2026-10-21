@@ -8,6 +8,7 @@ import { Absence, BriefField, FieldStatus, ImpactPreview, Origin } from "@/lib/t
 import { cn } from "@/lib/utils";
 import { useBriefStore } from "@/store/briefStore";
 import { StatusFlag } from "@/components/shared/badges";
+import { SearchBox, matchesQuery } from "@/components/shared/SearchBox";
 import { SourceLine, sourceLabel } from "@/components/shared/SourceChip";
 import { ImpactPanel } from "./ImpactPanel";
 
@@ -26,7 +27,10 @@ export function BriefEditor({ fields }: { fields: BriefField[] }) {
     [relevant]
   );
   const [filter, setFilter] = useState<Filter>(counts.needs_review ? "needs_review" : "all");
-  const shown = relevant.filter((f) => filter === "all" || f.status === filter);
+  const [query, setQuery] = useState("");
+  const inTab = relevant.filter((f) => filter === "all" || f.status === filter);
+  const shown = inTab.filter((f) => matchesQuery(query, f.label, f.key, f.key.replace(/_/g, " "), f.value));
+  const searching = query.trim().length > 0;
   const sections = SECTION_ORDER.map((s) => ({ name: s, fields: shown.filter((f) => f.section === s) })).filter((s) => s.fields.length);
   const tabs: [Filter, string][] = [
     ["needs_review", "Needs review"],
@@ -59,10 +63,50 @@ export function BriefEditor({ fields }: { fields: BriefField[] }) {
         </div>
       </div>
 
+      <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1">
+        <SearchBox
+          id="field-search"
+          label="Search fields"
+          value={query}
+          onChange={setQuery}
+          placeholder="Search by field name or value"
+          count={shown.length}
+          noun={["field", "fields"]}
+          size="sm"
+          className="w-full max-w-xs"
+        />
+        {searching && (
+          <p className="text-xs text-ink-muted" aria-hidden>
+            Showing {shown.length} of {inTab.length}
+          </p>
+        )}
+      </div>
+
       {sections.length === 0 ? (
         <div className="ticket mt-4 p-6 text-center">
-          <p className="font-semibold text-ink">{filter === "missing" ? "Nothing is missing." : "Nothing in this view."}</p>
-          <p className="mt-1 text-xs text-ink-muted">Switch the filter to see other fields.</p>
+          {searching ? (
+            <>
+              <p className="font-semibold text-ink">No field matches “{query.trim()}”.</p>
+              <p className="mt-1 text-xs text-ink-muted">
+                {filter === "all" ? "Try another word, or clear the search." : "Try another word, or search all fields."}
+              </p>
+              <div className="mt-3 flex justify-center gap-2">
+                <Button size="sm" variant="outline" onClick={() => setQuery("")}>
+                  Clear search
+                </Button>
+                {filter !== "all" && (
+                  <Button size="sm" variant="ghost" onClick={() => setFilter("all")}>
+                    Search all fields
+                  </Button>
+                )}
+              </div>
+            </>
+          ) : (
+            <>
+              <p className="font-semibold text-ink">{filter === "missing" ? "Nothing is missing." : "Nothing in this view."}</p>
+              <p className="mt-1 text-xs text-ink-muted">Switch the filter to see other fields.</p>
+            </>
+          )}
         </div>
       ) : (
         <div className="mt-3 space-y-6">
@@ -134,6 +178,7 @@ function Ticket({ f }: { f: BriefField }) {
   const [draft, setDraft] = useState(f.value ?? "");
   const [impact, setImpact] = useState<ImpactPreview | null>(null);
   const [loadingImpact, setLoadingImpact] = useState(false);
+  const [impactError, setImpactError] = useState<string | null>(null);
   const [showMore, setShowMore] = useState(false);
   const printKey = usePrintKey(f.value, f.status);
   const finalized = view?.state.status === "finalized";
@@ -150,10 +195,12 @@ function Ticket({ f }: { f: BriefField }) {
 
   const preview = async () => {
     setLoadingImpact(true);
+    setImpactError(null);
     try {
       setImpact(await api.impact(sid, f.key, draft));
-    } catch {
+    } catch (e) {
       setImpact(null);
+      setImpactError(e instanceof Error && e.message ? e.message : "The preview did not load.");
     } finally {
       setLoadingImpact(false);
     }
@@ -221,9 +268,9 @@ function Ticket({ f }: { f: BriefField }) {
               New value for {f.label}
             </label>
             {long ? (
-              <textarea id={`edit-${f.key}`} value={draft} onChange={(e) => { setDraft(e.target.value); setImpact(null); }} rows={4} className="w-full rounded border border-line-strong bg-stock p-2 text-sm focus:border-ink" />
+              <textarea id={`edit-${f.key}`} value={draft} onChange={(e) => { setDraft(e.target.value); setImpact(null); setImpactError(null); }} rows={4} className="w-full rounded border border-line-strong bg-stock p-2 text-sm focus:border-ink" />
             ) : (
-              <input id={`edit-${f.key}`} value={draft} onChange={(e) => { setDraft(e.target.value); setImpact(null); }} className="h-9 w-full rounded border border-line-strong bg-stock px-2 text-sm focus:border-ink" autoFocus />
+              <input id={`edit-${f.key}`} value={draft} onChange={(e) => { setDraft(e.target.value); setImpact(null); setImpactError(null); }} className="h-9 w-full rounded border border-line-strong bg-stock px-2 text-sm focus:border-ink" autoFocus />
             )}
             <div className="flex flex-wrap gap-2">
               <Button size="sm" variant="outline" onClick={preview} disabled={loadingImpact || !draft.trim()}>
@@ -232,16 +279,21 @@ function Ticket({ f }: { f: BriefField }) {
               <Button size="sm" disabled={!!busy || !draft.trim()} onClick={() => save(draft, "Edited in review")}>
                 <Check className="h-3.5 w-3.5" /> Save
               </Button>
-              <Button size="sm" variant="ghost" onClick={() => { setEditing(false); setImpact(null); setDraft(f.value ?? ""); }} aria-label="Cancel edit">
+              <Button size="sm" variant="ghost" onClick={() => { setEditing(false); setImpact(null); setImpactError(null); setDraft(f.value ?? ""); }} aria-label="Cancel edit">
                 <X className="h-3.5 w-3.5" /> Cancel
               </Button>
             </div>
+            {impactError && (
+              <p role="alert" className="text-xs text-stop-deep">
+                <b className="font-semibold">Impact preview failed.</b> {impactError}
+              </p>
+            )}
             {impact && <ImpactPanel p={impact} />}
           </div>
         ) : isFigure ? (
           <div className="grid grid-cols-[1fr_auto] items-end gap-4 px-4 pb-3 pt-1">
             <div className="min-w-0 space-y-2" onClick={(e) => e.stopPropagation()}>
-              <Alternatives alternatives={alternatives} finalized={finalized} save={save} />
+              <Alternatives alternatives={alternatives} finalized={finalized} busy={!!busy} save={save} />
               {actions}
             </div>
             <Figure value={f.value!} big={f.section === "Nutrition" || f.section === "Quantity"} />
@@ -261,7 +313,7 @@ function Ticket({ f }: { f: BriefField }) {
               {f.value ?? (f.absence ? ABSENCE_TEXT[f.absence] : "Not found in any file")}
             </p>
             <div className="space-y-2" onClick={(e) => e.stopPropagation()}>
-              <Alternatives alternatives={alternatives} finalized={finalized} save={save} />
+              <Alternatives alternatives={alternatives} finalized={finalized} busy={!!busy} save={save} />
               {actions}
             </div>
           </div>
@@ -302,10 +354,12 @@ function Ticket({ f }: { f: BriefField }) {
 function Alternatives({
   alternatives,
   finalized,
+  busy,
   save,
 }: {
   alternatives: BriefField["candidates"];
   finalized: boolean;
+  busy: boolean;
   save: (value: string, reason: string) => void;
 }) {
   if (!alternatives.length) return null;
@@ -318,7 +372,7 @@ function Alternatives({
             <span className="text-ink-muted">{sourceLabel(c.source)} says</span>
             <b className={cn("text-ink", short ? "figure text-[20px]" : "font-semibold")}>{short ? c.value : `“${c.value.slice(0, 160)}${c.value.length > 160 ? "…" : ""}”`}</b>
             {!finalized && (
-              <Button size="sm" variant="outline" className="h-6 border-ink px-2" onClick={() => save(c.value, `Chose the value from ${sourceLabel(c.source)}`)}>
+              <Button size="sm" variant="outline" className="h-6 border-ink px-2" disabled={busy} onClick={() => save(c.value, `Chose the value from ${sourceLabel(c.source)}`)}>
                 Use this
               </Button>
             )}

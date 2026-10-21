@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, Check, X } from "lucide-react";
+import { ArrowRight, Check, RotateCcw, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Flag } from "@/components/shared/badges";
 import { useBriefStore } from "@/store/briefStore";
@@ -49,7 +49,10 @@ export function fmtElapsed(s: number) {
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 }
 
-/** Bottom-right status: what is running (with real elapsed time), then a short confirmation. */
+/**
+ * Bottom-right status: what is running (with real elapsed time), then a short confirmation.
+ * On phones it spans the width just above the floating Ask button instead of covering it.
+ */
 export function BusyToast() {
   const { busy, busySince, notice, clearNotice } = useBriefStore();
   const elapsed = useElapsed(busySince);
@@ -61,9 +64,9 @@ export function BusyToast() {
 
   if (!busy && !notice) return null;
   return (
-    <div role="status" aria-live="polite" className="no-print fixed bottom-5 right-5 z-50">
+    <div role="status" aria-live="polite" className="no-print fixed inset-x-4 bottom-[76px] z-50 sm:inset-x-auto sm:bottom-5 sm:right-5">
       {busy ? (
-        <div className="anim-toast w-72 overflow-hidden rounded bg-ink text-white shadow-lift">
+        <div className="anim-toast w-full overflow-hidden rounded bg-ink text-white shadow-lift sm:w-72">
           <div className="flex items-center justify-between px-4 py-2.5 text-[13px] font-semibold">
             <span>{busy}…</span>
             <span className="text-xs tabular-nums text-white/70">{fmtElapsed(elapsed)}</span>
@@ -82,6 +85,8 @@ export function BusyToast() {
 }
 
 export function NoSession() {
+  const loadError = useBriefStore((s) => s.loadError);
+  if (loadError) return <LoadFailed />;
   return (
     <div className="ticket anim-rise mx-auto mt-16 max-w-md p-8 text-center">
       <h2 className="text-xl font-bold text-ink">No brief open</h2>
@@ -95,6 +100,37 @@ export function NoSession() {
       </Button>
     </div>
   );
+}
+
+/** Shown when a brief could not be opened (backend down, server error); "not found" shows NoSession instead. */
+export function LoadFailed() {
+  const { loadError, load, busy } = useBriefStore();
+  if (!loadError) return null;
+  return (
+    <div role="alert" className="ticket anim-rise mx-auto mt-16 max-w-md border-stop/40 p-8 pl-0 text-left">
+      <Flag tone="stop" side="right">
+        Problem
+      </Flag>
+      <div className="pl-8 pt-3">
+        <h2 className="text-xl font-bold text-ink">The brief could not be opened</h2>
+        <p className="mt-2 break-words text-sm text-ink-2">{loadError.message}</p>
+        <div className="mt-6 flex flex-wrap gap-2">
+          <Button onClick={() => load(loadError.id)} disabled={busy === "Loading brief"}>
+            <RotateCcw className="h-4 w-4" /> Try again
+          </Button>
+          <Button asChild variant="outline">
+            <Link href="/projects">All projects</Link>
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** While the open brief is not in memory yet: a loading line, or the failure with a retry. */
+export function SessionPending({ what = "brief" }: { what?: string }) {
+  const loadError = useBriefStore((s) => s.loadError);
+  return loadError ? <LoadFailed /> : <Loading what={what} />;
 }
 
 export function PageHead({ title, lead, actions }: { title: string; lead?: string; actions?: React.ReactNode }) {

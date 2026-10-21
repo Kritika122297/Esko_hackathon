@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useId, useMemo, useState } from "react";
 import { ChevronDown, Crosshair, RotateCcw, Send } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { api } from "@/lib/api";
@@ -8,10 +8,13 @@ import { Issue } from "@/lib/types";
 import { useBriefStore } from "@/store/briefStore";
 import { Flag, KindLabel, OwnerTag, SeverityFlag } from "@/components/shared/badges";
 import { SourceLine } from "@/components/shared/SourceChip";
+import { SearchBox, matchesQuery } from "@/components/shared/SearchBox";
 
 type Filter = "decisions" | "design" | "info" | "acknowledged" | "all";
 
 export function IssuesList({ issues: allIssues, editable = true }: { issues: Issue[]; editable?: boolean }) {
+  // Keeps the search field id unique if more than one list is on the page.
+  const idBase = useId().replace(/:/g, "");
   // Code findings lead. AI points are kept apart so a reader sees what was calculated before what was suggested.
   const issues = useMemo(() => allIssues.filter((i) => i.detected_by !== "ai"), [allIssues]);
   const aiIssues = useMemo(() => allIssues.filter((i) => i.detected_by === "ai"), [allIssues]);
@@ -26,7 +29,13 @@ export function IssuesList({ issues: allIssues, editable = true }: { issues: Iss
     [issues]
   );
   const [filter, setFilter] = useState<Filter>(groups.decisions.length ? "decisions" : "all");
-  const shown = groups[filter];
+  const [query, setQuery] = useState("");
+  const fields = useBriefStore((s) => s.view?.state.fields);
+  const labelOf = useMemo(() => new Map((fields ?? []).map((f) => [f.key, f.label])), [fields]);
+  const hit = (i: Issue) => matchesQuery(query, i.title, i.description, i.owner, ...i.fields.map((k) => labelOf.get(k) ?? k.replace(/_/g, " ")));
+  const searching = query.trim().length > 0;
+  const shown = groups[filter].filter(hit);
+  const aiShown = aiIssues.filter(hit);
   const tabs: [Filter, string][] = [
     ["decisions", "Decide"],
     ["design", "Designer tasks"],
@@ -53,25 +62,47 @@ export function IssuesList({ issues: allIssues, editable = true }: { issues: Iss
           </button>
         ))}
       </div>
+      <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
+        <SearchBox
+          id={`finding-search-${idBase}`}
+          label="Search findings"
+          value={query}
+          onChange={setQuery}
+          placeholder="Search title, description, field or owner"
+          count={shown.length + aiShown.length}
+          noun={["finding", "findings"]}
+          size="sm"
+          className="min-w-0 flex-1"
+        />
+        {searching && (
+          <p className="text-xs text-ink-muted" aria-hidden>
+            Showing {shown.length} of {groups[filter].length}
+          </p>
+        )}
+      </div>
       <div className="mt-3 min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
         {shown.length === 0 && (
           <p className="ticket p-5 text-center text-sm text-ink-muted">
-            {filter === "decisions" ? "No open decisions. Everything is resolved or passed on." : "Nothing in this view."}
+            {searching
+              ? `No finding in this view matches “${query.trim()}”.`
+              : filter === "decisions"
+                ? "No open decisions. Everything is resolved or passed on."
+                : "Nothing in this view."}
           </p>
         )}
         {shown.map((i, idx) => (
           <IssueCard key={i.id} issue={i} editable={editable} index={idx} />
         ))}
-        {aiIssues.length > 0 && (
+        {aiShown.length > 0 && (
           <details className="rounded border border-dashed border-line-strong bg-ground/50 p-2">
             <summary className="cursor-pointer select-none text-xs font-bold uppercase tracking-wider text-ink-2">
-              AI suggestions <b className="figure ml-1 text-[14px]">{aiIssues.length}</b>
+              AI suggestions <b className="figure ml-1 text-[14px]">{aiShown.length}</b>
               <span className="ml-2 font-normal normal-case tracking-normal text-ink-muted">
                 Possible problems the AI noticed. Not calculated, never blocking, always needs a person.
               </span>
             </summary>
             <div className="mt-2 space-y-2">
-              {aiIssues.map((i, idx) => (
+              {aiShown.map((i, idx) => (
                 <IssueCard key={i.id} issue={i} editable={editable} index={idx} />
               ))}
             </div>
@@ -85,7 +116,7 @@ export function IssuesList({ issues: allIssues, editable = true }: { issues: Iss
 function IssueCard({ issue, editable, index }: { issue: Issue; editable: boolean; index: number }) {
   const [open, setOpen] = useState(index === 0 && issue.state === "open" && issue.severity === "blocking");
   const [note, setNote] = useState("");
-  const { run, setHighlight, highlight, view } = useBriefStore();
+  const { run, setHighlight, highlight, view, busy } = useBriefStore();
   const finalized = view?.state.status === "finalized";
   const locatable = issue.evidence.filter((e) => e.bbox);
   const selected = highlight?.label === issue.title;
@@ -168,7 +199,8 @@ function IssueCard({ issue, editable, index }: { issue: Issue; editable: boolean
                       className="h-8 w-full rounded border border-line-strong bg-stock px-2 text-xs focus:border-ink"
                     />
                     <button
-                      className="inline-flex h-8 w-full items-center justify-center gap-1.5 rounded border border-ink bg-stock text-xs font-semibold text-ink transition-colors hover:bg-ground"
+                      className="inline-flex h-8 w-full items-center justify-center gap-1.5 rounded border border-ink bg-stock text-xs font-semibold text-ink transition-colors hover:bg-ground disabled:pointer-events-none disabled:opacity-55"
+                      disabled={!!busy}
                       onClick={() => run("Passing to agency", (sid) => api.acknowledge(sid, issue.id, note || "Passed to the agency as an open question."), "Passed to the agency")}
                     >
                       <Send className="h-3.5 w-3.5" /> Pass to agency as open question
@@ -176,7 +208,8 @@ function IssueCard({ issue, editable, index }: { issue: Issue; editable: boolean
                   </div>
                 ) : (
                   <button
-                    className="inline-flex h-8 items-center gap-1.5 rounded border border-line-strong bg-stock px-3 text-xs font-semibold text-ink hover:border-ink"
+                    className="inline-flex h-8 items-center gap-1.5 rounded border border-line-strong bg-stock px-3 text-xs font-semibold text-ink hover:border-ink disabled:pointer-events-none disabled:opacity-55"
+                    disabled={!!busy}
                     onClick={() => run("Reopening", (sid) => api.reopenIssue(sid, issue.id), "Reopened")}
                   >
                     <RotateCcw className="h-3.5 w-3.5" /> Reopen

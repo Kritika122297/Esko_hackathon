@@ -10,7 +10,8 @@ from app.services.checks.base import CheckContext, Ctx
 from app.services.checks.claims import check_claims, suggested_allergen_statement
 from app.services.checks.market import check_artwork_leftovers, check_barcode, check_us_rules, us_net_weight_text
 from app.services.checks.nutrition import check_nutrition, fda_round_calories, serving_grams
-from app.services.checks.sources import check_assumptions, check_conflicts, check_missing, check_sheet_table
+from app.services.checks.sources import (check_assumptions, check_carryover, check_conflicts, check_missing,
+                                         check_sheet_table)
 
 SEVERITY_ORDER = {"blocking": 0, "warning": 1, "info": 2}
 KIND_ORDER = {"definite": 0, "likely": 1, "needs_human": 2}
@@ -34,6 +35,7 @@ def run_checks(state: BriefState, saved: CheckContext) -> Tuple[List[Issue], Lis
     check_artwork_leftovers(ctx)
     check_sheet_table(ctx)
     check_assumptions(ctx)
+    check_carryover(ctx)
     for ai_issue in saved.ai_issues:
         # An AI point that repeats a code finding (same field and same clause) is merged into it.
         duplicate = any(set(ai_issue.fields) & set(c.fields)

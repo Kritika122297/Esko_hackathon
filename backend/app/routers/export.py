@@ -10,6 +10,7 @@ from fastapi.responses import FileResponse
 
 from app.config import settings
 from app.routers.common import load
+from app.services.ai_summary import summarize
 from app.services.brief_exporter import export_docx, export_pdf
 from app.services.designer import DesignerBrief, build_designer_brief
 
@@ -31,6 +32,7 @@ def designer_brief(sid: str) -> DesignerBrief:
 def export(sid: str, fmt: Literal["docx", "pdf"]) -> FileResponse:
     state, _, ex = load(sid)
     brief = build_designer_brief(state, ex)
+    brief.ai = summarize(sid, state.updated_at, brief)  # None without a provider; the export works either way
     safe = re.sub(r"[^A-Za-z0-9]+", "_", state.product_name).strip("_") or "Packaging"
     suffix = "" if state.status == "finalized" else "_DRAFT"
     name = f"{safe}_Design_Brief{suffix}.{fmt}"

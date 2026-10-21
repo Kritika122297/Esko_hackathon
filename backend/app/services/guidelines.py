@@ -108,6 +108,24 @@ def market_options() -> List[Dict[str, str]]:
     return [{"code": c, "label": l} for c, l in seen.items()]
 
 
+@lru_cache(maxsize=1)
+def category_labels() -> Dict[str, str]:
+    """Category id -> label, from categories.json (the single list the app and the rule packs share)."""
+    return json.loads((GUIDELINE_DIR / "categories.json").read_text(encoding="utf-8"))
+
+
+def normalize_category(value: Optional[str]) -> Optional[str]:
+    """'household' or 'Household & cleaning products' -> 'household'; an unknown value -> None. Empty -> default."""
+    v = (value or "").strip()
+    if not v:
+        return DEFAULT_CATEGORY
+    labels = category_labels()
+    if v.lower() in labels:
+        return v.lower()
+    by_label = {label.lower(): cid for cid, label in labels.items()}
+    return by_label.get(v.lower())
+
+
 def category_options() -> List[Dict]:
     """Categories to pick from. Those without a rule pack are listed too, and run on the general checks only."""
     labels = json.loads((GUIDELINE_DIR / "categories.json").read_text(encoding="utf-8"))

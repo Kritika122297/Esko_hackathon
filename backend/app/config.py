@@ -43,6 +43,7 @@ class Settings:
 
     ALLOWED_EXTENSIONS: Set[str] = {"pdf", "xlsx", "docx", "txt", "md", "png", "jpg", "jpeg"}
     MAX_FILE_SIZE_BYTES: int = 50 * 1024 * 1024
+    MAX_FILES_PER_UPLOAD: int = 20
 
     # Page renders used by the artwork viewer (and by vision models when enabled)
     RENDER_DPI: int = int(os.getenv("RENDER_DPI", "144"))

@@ -5,7 +5,7 @@ import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { IssuesList } from "@/components/analysis/IssuesList";
 import { ArtworkViewer } from "@/components/shared/ArtworkViewer";
-import { ErrorBanner, Loading, NoSession, PageHead } from "@/components/shared/Notice";
+import { ErrorBanner, NoSession, PageHead, SessionPending } from "@/components/shared/Notice";
 import { useSession } from "@/components/shared/useSession";
 import { fileRole } from "@/components/upload/FileDropzone";
 
@@ -13,7 +13,7 @@ export default function AnalysisPage() {
   const { ready, sessionId, view } = useSession();
   if (!ready) return null;
   if (!sessionId) return <NoSession />;
-  if (!view) return <Loading />;
+  if (!view) return <SessionPending />;
 
   const s = view.state;
   const r = s.readiness;
