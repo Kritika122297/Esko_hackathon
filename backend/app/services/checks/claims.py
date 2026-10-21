@@ -7,6 +7,7 @@ from typing import Dict, List, Optional, Tuple
 
 from app.models.brief import SourceRef
 from app.services.checks.base import Ctx, src_label
+from app.services.checks.market import is_us
 from app.services.values import fmt_num, ingredient_name, ingredient_percent, split_ingredients
 
 ANIMAL_DERIVED = ("honey", "milk", "whey", "casein", "lactose", "butter", "cream", "egg", "gelatin",
@@ -283,7 +284,7 @@ def _check_claim_coverage(ctx: Ctx, claims_text: str) -> None:
                 fields=["claims"], evidence=[s for c in art_only for s in ctx.art.claims[c]][:3], owner="Brand")
     organic = "organic" in sheet or "Organic" in ctx.art.claims
     texts = " ".join(v for f in ctx.state.fields for v, _ in ctx.all_values(f.key)).lower()
-    if organic and "certified organic by" not in texts:
+    if organic and "certified organic by" not in texts and is_us(ctx):
         ctx.add("us.organic_certifier", severity="warning", kind="likely", category="market_rule",
                 title="Organic certifier statement not found",
                 description="The pack carries the USDA Organic seal, but no 'Certified organic by <certifying agent>' "

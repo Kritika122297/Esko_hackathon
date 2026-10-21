@@ -1,0 +1,131 @@
+{
+  "standard": "eu_clp",
+  "name": "EU hazardous product labelling (CLP 1272/2008)",
+  "status": "draft",
+  "version": "0.1",
+  "ui_markets": [],
+  "applies_to": {
+    "markets": [
+      "EU",
+      "EUROPE",
+      "FR",
+      "FRANCE",
+      "DE",
+      "GERMANY",
+      "ES",
+      "SPAIN",
+      "IT",
+      "ITALY",
+      "NL",
+      "NETHERLANDS"
+    ],
+    "categories": [
+      "household"
+    ]
+  },
+  "clauses": [
+    {
+      "id": "EU-CLP/Art17-1a",
+      "section": "Legal & Identity",
+      "text": "The name, address and telephone number of the supplier are shown.",
+      "keywords": [
+        "supplier",
+        "address",
+        "telephone"
+      ],
+      "source": {
+        "name": "EU Regulation (EC) 1272/2008 (CLP), Art. 17",
+        "url": "https://eur-lex.europa.eu/eli/reg/2008/1272/oj",
+        "note": "Draft paraphrase. Check against the source before relying on it."
+      },
+      "requires": [
+        {
+          "field": "producer",
+          "severity": "blocking",
+          "owner": "Legal"
+        }
+      ]
+    },
+    {
+      "id": "EU-CLP/Art17-1b",
+      "section": "Quantity",
+      "text": "The nominal quantity of the product is stated for products sold to the public.",
+      "keywords": [
+        "nominal quantity",
+        "ml",
+        "g"
+      ],
+      "source": {
+        "name": "EU Regulation (EC) 1272/2008 (CLP), Art. 17",
+        "url": "https://eur-lex.europa.eu/eli/reg/2008/1272/oj",
+        "note": "Draft paraphrase. Check against the source before relying on it."
+      },
+      "requires": [
+        {
+          "field": "net_weight",
+          "severity": "blocking",
+          "owner": "Supply Chain"
+        }
+      ]
+    },
+    {
+      "id": "EU-CLP/Art17-1c",
+      "section": "Legal & Identity",
+      "text": "The product identifier (name) is shown.",
+      "keywords": [
+        "product identifier"
+      ],
+      "source": {
+        "name": "EU Regulation (EC) 1272/2008 (CLP), Art. 17",
+        "url": "https://eur-lex.europa.eu/eli/reg/2008/1272/oj",
+        "note": "Draft paraphrase. Check against the source before relying on it."
+      },
+      "requires": [
+        {
+          "field": "statement_of_identity",
+          "severity": "blocking",
+          "owner": "Legal"
+        }
+      ]
+    },
+    {
+      "id": "EU-CLP/Art17-1d",
+      "section": "Other Pack Copy",
+      "text": "For hazardous products: hazard pictograms, the signal word, hazard statements and precautionary statements are shown.",
+      "keywords": [
+        "pictogram",
+        "signal word",
+        "danger",
+        "warning",
+        "hazard statement"
+      ],
+      "source": {
+        "name": "EU Regulation (EC) 1272/2008 (CLP), Art. 17",
+        "url": "https://eur-lex.europa.eu/eli/reg/2008/1272/oj",
+        "note": "Draft paraphrase. Check against the source before relying on it."
+      },
+      "requires": [
+        {
+          "field": "hazard_pictograms",
+          "severity": "warning",
+          "owner": "Legal"
+        },
+        {
+          "field": "signal_word",
+          "severity": "warning",
+          "owner": "Legal"
+        },
+        {
+          "field": "hazard_statements",
+          "severity": "warning",
+          "owner": "Legal"
+        },
+        {
+          "field": "precautionary_statements",
+          "severity": "warning",
+          "owner": "Legal"
+        }
+      ]
+    }
+  ]
+}

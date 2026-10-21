@@ -1,0 +1,202 @@
+{
+  "standard": "eu_pet_food",
+  "name": "EU pet food labelling (Regulation 767/2009)",
+  "status": "draft",
+  "version": "0.1",
+  "ui_markets": [],
+  "applies_to": {
+    "markets": [
+      "EU",
+      "EUROPE",
+      "FR",
+      "FRANCE",
+      "DE",
+      "GERMANY",
+      "ES",
+      "SPAIN",
+      "IT",
+      "ITALY",
+      "NL",
+      "NETHERLANDS"
+    ],
+    "categories": [
+      "pet_food"
+    ]
+  },
+  "clauses": [
+    {
+      "id": "EU-PET/type",
+      "section": "Product",
+      "text": "The type of feed (for example complete or complementary feed) and the target species are stated.",
+      "keywords": [
+        "complete feed",
+        "complementary feed",
+        "dogs",
+        "cats"
+      ],
+      "source": {
+        "name": "EU Regulation (EC) 767/2009 (feed marketing and use), Art. 15-17",
+        "url": "https://eur-lex.europa.eu/eli/reg/2009/767/oj",
+        "note": "Draft paraphrase. Check against the source before relying on it."
+      },
+      "requires": [
+        {
+          "field": "feed_type",
+          "severity": "blocking",
+          "owner": "R&D"
+        },
+        {
+          "field": "target_species",
+          "severity": "blocking",
+          "owner": "R&D"
+        }
+      ]
+    },
+    {
+      "id": "EU-PET/operator",
+      "section": "Legal & Identity",
+      "text": "The name or business name and address of the feed business operator responsible for the label are shown.",
+      "keywords": [
+        "operator",
+        "address"
+      ],
+      "source": {
+        "name": "EU Regulation (EC) 767/2009 (feed marketing and use), Art. 15-17",
+        "url": "https://eur-lex.europa.eu/eli/reg/2009/767/oj",
+        "note": "Draft paraphrase. Check against the source before relying on it."
+      },
+      "requires": [
+        {
+          "field": "producer",
+          "severity": "blocking",
+          "owner": "Legal"
+        }
+      ]
+    },
+    {
+      "id": "EU-PET/batch",
+      "section": "Other Pack Copy",
+      "text": "A batch or lot reference is shown.",
+      "keywords": [
+        "batch",
+        "lot"
+      ],
+      "source": {
+        "name": "EU Regulation (EC) 767/2009 (feed marketing and use), Art. 15-17",
+        "url": "https://eur-lex.europa.eu/eli/reg/2009/767/oj",
+        "note": "Draft paraphrase. Check against the source before relying on it."
+      },
+      "requires": [
+        {
+          "field": "batch_lot",
+          "severity": "blocking",
+          "owner": "Supply Chain"
+        }
+      ]
+    },
+    {
+      "id": "EU-PET/quantity",
+      "section": "Quantity",
+      "text": "The net quantity is stated by weight.",
+      "keywords": [
+        "net weight",
+        "kg"
+      ],
+      "source": {
+        "name": "EU Regulation (EC) 767/2009 (feed marketing and use), Art. 15-17",
+        "url": "https://eur-lex.europa.eu/eli/reg/2009/767/oj",
+        "note": "Draft paraphrase. Check against the source before relying on it."
+      },
+      "requires": [
+        {
+          "field": "net_weight",
+          "severity": "blocking",
+          "owner": "Supply Chain"
+        }
+      ]
+    },
+    {
+      "id": "EU-PET/ingredients",
+      "section": "Ingredients & Allergens",
+      "text": "The list of feed materials (ingredients) is given.",
+      "keywords": [
+        "composition",
+        "ingredients"
+      ],
+      "source": {
+        "name": "EU Regulation (EC) 767/2009 (feed marketing and use), Art. 15-17",
+        "url": "https://eur-lex.europa.eu/eli/reg/2009/767/oj",
+        "note": "Draft paraphrase. Check against the source before relying on it."
+      },
+      "requires": [
+        {
+          "field": "ingredients",
+          "severity": "blocking",
+          "owner": "R&D"
+        }
+      ]
+    },
+    {
+      "id": "EU-PET/analytical",
+      "section": "Nutrition",
+      "text": "The analytical constituents are declared.",
+      "keywords": [
+        "analytical constituents",
+        "crude protein"
+      ],
+      "source": {
+        "name": "EU Regulation (EC) 767/2009 (feed marketing and use), Art. 15-17",
+        "url": "https://eur-lex.europa.eu/eli/reg/2009/767/oj",
+        "note": "Draft paraphrase. Check against the source before relying on it."
+      },
+      "requires": [
+        {
+          "field": "guaranteed_analysis",
+          "severity": "blocking",
+          "owner": "R&D"
+        }
+      ]
+    },
+    {
+      "id": "EU-PET/directions",
+      "section": "Nutrition",
+      "text": "Directions for proper use (feeding guidelines) are shown.",
+      "keywords": [
+        "feeding",
+        "directions"
+      ],
+      "source": {
+        "name": "EU Regulation (EC) 767/2009 (feed marketing and use), Art. 15-17",
+        "url": "https://eur-lex.europa.eu/eli/reg/2009/767/oj",
+        "note": "Draft paraphrase. Check against the source before relying on it."
+      },
+      "requires": [
+        {
+          "field": "feeding_guidelines",
+          "severity": "blocking",
+          "owner": "R&D"
+        }
+      ]
+    },
+    {
+      "id": "EU-PET/date",
+      "section": "Other Pack Copy",
+      "text": "The best-before date is shown.",
+      "keywords": [
+        "best before"
+      ],
+      "source": {
+        "name": "EU Regulation (EC) 767/2009 (feed marketing and use), Art. 15-17",
+        "url": "https://eur-lex.europa.eu/eli/reg/2009/767/oj",
+        "note": "Draft paraphrase. Check against the source before relying on it."
+      },
+      "requires": [
+        {
+          "field": "expiry_date",
+          "severity": "blocking",
+          "owner": "Supply Chain"
+        }
+      ]
+    }
+  ]
+}

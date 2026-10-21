@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FileDropzone } from "@/components/upload/FileDropzone";
 import { ErrorBanner, PageHead, fmtElapsed } from "@/components/shared/Notice";
 import { api } from "@/lib/api";
-import { CaseType } from "@/lib/types";
+import { CaseType, ChecklistField, RulebookProposal, RulesSummary, StandardsOptions } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useBriefStore } from "@/store/briefStore";
 
@@ -20,9 +20,155 @@ const CASES: { id: CaseType; title: string; text: string }[] = [
 const STAGES = [
   ["Read", "Text with positions, panel grid, hidden layers, sheet cells and notes"],
   ["Fill", "Every brief field from a real source; nothing invented"],
-  ["Check", "Math, claims, allergens and US label rules"],
+  ["Check", "Math, claims, files against each other, and the label rules for the chosen market and category"],
   ["Ask", "Only the decisions that matter, routed by owner"],
 ];
+
+const OTHER = "OTHER";
+const SECTION_ORDER = ["Product", "Legal & Identity", "Ingredients & Allergens", "Claims & Certifications", "Quantity", "Nutrition", "Other Pack Copy", "Project"];
+
+/** Which label rules will be applied, and how far they can be trusted. */
+function RulesBox({ rules, marketLabel }: { rules: RulesSummary | null; marketLabel: string }) {
+  if (!rules) return null;
+  return (
+    <div className="mt-3 rounded border border-line bg-stock p-3 text-[13px]" aria-live="polite">
+      {rules.market_rules ? (
+        <>
+          <p className="font-semibold text-ink">Rules that will be applied for {marketLabel}:</p>
+          <ul className="mt-1 space-y-0.5">
+            {rules.packs.map((p) => (
+              <li key={p.standard} className="text-ink-2">
+                {p.name} <span className="text-ink-muted">· {p.clauses} rules ·</span>{" "}
+                <span className={p.status === "verified" ? "font-semibold text-rail" : "font-semibold text-talker-deep"}>
+                  {p.status === "verified" ? "verified" : "draft: not yet checked against the official text"}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </>
+      ) : (
+        <p className="text-ink-2">
+          <b className="text-ink">No label rules are loaded for {marketLabel} yet.</b> Only the general checks run: math, files
+          against each other, claims, and the core brief fields.
+        </p>
+      )}
+    </div>
+  );
+}
+
+/** For a new product: what the team needs to provide, by section, before any file is read. */
+function ChecklistBox({ fields }: { fields: ChecklistField[] }) {
+  const sections = useMemo(
+    () => SECTION_ORDER.map((s) => ({ name: s, rows: fields.filter((f) => f.section === s) })).filter((s) => s.rows.length),
+    [fields]
+  );
+  if (!fields.length) return null;
+  return (
+    <details className="mt-3 rounded border border-line p-3 text-[13px]" open>
+      <summary className="cursor-pointer select-none font-semibold text-ink">
+        What to provide for a new product <span className="figure ml-1 text-[15px]">{fields.length}</span> fields
+      </summary>
+      <p className="mt-1 text-xs text-ink-muted">
+        Anything you do not have becomes a question for the owner shown. A field that does not apply can be marked
+        &quot;not applicable&quot; with a reason.
+      </p>
+      <div className="mt-2 grid grid-cols-1 gap-x-6 gap-y-2 md:grid-cols-2">
+        {sections.map((s) => (
+          <div key={s.name}>
+            <p className="text-[11px] font-bold uppercase tracking-wider text-ink-muted">{s.name}</p>
+            <ul className="mt-0.5 space-y-0.5">
+              {s.rows.map((r) => (
+                <li key={r.key} className="flex justify-between gap-2 text-ink-2" title={r.clauses.join(", ")}>
+                  <span>
+                    {r.label}
+                    {r.or && r.or.length > 0 && <span className="text-xs text-ink-muted"> (or {r.or.join(", ")})</span>}
+                  </span>
+                  <span className="text-xs text-ink-muted">{r.owner}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+    </details>
+  );
+}
+
+/** Optional: the company's own packaging rules. The reviewer ticks which proposed rules to apply to this brief. */
+function RulebookBox({
+  proposal,
+  accepted,
+  loading,
+  error,
+  onFile,
+  onToggle,
+  onClear,
+}: {
+  proposal: RulebookProposal | null;
+  accepted: Set<string>;
+  loading: boolean;
+  error: string | null;
+  onFile: (f: File) => void;
+  onToggle: (id: string) => void;
+  onClear: () => void;
+}) {
+  return (
+    <details className="mt-3 rounded border border-line p-3 text-[13px]" open={Boolean(proposal)}>
+      <summary className="cursor-pointer select-none font-semibold text-ink">
+        Company rulebook (optional){" "}
+        {proposal && <span className="font-normal text-ink-muted">· {accepted.size} of {proposal.rules.length} rules accepted</span>}
+      </summary>
+      <p className="mt-1 text-xs text-ink-muted">
+        Upload your own packaging rules (PDF, DOCX or text). BriefForge proposes rules, each quoting the sentence it came from. Only the
+        rules you tick are applied, and only to this brief.
+      </p>
+      {!proposal && (
+        <label className="mt-2 inline-flex cursor-pointer items-center gap-2 rounded border border-line-strong bg-stock px-3 py-1.5 text-xs font-semibold text-ink hover:border-ink">
+          {loading ? "Reading the rulebook…" : "Choose a rulebook file"}
+          <input
+            type="file"
+            accept=".pdf,.docx,.txt,.md"
+            className="sr-only"
+            disabled={loading}
+            onChange={(e) => e.target.files?.[0] && onFile(e.target.files[0])}
+          />
+        </label>
+      )}
+      {error && (
+        <p role="alert" className="mt-2 text-xs text-stop-deep">
+          {error}
+        </p>
+      )}
+      {proposal && (
+        <div className="mt-2 space-y-2">
+          <p className="text-xs text-ink-muted">
+            {proposal.filename} · {proposal.rules.length} proposed {proposal.ai_used ? "(keyword match and AI)" : "(keyword match)"}
+            <button onClick={onClear} className="ml-3 underline hover:text-ink">
+              Remove
+            </button>
+          </p>
+          {proposal.rules.length === 0 && <p className="text-ink-2">No rules that say something must appear were found in this file.</p>}
+          <ul className="max-h-64 space-y-1.5 overflow-y-auto pr-1">
+            {proposal.rules.map((r) => (
+              <li key={r.id}>
+                <label className="flex cursor-pointer items-start gap-2 rounded border border-line bg-stock p-2">
+                  <input type="checkbox" className="mt-0.5" checked={accepted.has(r.id)} onChange={() => onToggle(r.id)} />
+                  <span className="min-w-0">
+                    <b className="text-ink">{r.label}</b>{" "}
+                    <span className="text-xs text-ink-muted">
+                      · {r.severity === "blocking" ? "required" : "recommended"} · {r.owner} · {r.method === "ai" ? "AI" : "keyword"}
+                    </span>
+                    <span className="block text-xs italic text-ink-2">“{r.quote}”</span>
+                  </span>
+                </label>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </details>
+  );
+}
 
 const BUSY_LABEL = "Reading files and running checks";
 
@@ -69,10 +215,48 @@ export default function UploadPage() {
   const [files, setFiles] = useState<File[]>([]);
   const [caseType, setCaseType] = useState<CaseType>("update");
   const [market, setMarket] = useState("US");
+  const [category, setCategory] = useState("food");
+  const [chosen, setChosen] = useState<string[]>([]);
+  const [options, setOptions] = useState<StandardsOptions | null>(null);
+  const [rules, setRules] = useState<RulesSummary | null>(null);
+  const [checklist, setChecklist] = useState<ChecklistField[]>([]);
+  const [proposal, setProposal] = useState<RulebookProposal | null>(null);
+  const [accepted, setAccepted] = useState<Set<string>>(new Set());
+  const [rbLoading, setRbLoading] = useState(false);
+  const [rbError, setRbError] = useState<string | null>(null);
   const analyzing = busy === BUSY_LABEL;
 
+  useEffect(() => {
+    api.standards().then(setOptions).catch(() => setOptions(null));
+  }, []);
+  useEffect(() => {
+    const call = caseType === "new_product" ? api.checklist(market, category, chosen) : api.applicable(market, category, chosen);
+    call
+      .then((r) => {
+        setRules(r);
+        setChecklist("fields" in r ? (r as { fields: ChecklistField[] }).fields : []);
+      })
+      .catch(() => setRules(null));
+  }, [market, category, chosen, caseType]);
+  const marketLabel = options?.markets.find((m) => m.code === market)?.label ?? "this market";
+
+  const readRulebook = async (file: File) => {
+    setRbLoading(true);
+    setRbError(null);
+    try {
+      const p = await api.companyRulebook(file);
+      setProposal(p);
+      setAccepted(new Set(p.rules.map((r) => r.id)));
+    } catch (e) {
+      setRbError(e instanceof Error ? e.message : "Could not read the rulebook.");
+    } finally {
+      setRbLoading(false);
+    }
+  };
+  const company = proposal ? { filename: proposal.filename, rules: proposal.rules.filter((r) => accepted.has(r.id)) } : undefined;
+
   const analyze = async (allowDuplicate = false) => {
-    const ok = await start(() => api.upload(files, caseType, market, allowDuplicate), BUSY_LABEL);
+    const ok = await start(() => api.upload(files, caseType, market, allowDuplicate, category, chosen, company), BUSY_LABEL);
     if (ok) router.push("/analysis");
   };
   const openExisting = async (sid: string) => {
@@ -134,11 +318,64 @@ export default function UploadPage() {
               Target market
             </label>
             <select id="market" value={market} onChange={(e) => setMarket(e.target.value)} className="h-9 w-full rounded border border-line-strong bg-stock px-2 text-sm font-medium sm:w-auto">
-              <option value="US">United States (FDA label rules)</option>
-              <option value="EU">European Union (label rules not loaded yet)</option>
+              {(options?.markets ?? [{ code: "US", label: "United States" }]).map((m) => (
+                <option key={m.code} value={m.code}>
+                  {m.label}
+                </option>
+              ))}
+              <option value={OTHER}>Another market (general checks only)</option>
             </select>
-            {market !== "US" && <span className="text-xs text-ink-muted">Only US label rules are checked today; every other check still runs.</span>}
+            <label htmlFor="category" className="text-sm font-semibold text-ink">
+              Product category
+            </label>
+            <select id="category" value={category} onChange={(e) => setCategory(e.target.value)} className="h-9 w-full rounded border border-line-strong bg-stock px-2 text-sm font-medium sm:w-auto">
+              {(options?.categories ?? [{ id: "food", label: "Food & beverage", has_rules: true }]).map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.label}
+                  {c.has_rules ? "" : " (general checks only)"}
+                </option>
+              ))}
+            </select>
           </div>
+          <RulesBox rules={rules} marketLabel={marketLabel} />
+          {options && options.standards.length > 0 && (
+            <details className="mt-2 text-[13px]">
+              <summary className="cursor-pointer select-none text-ink-muted hover:text-ink">Choose the rule sets yourself (optional)</summary>
+              <div className="mt-1.5 space-y-1">
+                {options.standards.map((s) => (
+                  <label key={s.standard} className="flex items-center gap-2 text-ink-2">
+                    <input
+                      type="checkbox"
+                      checked={chosen.includes(s.standard)}
+                      onChange={(e) => setChosen((p) => (e.target.checked ? [...p, s.standard] : p.filter((x) => x !== s.standard)))}
+                    />
+                    {s.name} <span className="text-xs text-ink-muted">· {s.status}</span>
+                  </label>
+                ))}
+                <p className="text-xs text-ink-muted">Leave all unticked to use the rules that match the market and category.</p>
+              </div>
+            </details>
+          )}
+          <RulebookBox
+            proposal={proposal}
+            accepted={accepted}
+            loading={rbLoading}
+            error={rbError}
+            onFile={readRulebook}
+            onToggle={(id) =>
+              setAccepted((prev) => {
+                const next = new Set(prev);
+                if (next.has(id)) next.delete(id);
+                else next.add(id);
+                return next;
+              })
+            }
+            onClear={() => {
+              setProposal(null);
+              setAccepted(new Set());
+            }}
+          />
+          {caseType === "new_product" && <ChecklistBox fields={checklist} />}
         </fieldset>
 
         <section aria-labelledby="files-h" className="min-w-0">

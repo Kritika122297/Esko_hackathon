@@ -12,7 +12,9 @@ from app.models.extraction import Extraction
 from app.services.checks import CheckContext, run_checks
 from app.services.extract_fields import read_artwork, read_sheets
 from app.services.file_parser import merge_extractions, parse_file
+from app.services.guidelines import requirements
 from app.services.merge import build_fields, group_candidates
+from app.services.ai_questions import apply_rewrites
 from app.services.questions import build_questions
 from app.services.values import plural
 
@@ -56,6 +58,17 @@ def analyze(state: BriefState, ex: Extraction) -> CheckContext:
 
 
 def recompute(state: BriefState, saved: CheckContext) -> BriefState:
+    required = requirements(state.market, state.category, state.standards or None, state.company_clauses)
+    for f in state.fields:
+        f.mandatory = f.key in required
+    art = saved.artwork.has_artwork
+    for f in state.fields:
+        if f.value:
+            f.absence = None
+        elif f.not_applicable:
+            f.absence = "not_applicable"
+        else:  # nobody provided it; with artwork present we also looked for it there and did not find it
+            f.absence = "not_detected" if art and f.on_artwork else "not_provided"
     issues, passed = run_checks(state, saved)
     state.issues = issues
     state.passed_checks = passed
@@ -70,7 +83,9 @@ def recompute(state: BriefState, saved: CheckContext) -> BriefState:
         conflicting = len(group_candidates(f.key, f.candidates)) > 1 and f.key != "claims"
         flagged = any(s.flagged for s in f.sources)
         agreeing = len({(s.kind, s.file) for s in f.sources})
-        if not f.value:
+        if not f.value and f.not_applicable:
+            f.status, f.confidence = "confirmed", 1.0  # a reviewer decided it does not apply
+        elif not f.value:
             f.status, f.confidence = "missing", 0.0
         elif f.key in open_by_field:
             f.status = "needs_review"
@@ -89,6 +104,7 @@ def recompute(state: BriefState, saved: CheckContext) -> BriefState:
         state.product_name = f"{brand} {name}" if brand and brand.lower() not in name.lower() else name
 
     state.questions = build_questions(state, saved)
+    apply_rewrites(state.questions, saved)
     state.readiness = readiness(state)
     state.updated_at = now()
     return state

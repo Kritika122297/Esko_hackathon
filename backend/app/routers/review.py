@@ -7,7 +7,7 @@ from typing import Dict, List, Optional
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-from app.models.brief import ChangeLogEntry, Issue, SourceRef
+from app.models.brief import ChangeLogEntry, FieldChange, Issue, SourceRef
 from app.routers.common import SessionView, apply_edit, load, require_draft, save_and_view
 from app.services.catalog import FIELD_BY_KEY
 from app.services.pipeline import now, recompute
@@ -52,6 +52,41 @@ def confirm_field(sid: str, key: str, req: ConfirmRequest) -> SessionView:
     if f is None or not f.value:
         raise HTTPException(status_code=400, detail="Only a field with a value can be confirmed.")
     apply_edit(state, key, f.value, REVIEWER, req.reason or "Confirmed as correct", action="confirm")
+    return save_and_view(state, ctx, ex)
+
+
+class NARequest(BaseModel):
+    reason: str
+
+
+@router.post("/{sid}/fields/{key}/undo", response_model=SessionView)
+def undo_field(sid: str, key: str) -> SessionView:
+    """Reverses the latest change to a field. Undoing again re-applies it."""
+    state, ctx, ex = load(sid)
+    require_draft(state)
+    f = state.field(key)
+    if f is None or not f.history:
+        raise HTTPException(status_code=400, detail="Nothing to undo for this field.")
+    last = f.history[-1]
+    apply_edit(state, key, last.old or "", REVIEWER, f"Undo of: {last.reason or 'earlier change'}", action="undo")
+    f.user_confirmed = False
+    return save_and_view(state, ctx, ex)
+
+
+@router.post("/{sid}/fields/{key}/not-applicable", response_model=SessionView)
+def mark_not_applicable(sid: str, key: str, req: NARequest) -> SessionView:
+    state, ctx, ex = load(sid)
+    require_draft(state)
+    f = state.field(key)
+    if f is None:
+        raise HTTPException(status_code=404, detail=f"Unknown field '{key}'.")
+    if f.value:
+        raise HTTPException(status_code=400, detail="Clear the value first; a field with a value applies.")
+    if not req.reason.strip():
+        raise HTTPException(status_code=400, detail="Say why this field does not apply.")
+    f.not_applicable = True
+    f.history.append(FieldChange(at=now(), by=REVIEWER, old=None, new=None, reason=f"Not applicable: {req.reason}"))
+    state.change_log.append(ChangeLogEntry(at=now(), by=REVIEWER, action="not_applicable", field=key, note=req.reason))
     return save_and_view(state, ctx, ex)
 
 

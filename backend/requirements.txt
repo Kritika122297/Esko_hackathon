@@ -14,3 +14,5 @@ httpx==0.28.1
 google-genai==2.31.0
 # Tests
 pytest==9.1.1
+# Optional OCR (needs the Tesseract program installed; see .env.example)
+pytesseract==0.3.13

@@ -1,4 +1,7 @@
-import { CaseType, ChatAnswer, ChatMessageOut, DesignerBrief, ImpactPreview, ProjectSummary, SessionView } from "./types";
+import {
+  CaseType, ChatAnswer, ChatMessageOut, ChecklistField, DesignerBrief, ImpactPreview, ProjectSummary, RulesSummary, SessionView,
+  StandardsOptions, RulebookProposal,
+} from "./types";
 
 // Requests go to /api, which next.config.mjs proxies to the FastAPI backend.
 const API = process.env.NEXT_PUBLIC_API_URL || "/api";
@@ -49,11 +52,30 @@ export const api = {
     if (!res.ok && res.status !== 404) throw new ApiError(res.status, "Could not delete the brief.");
   },
 
-  upload: (files: File[], caseType: CaseType, market: string, allowDuplicate = false) => {
+  standards: () => request<StandardsOptions>("/standards"),
+  applicable: (market: string, category: string, standards: string[]) =>
+    request<RulesSummary>(`/standards/applicable?${new URLSearchParams({ market, category, standards: standards.join(",") })}`),
+  checklist: (market: string, category: string, standards: string[]) =>
+    request<RulesSummary & { fields: ChecklistField[] }>(`/standards/checklist?${new URLSearchParams({ market, category, standards: standards.join(",") })}`),
+
+  companyRulebook: (file: File) => {
+    const form = new FormData();
+    form.append("file", file);
+    return request<RulebookProposal>("/standards/company-rulebook", { method: "POST", body: form });
+  },
+
+  upload: (files: File[], caseType: CaseType, market: string, allowDuplicate = false, category = "food", standards: string[] = [],
+           company?: { filename: string; rules: object[] }) => {
     const form = new FormData();
     files.forEach((f) => form.append("files", f));
     form.append("case", caseType);
     form.append("market", market);
+    form.append("category", category);
+    form.append("standards", standards.join(","));
+    if (company && company.rules.length) {
+      form.append("company_rules", JSON.stringify(company.rules));
+      form.append("company_file", company.filename);
+    }
     form.append("allow_duplicate", String(allowDuplicate));
     return request<SessionView>("/sessions", { method: "POST", body: form });
   },
@@ -65,6 +87,15 @@ export const api = {
   },
 
   get: (sid: string) => request<SessionView>(`/sessions/${sid}`),
+
+  undoField: (sid: string, key: string) => request<SessionView>(`/sessions/${sid}/fields/${key}/undo`, { method: "POST" }),
+
+  markNotApplicable: (sid: string, key: string, reason: string) =>
+    request<SessionView>(`/sessions/${sid}/fields/${key}/not-applicable`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reason }),
+    }),
 
   editField: (sid: string, key: string, value: string, reason?: string) =>
     request<SessionView>(`/sessions/${sid}/fields/${key}`, {

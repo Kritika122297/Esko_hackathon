@@ -12,6 +12,7 @@ from typing import Dict, List, Optional, Tuple
 
 from pydantic import BaseModel, Field
 
+from app.config import settings
 from app.models.brief import Candidate, SourceRef
 from app.models.extraction import ExcelRow, Extraction, Fragment
 from app.services.catalog import NUTRIENTS, dv_key, match_label, match_nutrient
@@ -72,8 +73,12 @@ def union_bbox(frags: List[Fragment]) -> Optional[List[float]]:
 
 def pdf_source(frags: List[Fragment], snippet: Optional[str] = None) -> SourceRef:
     f0 = frags[0]
+    ocr = [f for f in frags if f.ocr]
+    shaky = ocr and (any(f.ocr_conf is not None and f.ocr_conf < settings.OCR_MIN_CONFIDENCE for f in ocr)
+                     or any(f.bbox is None for f in ocr))  # a model-read line has no box: a human must look
     return SourceRef(file=f0.file, kind="pdf", page=f0.page, panel=f0.panel, bbox=union_bbox(frags),
-                     snippet=_clean(snippet if snippet is not None else " ".join(f.text for f in frags)))
+                     snippet=_clean(snippet if snippet is not None else " ".join(f.text for f in frags)),
+                     note=f"Read by OCR ({ocr[0].ocr})" if ocr else None, flagged=bool(shaky))
 
 
 # --------------------------------------------------------------------------- PDF layout helpers

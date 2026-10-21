@@ -1,0 +1,186 @@
+{
+  "standard": "us_pet_food",
+  "name": "US pet food labeling (21 CFR 501, AAFCO model rules)",
+  "status": "draft",
+  "version": "0.1",
+  "ui_markets": [],
+  "applies_to": {
+    "markets": [
+      "US",
+      "USA",
+      "UNITED STATES"
+    ],
+    "categories": [
+      "pet_food"
+    ]
+  },
+  "clauses": [
+    {
+      "id": "US-PET/name",
+      "section": "Legal & Identity",
+      "text": "The product name is shown on the principal display panel.",
+      "keywords": [
+        "product name"
+      ],
+      "source": {
+        "name": "US 21 CFR Part 501 and AAFCO model pet food regulations",
+        "url": "https://www.ecfr.gov/current/title-21/chapter-I/subchapter-E/part-501",
+        "note": "Draft paraphrase. Check against the source before relying on it."
+      },
+      "requires": [
+        {
+          "field": "statement_of_identity",
+          "severity": "blocking",
+          "owner": "Legal"
+        }
+      ]
+    },
+    {
+      "id": "US-PET/species",
+      "section": "Product",
+      "text": "The species the food is intended for is stated.",
+      "keywords": [
+        "dog",
+        "cat",
+        "for adult"
+      ],
+      "source": {
+        "name": "US 21 CFR Part 501 and AAFCO model pet food regulations",
+        "url": "https://www.ecfr.gov/current/title-21/chapter-I/subchapter-E/part-501",
+        "note": "Draft paraphrase. Check against the source before relying on it."
+      },
+      "requires": [
+        {
+          "field": "target_species",
+          "severity": "blocking",
+          "owner": "R&D"
+        }
+      ]
+    },
+    {
+      "id": "US-PET/quantity",
+      "section": "Quantity",
+      "text": "The net quantity of contents is stated.",
+      "keywords": [
+        "net wt",
+        "lb",
+        "oz"
+      ],
+      "source": {
+        "name": "US 21 CFR Part 501 and AAFCO model pet food regulations",
+        "url": "https://www.ecfr.gov/current/title-21/chapter-I/subchapter-E/part-501",
+        "note": "Draft paraphrase. Check against the source before relying on it."
+      },
+      "requires": [
+        {
+          "field": "net_weight",
+          "severity": "blocking",
+          "owner": "Supply Chain"
+        }
+      ]
+    },
+    {
+      "id": "US-PET/maker",
+      "section": "Legal & Identity",
+      "text": "The name and place of business of the manufacturer or distributor are shown.",
+      "keywords": [
+        "manufactured by",
+        "distributed by"
+      ],
+      "source": {
+        "name": "US 21 CFR Part 501 and AAFCO model pet food regulations",
+        "url": "https://www.ecfr.gov/current/title-21/chapter-I/subchapter-E/part-501",
+        "note": "Draft paraphrase. Check against the source before relying on it."
+      },
+      "requires": [
+        {
+          "field": "producer",
+          "severity": "blocking",
+          "owner": "Legal"
+        }
+      ]
+    },
+    {
+      "id": "US-PET/ingredients",
+      "section": "Ingredients & Allergens",
+      "text": "Ingredients are listed in descending order of weight.",
+      "keywords": [
+        "ingredients"
+      ],
+      "source": {
+        "name": "US 21 CFR Part 501 and AAFCO model pet food regulations",
+        "url": "https://www.ecfr.gov/current/title-21/chapter-I/subchapter-E/part-501",
+        "note": "Draft paraphrase. Check against the source before relying on it."
+      },
+      "requires": [
+        {
+          "field": "ingredients",
+          "severity": "blocking",
+          "owner": "R&D"
+        }
+      ]
+    },
+    {
+      "id": "US-PET/analysis",
+      "section": "Nutrition",
+      "text": "A guaranteed analysis (minimum crude protein and fat, maximum fibre and moisture) is shown.",
+      "keywords": [
+        "guaranteed analysis",
+        "crude protein"
+      ],
+      "source": {
+        "name": "US 21 CFR Part 501 and AAFCO model pet food regulations",
+        "url": "https://www.ecfr.gov/current/title-21/chapter-I/subchapter-E/part-501",
+        "note": "Draft paraphrase. Check against the source before relying on it."
+      },
+      "requires": [
+        {
+          "field": "guaranteed_analysis",
+          "severity": "blocking",
+          "owner": "R&D"
+        }
+      ]
+    },
+    {
+      "id": "US-PET/adequacy",
+      "section": "Nutrition",
+      "text": "A nutritional adequacy statement (for example 'complete and balanced' for a life stage) is shown.",
+      "keywords": [
+        "complete and balanced",
+        "aafco"
+      ],
+      "source": {
+        "name": "US 21 CFR Part 501 and AAFCO model pet food regulations",
+        "url": "https://www.ecfr.gov/current/title-21/chapter-I/subchapter-E/part-501",
+        "note": "Draft paraphrase. Check against the source before relying on it."
+      },
+      "requires": [
+        {
+          "field": "nutritional_adequacy",
+          "severity": "blocking",
+          "owner": "Legal"
+        }
+      ]
+    },
+    {
+      "id": "US-PET/feeding",
+      "section": "Nutrition",
+      "text": "Feeding directions are shown.",
+      "keywords": [
+        "feeding"
+      ],
+      "source": {
+        "name": "US 21 CFR Part 501 and AAFCO model pet food regulations",
+        "url": "https://www.ecfr.gov/current/title-21/chapter-I/subchapter-E/part-501",
+        "note": "Draft paraphrase. Check against the source before relying on it."
+      },
+      "requires": [
+        {
+          "field": "feeding_guidelines",
+          "severity": "blocking",
+          "owner": "R&D"
+        }
+      ]
+    }
+  ]
+}

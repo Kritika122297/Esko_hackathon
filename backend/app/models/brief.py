@@ -4,6 +4,8 @@ from typing import Dict, List, Literal, Optional
 
 from pydantic import BaseModel, Field
 
+from app.services.guidelines import Clause
+
 FieldStatus = Literal["confirmed", "needs_review", "missing"]
 Severity = Literal["blocking", "warning", "info"]
 IssueKind = Literal["definite", "likely", "needs_human"]
@@ -35,9 +37,14 @@ class Candidate(BaseModel):
     source: SourceRef
 
 
+Origin = Literal["human", "rule", "ai", "source"]
+Absence = Literal["not_provided", "not_detected", "not_applicable"]
+
+
 class FieldChange(BaseModel):
     at: str
     by: str
+    origin: Origin = Field("human", description="Who proposed the value: a person, a code rule, the AI or a source file")
     old: Optional[str] = None
     new: Optional[str] = None
     reason: Optional[str] = None
@@ -56,6 +63,8 @@ class BriefField(BaseModel):
     mandatory: bool = False
     on_artwork: bool = Field(False, description="Content the designer places on the pack")
     user_confirmed: bool = False
+    not_applicable: bool = Field(False, description="A reviewer decided this field does not apply to the product")
+    absence: Optional[Absence] = Field(None, description="Why an empty field is empty")
     history: List[FieldChange] = Field(default_factory=list)
 
 
@@ -77,6 +86,7 @@ class Issue(BaseModel):
         description="data: a person must decide before handoff; design: becomes a designer task",
     )
     detected_by: Literal["code", "ai"] = "code"
+    clauses: List[str] = Field(default_factory=list, description="Guideline clause ids this finding rests on")
     state: IssueState = "open"
     acknowledgement: Optional[str] = None
 
@@ -106,12 +116,15 @@ class Question(BaseModel):
     priority: Literal["must_answer", "should_answer"]
     options: List[QuestionOption]
     custom_field: Optional[str] = Field(None, description="Field a free-text answer is written to")
+    ai_worded: bool = Field(False, description="The wording was rewritten by the AI; options and answers are code")
+    original_question: Optional[str] = None
 
 
 class ChangeLogEntry(BaseModel):
     at: str
     by: str
-    action: Literal["edit", "confirm", "answer", "acknowledge", "reopen", "finalize", "analyze", "files"]
+    action: Literal["edit", "confirm", "answer", "acknowledge", "reopen", "finalize", "analyze", "files", "undo", "not_applicable"]
+    origin: Origin = "human"
     field: Optional[str] = None
     issue: Optional[str] = None
     old: Optional[str] = None
@@ -154,6 +167,9 @@ class BriefState(BaseModel):
     updated_at: str
     case: Case = "update"
     market: str = "US"
+    category: str = "food"
+    standards: List[str] = Field(default_factory=list, description="Selected standards; empty = by market")
+    company_clauses: List[Clause] = Field(default_factory=list, description="Rules from an uploaded company rulebook, accepted by a reviewer")
     status: Literal["draft", "finalized"] = "draft"
     product_name: str = "Untitled product"
     files: List[FileInfo] = Field(default_factory=list)

@@ -1,0 +1,165 @@
+{
+  "standard": "in_drugs",
+  "name": "India drug labelling (Drugs and Cosmetics Rules 1945)",
+  "status": "draft",
+  "version": "0.1",
+  "ui_markets": [],
+  "applies_to": {
+    "markets": [
+      "IN",
+      "INDIA"
+    ],
+    "categories": [
+      "pharma"
+    ]
+  },
+  "clauses": [
+    {
+      "id": "IN-DRUG/name",
+      "section": "Legal & Identity",
+      "text": "The label names the drug.",
+      "keywords": [
+        "name of drug"
+      ],
+      "source": {
+        "name": "India Drugs and Cosmetics Rules, 1945 (labelling of drugs)",
+        "url": "https://cdsco.gov.in/",
+        "note": "Draft paraphrase. Check against the source before relying on it."
+      },
+      "requires": [
+        {
+          "field": "statement_of_identity",
+          "severity": "blocking",
+          "owner": "Legal"
+        }
+      ]
+    },
+    {
+      "id": "IN-DRUG/active",
+      "section": "Ingredients & Allergens",
+      "text": "The active ingredients and their quantity are stated.",
+      "keywords": [
+        "active ingredient",
+        "each tablet contains"
+      ],
+      "source": {
+        "name": "India Drugs and Cosmetics Rules, 1945 (labelling of drugs)",
+        "url": "https://cdsco.gov.in/",
+        "note": "Draft paraphrase. Check against the source before relying on it."
+      },
+      "requires": [
+        {
+          "field": "active_ingredients",
+          "severity": "blocking",
+          "owner": "R&D"
+        }
+      ]
+    },
+    {
+      "id": "IN-DRUG/maker",
+      "section": "Legal & Identity",
+      "text": "The name and address of the manufacturer and the manufacturing licence number are shown.",
+      "keywords": [
+        "manufacturer",
+        "mfg. lic"
+      ],
+      "source": {
+        "name": "India Drugs and Cosmetics Rules, 1945 (labelling of drugs)",
+        "url": "https://cdsco.gov.in/",
+        "note": "Draft paraphrase. Check against the source before relying on it."
+      },
+      "requires": [
+        {
+          "field": "producer",
+          "severity": "blocking",
+          "owner": "Legal"
+        },
+        {
+          "field": "licence_number",
+          "severity": "blocking",
+          "owner": "Legal"
+        }
+      ]
+    },
+    {
+      "id": "IN-DRUG/batch",
+      "section": "Other Pack Copy",
+      "text": "The batch number, date of manufacture and date of expiry are shown.",
+      "keywords": [
+        "batch",
+        "mfg",
+        "exp"
+      ],
+      "source": {
+        "name": "India Drugs and Cosmetics Rules, 1945 (labelling of drugs)",
+        "url": "https://cdsco.gov.in/",
+        "note": "Draft paraphrase. Check against the source before relying on it."
+      },
+      "requires": [
+        {
+          "field": "batch_lot",
+          "severity": "blocking",
+          "owner": "Supply Chain"
+        },
+        {
+          "field": "manufacture_date",
+          "severity": "blocking",
+          "owner": "Supply Chain"
+        },
+        {
+          "field": "expiry_date",
+          "severity": "blocking",
+          "owner": "Supply Chain"
+        }
+      ]
+    },
+    {
+      "id": "IN-DRUG/quantity",
+      "section": "Quantity",
+      "text": "The quantity or number of dosage units in the pack is stated.",
+      "keywords": [
+        "quantity",
+        "tablets"
+      ],
+      "source": {
+        "name": "India Drugs and Cosmetics Rules, 1945 (labelling of drugs)",
+        "url": "https://cdsco.gov.in/",
+        "note": "Draft paraphrase. Check against the source before relying on it."
+      },
+      "requires": [
+        {
+          "field": "net_weight",
+          "severity": "blocking",
+          "owner": "Supply Chain"
+        }
+      ]
+    },
+    {
+      "id": "IN-DRUG/warnings",
+      "section": "Other Pack Copy",
+      "text": "Storage conditions and required warnings (including the prescription-only statement where applicable) are shown.",
+      "keywords": [
+        "store",
+        "schedule",
+        "warning"
+      ],
+      "source": {
+        "name": "India Drugs and Cosmetics Rules, 1945 (labelling of drugs)",
+        "url": "https://cdsco.gov.in/",
+        "note": "Draft paraphrase. Check against the source before relying on it."
+      },
+      "requires": [
+        {
+          "field": "warnings",
+          "severity": "warning",
+          "owner": "Legal"
+        },
+        {
+          "field": "storage",
+          "severity": "warning",
+          "owner": "R&D"
+        }
+      ]
+    }
+  ]
+}

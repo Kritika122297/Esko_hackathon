@@ -1,0 +1,202 @@
+{
+  "standard": "in_cosmetics",
+  "name": "India cosmetics labelling (Cosmetics Rules 2020)",
+  "status": "draft",
+  "version": "0.1",
+  "ui_markets": [
+    {
+      "code": "IN",
+      "label": "India"
+    }
+  ],
+  "applies_to": {
+    "markets": [
+      "IN",
+      "INDIA"
+    ],
+    "categories": [
+      "cosmetics"
+    ]
+  },
+  "clauses": [
+    {
+      "id": "IN-COSM/name",
+      "section": "Legal & Identity",
+      "text": "The label states the name of the cosmetic.",
+      "keywords": [
+        "name"
+      ],
+      "source": {
+        "name": "India Cosmetics Rules, 2020 (Drugs and Cosmetics Act, 1940)",
+        "url": "https://cdsco.gov.in/",
+        "note": "Draft paraphrase. Check against the source before relying on it."
+      },
+      "requires": [
+        {
+          "field": "statement_of_identity",
+          "severity": "blocking",
+          "owner": "Legal"
+        }
+      ]
+    },
+    {
+      "id": "IN-COSM/maker",
+      "section": "Legal & Identity",
+      "text": "The label states the name and address of the manufacturer (or importer for imported products).",
+      "keywords": [
+        "manufacturer",
+        "address",
+        "importer"
+      ],
+      "source": {
+        "name": "India Cosmetics Rules, 2020 (Drugs and Cosmetics Act, 1940)",
+        "url": "https://cdsco.gov.in/",
+        "note": "Draft paraphrase. Check against the source before relying on it."
+      },
+      "requires": [
+        {
+          "field": "producer",
+          "severity": "blocking",
+          "owner": "Legal"
+        }
+      ]
+    },
+    {
+      "id": "IN-COSM/licence",
+      "section": "Legal & Identity",
+      "text": "The manufacturing licence number (or import registration number) is shown.",
+      "keywords": [
+        "licence",
+        "license",
+        "registration"
+      ],
+      "source": {
+        "name": "India Cosmetics Rules, 2020 (Drugs and Cosmetics Act, 1940)",
+        "url": "https://cdsco.gov.in/",
+        "note": "Draft paraphrase. Check against the source before relying on it."
+      },
+      "requires": [
+        {
+          "field": "licence_number",
+          "severity": "blocking",
+          "owner": "Legal"
+        }
+      ]
+    },
+    {
+      "id": "IN-COSM/ingredients",
+      "section": "Ingredients & Allergens",
+      "text": "The ingredients are listed.",
+      "keywords": [
+        "ingredients"
+      ],
+      "source": {
+        "name": "India Cosmetics Rules, 2020 (Drugs and Cosmetics Act, 1940)",
+        "url": "https://cdsco.gov.in/",
+        "note": "Draft paraphrase. Check against the source before relying on it."
+      },
+      "requires": [
+        {
+          "field": "inci_ingredients",
+          "severity": "blocking",
+          "owner": "R&D"
+        }
+      ]
+    },
+    {
+      "id": "IN-COSM/batch",
+      "section": "Other Pack Copy",
+      "text": "The batch number is shown.",
+      "keywords": [
+        "batch"
+      ],
+      "source": {
+        "name": "India Cosmetics Rules, 2020 (Drugs and Cosmetics Act, 1940)",
+        "url": "https://cdsco.gov.in/",
+        "note": "Draft paraphrase. Check against the source before relying on it."
+      },
+      "requires": [
+        {
+          "field": "batch_lot",
+          "severity": "blocking",
+          "owner": "Supply Chain"
+        }
+      ]
+    },
+    {
+      "id": "IN-COSM/dates",
+      "section": "Other Pack Copy",
+      "text": "The date of manufacture and the expiry or best-before date are shown.",
+      "keywords": [
+        "manufacture",
+        "expiry",
+        "best before"
+      ],
+      "source": {
+        "name": "India Cosmetics Rules, 2020 (Drugs and Cosmetics Act, 1940)",
+        "url": "https://cdsco.gov.in/",
+        "note": "Draft paraphrase. Check against the source before relying on it."
+      },
+      "requires": [
+        {
+          "field": "expiry_date",
+          "severity": "blocking",
+          "owner": "Supply Chain"
+        },
+        {
+          "field": "manufacture_date",
+          "severity": "warning",
+          "owner": "Supply Chain"
+        }
+      ]
+    },
+    {
+      "id": "IN-COSM/quantity",
+      "section": "Quantity",
+      "text": "The net contents are stated by weight, volume or number.",
+      "keywords": [
+        "net content",
+        "net quantity"
+      ],
+      "source": {
+        "name": "India Cosmetics Rules, 2020 (Drugs and Cosmetics Act, 1940)",
+        "url": "https://cdsco.gov.in/",
+        "note": "Draft paraphrase. Check against the source before relying on it."
+      },
+      "requires": [
+        {
+          "field": "net_weight",
+          "severity": "blocking",
+          "owner": "Supply Chain"
+        }
+      ]
+    },
+    {
+      "id": "IN-COSM/directions",
+      "section": "Other Pack Copy",
+      "text": "Directions for use and any warnings or cautions are shown where applicable.",
+      "keywords": [
+        "directions",
+        "warning",
+        "caution"
+      ],
+      "source": {
+        "name": "India Cosmetics Rules, 2020 (Drugs and Cosmetics Act, 1940)",
+        "url": "https://cdsco.gov.in/",
+        "note": "Draft paraphrase. Check against the source before relying on it."
+      },
+      "requires": [
+        {
+          "field": "directions",
+          "severity": "warning",
+          "owner": "R&D"
+        },
+        {
+          "field": "warnings",
+          "severity": "warning",
+          "owner": "Legal"
+        }
+      ]
+    }
+  ]
+}

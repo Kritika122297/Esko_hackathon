@@ -20,7 +20,9 @@ from app.models.brief import AIStatus, BriefState, Candidate, Issue, SourceRef
 from app.models.extraction import Extraction
 from app.services.catalog import FIELD_BY_KEY
 from app.services.checks import CheckContext
-from app.services.llm import LLMError, llm
+from app.services.ai_questions import reword_questions
+from app.services.ai_rules import quote_found, rule_review
+from app.services.llm import LLMError, any_enabled, get_llm, llm
 from app.services.values import comparable, norm_text, plural
 
 logger = logging.getLogger(__name__)
@@ -56,15 +58,22 @@ def _short_error(err: Exception) -> str:
 
 def run_ai(state: BriefState, saved: CheckContext, ex: Extraction, session_dir: Path) -> None:
     state.ai = AIStatus(provider=llm.provider, model=llm.model or None, enabled=llm.enabled)
-    if not llm.enabled:
+    if not any_enabled():
         state.ai.notes.append("AI is switched off: all values come from document text and all checks are code. "
                               "The visual cross-check of the printed artwork did not run.")
         return
     # The two calls are independent: the review reads values and code findings,
     # the vision check only appends alternative candidates. Run them side by side.
-    with ThreadPoolExecutor(max_workers=2) as pool:
+    proposed: dict = {}
+    with ThreadPoolExecutor(max_workers=3) as pool:
         vision = pool.submit(vision_crosscheck, state, saved, ex, session_dir)
         review = pool.submit(claims_review, state, saved)
+        rules = pool.submit(rule_review, state, saved)
+    try:
+        proposed["rules"] = rules.result()
+    except (LLMError, Exception) as err:
+        logger.warning("Rule review failed: %s", err)
+        state.ai.notes.append(f"AI rule review did not run: {_short_error(err)}.")
     try:
         n = vision.result()
         if n is not None:
@@ -73,11 +82,27 @@ def run_ai(state: BriefState, saved: CheckContext, ex: Extraction, session_dir: 
         logger.warning("Vision cross-check failed: %s", err)
         state.ai.notes.append(f"Vision cross-check did not run: {_short_error(err)}. Values rely on the file text only.")
     try:
-        k = review.result()
-        state.ai.used_for.append(f"Second opinion on claims and wording ({plural(k, 'extra point')} for human review)")
+        proposed["claims"] = review.result()
     except (LLMError, Exception) as err:
         logger.warning("Claims review failed: %s", err)
         state.ai.notes.append(f"AI claims review did not run: {_short_error(err)}.")
+    from app.services.pipeline import recompute  # re-check so duplicates are merged and questions exist
+
+    recompute(state, saved)
+    for key, check, text in (("rules", "ai.rules", f"Checked the brief against {state.market} label rules"),
+                             ("claims", "ai.review", "Second opinion on claims and wording")):
+        if key in proposed:
+            shown = sum(1 for i in state.issues if i.check == check)
+            state.ai.used_for.append(f"{text}: {proposed[key]} point(s) passed code validation, {shown} new after merging "
+                                     "with code findings")
+    try:
+        if get_llm("questions").enabled:
+            n = reword_questions(state, saved)
+            if n:
+                state.ai.used_for.append(f"Reworded {plural(n, 'question')} in plain language (options and answers stay code-made)")
+    except (LLMError, Exception) as err:
+        logger.warning("Question wording failed: %s", err)
+        state.ai.notes.append(f"AI question wording did not run: {_short_error(err)}.")
 
 
 def vision_crosscheck(state: BriefState, saved: CheckContext, ex: Extraction, session_dir: Path):
@@ -104,7 +129,10 @@ def vision_crosscheck(state: BriefState, saved: CheckContext, ex: Extraction, se
         'Return JSON only: {"readings":[{"field":"<key>","visible":"<text or null>","confidence":0.0}],'
         '"barcode_digits":null,"logos":[]}\n\nFIELDS:\n' + "\n".join(rows)
     )
-    data = llm.json(prompt, [_page_png(session_dir, page.image)])
+    vision = get_llm("vision")
+    if not vision.enabled:
+        return None
+    data = vision.json(prompt, [_page_png(session_dir, page.image)])
     agreed = 0
     for r in (data.get("readings") or []) if isinstance(data, dict) else []:
         key, seen = r.get("field"), r.get("visible")
@@ -135,26 +163,43 @@ def vision_crosscheck(state: BriefState, saved: CheckContext, ex: Extraction, se
     return len(rows)
 
 
+_ABSENCE = re.compile(r"\b(?:missing|absent|lack(?:s|ing)?|omitted|not (?:declared|stated|provided|listed|included|shown)|"
+                      r"no [\w-]+(?: [\w-]+)? (?:statement|declaration|section|warning|disclosure)|without)\b", re.I)
+
+
+def about_absence(title: str) -> bool:
+    return bool(_ABSENCE.search(title or ""))
+
+
 def claims_review(state: BriefState, saved: CheckContext) -> int:
     values = {f.key: f.value for f in state.fields if f.on_artwork and f.value}
     known = "\n".join(f"- {i.title}" for i in state.issues)
     prompt = (
         f"You review packaging copy for the {state.market} market. Below are the brief fields and the issues "
-        "already found by rule-based checks. List up to 5 ADDITIONAL labelling concerns about claims, wording or "
-        "required statements that are not already listed. Do not do arithmetic (code handles math).\n"
-        "Each concern must cite field keys from the list and quote the exact text it is about.\n"
-        'Return JSON only: {"concerns":[{"title":"","description":"","fields":["<key>"],"quote":"",'
+        "already found by rule-based checks. List up to 5 ADDITIONAL concerns about the claims and wording that "
+        "ARE PRESENT in the text (for example a claim the ingredients contradict, or a misleading phrase). "
+        "Do NOT report anything that is missing or absent, and do not list statements you think a pack should "
+        "carry: required statements are checked separately against the real rules. Do not do arithmetic (code "
+        "handles math). Skip anything already listed.\n"
+        "Each concern must cite field keys from the list and quote the exact text it is about, copied word for word.\n"
+        'Return JSON only: {"concerns":[{"title":"<5-9 word title>","description":"<one sentence: what is wrong and why>",'
+        '"fields":["<key>"],"quote":"<exact text, without the key name>",'
         '"owner":"Legal|R&D|Brand|Agency|Supply Chain"}]}\n\n'
         f"FIELDS:\n{values}\n\nALREADY FOUND:\n{known}"
     )
-    data = llm.json(prompt)
+    model = get_llm("claims")
+    if not model.enabled:
+        return 0
+    data = model.json(prompt)
     added = 0
     for c in (data.get("concerns") or [])[:5] if isinstance(data, dict) else []:
         keys = [k for k in c.get("fields") or [] if k in values]
         quote = str(c.get("quote") or "")
-        if not keys or not quote or not any(norm_text(quote) in norm_text(values[k]) for k in keys):
+        if not keys or not quote or not quote_found(quote, keys, values):
             continue  # unverifiable -> dropped
         title = str(c.get("title") or "AI review point")[:120]
+        if about_absence(title):
+            continue  # "something is missing" cannot be proven from a quote; required statements are the rule review's job
         slug = re.sub(r"[^a-z0-9]+", "-", title.lower()).strip("-")[:40]
         saved.ai_issues.append(Issue(
             id=f"ai:{slug}", check="ai.review", severity="warning", kind="needs_human", category="ai_review",

@@ -39,6 +39,11 @@ export function QuestionCard({ q, index }: { q: Question; index: number }) {
         <h3 id={`${id}-q`} className="text-[17px] font-bold leading-snug text-ink">
           {q.question}
         </h3>
+        {q.ai_worded && (
+          <p className="mt-1 text-[11px] uppercase tracking-wider text-ink-faint" title={q.original_question ?? undefined}>
+            AI-worded · answers are computed by code
+          </p>
+        )}
         <button
           onClick={() => setShowWhy((v) => !v)}
           aria-expanded={showWhy}

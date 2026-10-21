@@ -24,9 +24,13 @@ export interface Candidate {
   source: SourceRef;
 }
 
+export type Origin = "human" | "rule" | "ai" | "source";
+export type Absence = "not_provided" | "not_detected" | "not_applicable";
+
 export interface FieldChange {
   at: string;
   by: string;
+  origin: Origin;
   old?: string | null;
   new?: string | null;
   reason?: string | null;
@@ -45,6 +49,8 @@ export interface BriefField {
   mandatory: boolean;
   on_artwork: boolean;
   user_confirmed: boolean;
+  not_applicable: boolean;
+  absence?: Absence | null;
   history: FieldChange[];
 }
 
@@ -63,6 +69,7 @@ export interface Issue {
   design_action?: DesignAction | null;
   resolution: "data" | "design";
   detected_by: "code" | "ai";
+  clauses?: string[];
   state: "open" | "acknowledged";
   acknowledgement?: string | null;
 }
@@ -92,12 +99,15 @@ export interface Question {
   priority: "must_answer" | "should_answer";
   options: QuestionOption[];
   custom_field?: string | null;
+  ai_worded?: boolean;
+  original_question?: string | null;
 }
 
 export interface ChangeLogEntry {
   at: string;
   by: string;
   action: string;
+  origin?: Origin;
   field?: string | null;
   issue?: string | null;
   old?: string | null;
@@ -254,4 +264,51 @@ export interface ChatMessageOut {
   at: string;
   citations: ChatCitation[];
   suggestions: string[];
+}
+
+export interface RulePack {
+  standard: string;
+  name: string;
+  status: string;
+  version?: string;
+  clauses: number;
+}
+
+export interface RulesSummary {
+  packs: RulePack[];
+  market_rules: boolean;
+  all_verified: boolean;
+}
+
+export interface ChecklistField {
+  key: string;
+  label: string;
+  section: string;
+  owner: string;
+  severity: string;
+  clauses: string[];
+  or?: string[];
+}
+
+export interface StandardsOptions {
+  markets: { code: string; label: string }[];
+  categories: { id: string; label: string; has_rules: boolean }[];
+  standards: { standard: string; name: string; status: string; markets: { code: string; label: string }[]; categories: string[]; clauses: number }[];
+}
+
+export interface RulebookRule {
+  id: string;
+  field: string;
+  label: string;
+  severity: string;
+  owner: string;
+  quote: string;
+  method: "keyword" | "ai";
+}
+
+export interface RulebookProposal {
+  filename: string;
+  characters: number;
+  rules: RulebookRule[];
+  ai_used: boolean;
 }

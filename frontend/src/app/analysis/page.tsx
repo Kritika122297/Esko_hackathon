@@ -48,7 +48,7 @@ export default function AnalysisPage() {
         <section aria-labelledby="findings-h" className="ticket flex max-h-[720px] min-h-[420px] flex-col p-3">
           <div className="mb-2 flex items-baseline justify-between gap-2">
             <h2 id="findings-h" className="text-label font-bold uppercase text-ink">
-              Findings <b className="figure ml-1 text-[18px]">{s.issues.length}</b>
+              Findings <b className="figure ml-1 text-[18px]">{s.issues.filter((i) => i.detected_by !== "ai").length}</b>
             </h2>
             <span className="text-xs text-ink-muted">Click evidence to see it on the pack</span>
           </div>

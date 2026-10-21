@@ -27,12 +27,15 @@ def _kind(name: str) -> str:
     return {"pdf": "artwork", "xlsx": "content sheet", "docx": "document", "txt": "notes", "md": "notes"}.get(ext, "image")
 
 
-def _create(paths: List[Path], case: str, market: str) -> SessionView:
+def _create(paths: List[Path], case: str, market: str, category: str = "food", standards: Optional[List[str]] = None,
+            company: Optional[List] = None) -> SessionView:
     sid = store.new_id()
     d = store.dir(sid)
     d.mkdir(parents=True, exist_ok=True)
     stamp = now()
-    state = BriefState(session_id=sid, created_at=stamp, updated_at=stamp, case=case, market=market.upper())
+    state = BriefState(session_id=sid, created_at=stamp, updated_at=stamp, case=case, market=market.upper(),
+                       category=(category or "food").lower(), standards=standards or [],
+                       company_clauses=company or [])
     pairs = [(p, p.name) for p in paths]
     ex = read_files(pairs, d)
     for p in paths:
@@ -110,11 +113,28 @@ def _same_files(paths: List[Path]) -> Optional[BriefState]:
     return None
 
 
+def _company_clauses(raw: str, filename: str) -> list:
+    """Accepted rulebook rules sent by the upload form; each is re-checked against the catalog."""
+    import json
+
+    from app.services.rulebook import to_clauses
+
+    try:
+        accepted = json.loads(raw) if raw else []
+    except ValueError:
+        raise HTTPException(status_code=400, detail="The company rules could not be read.")
+    return to_clauses(accepted if isinstance(accepted, list) else [], filename or "rulebook")
+
+
 @router.post("", response_model=SessionView, status_code=201)
 async def create_session(
     files: List[UploadFile] = File(...),
     case: CaseT = Form("update"),
     market: str = Form("US"),
+    category: str = Form("food"),
+    standards: str = Form(""),
+    company_rules: str = Form(""),
+    company_file: str = Form(""),
     allow_duplicate: bool = Form(False),
 ) -> SessionView:
     if not files:
@@ -131,7 +151,8 @@ async def create_session(
                 "existing": existing.session_id,
                 "product_name": existing.product_name,
             })
-        result = _create(saved, case, market)
+        result = _create(saved, case, market, category, [s.strip() for s in standards.split(",") if s.strip()],
+                         _company_clauses(company_rules, company_file))
         for s in saved:
             shutil.move(str(s), str(store.dir(result.state.session_id) / s.name))
         return result
@@ -151,6 +172,7 @@ async def add_files(sid: str, files: List[UploadFile] = File(...)) -> SessionVie
     paths = [d / n for n in names if (d / n).exists()]
 
     state = BriefState(session_id=sid, created_at=old.created_at, updated_at=now(), case=old.case, market=old.market,
+                       category=old.category, standards=list(old.standards), company_clauses=list(old.company_clauses),
                        acknowledgements=dict(old.acknowledgements), change_log=list(old.change_log))
     ex = read_files([(p, p.name) for p in paths], d)
     for p in paths:

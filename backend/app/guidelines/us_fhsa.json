@@ -1,0 +1,135 @@
+{
+  "standard": "us_fhsa",
+  "name": "US hazardous household products (FHSA, 16 CFR 1500)",
+  "status": "draft",
+  "version": "0.1",
+  "ui_markets": [],
+  "applies_to": {
+    "markets": [
+      "US",
+      "USA",
+      "UNITED STATES"
+    ],
+    "categories": [
+      "household"
+    ]
+  },
+  "clauses": [
+    {
+      "id": "US-FHSA/1500.121a",
+      "section": "Legal & Identity",
+      "text": "The label shows the name and place of business of the manufacturer, packer, distributor or seller.",
+      "keywords": [
+        "manufacturer",
+        "distributor"
+      ],
+      "source": {
+        "name": "US Federal Hazardous Substances Act, 16 CFR 1500.121",
+        "url": "https://www.ecfr.gov/current/title-16/chapter-II/subchapter-C/part-1500",
+        "note": "Draft paraphrase. Check against the source before relying on it."
+      },
+      "requires": [
+        {
+          "field": "producer",
+          "severity": "blocking",
+          "owner": "Legal"
+        }
+      ]
+    },
+    {
+      "id": "US-FHSA/1500.121b",
+      "section": "Legal & Identity",
+      "text": "The common or usual name of the product (statement of identity) is shown.",
+      "keywords": [
+        "common name",
+        "identity"
+      ],
+      "source": {
+        "name": "US Federal Hazardous Substances Act, 16 CFR 1500.121",
+        "url": "https://www.ecfr.gov/current/title-16/chapter-II/subchapter-C/part-1500",
+        "note": "Draft paraphrase. Check against the source before relying on it."
+      },
+      "requires": [
+        {
+          "field": "statement_of_identity",
+          "severity": "blocking",
+          "owner": "Legal"
+        }
+      ]
+    },
+    {
+      "id": "US-FHSA/FPLA",
+      "section": "Quantity",
+      "text": "The net contents are stated in US customary and metric units.",
+      "keywords": [
+        "net contents",
+        "fl oz"
+      ],
+      "source": {
+        "name": "US Fair Packaging and Labeling Act",
+        "url": "https://www.ftc.gov/legal-library/browse/statutes/fair-packaging-labeling-act",
+        "note": "Draft paraphrase. Check against the source before relying on it."
+      },
+      "requires": [
+        {
+          "field": "net_weight",
+          "severity": "blocking",
+          "owner": "Supply Chain"
+        }
+      ]
+    },
+    {
+      "id": "US-FHSA/1500.121c",
+      "section": "Other Pack Copy",
+      "text": "For hazardous products: the signal word (DANGER, WARNING or CAUTION), the statement of hazard and precautionary statements are shown.",
+      "keywords": [
+        "danger",
+        "warning",
+        "caution",
+        "keep out of reach"
+      ],
+      "source": {
+        "name": "US Federal Hazardous Substances Act, 16 CFR 1500.121",
+        "url": "https://www.ecfr.gov/current/title-16/chapter-II/subchapter-C/part-1500",
+        "note": "Draft paraphrase. Check against the source before relying on it."
+      },
+      "requires": [
+        {
+          "field": "signal_word",
+          "severity": "warning",
+          "owner": "Legal"
+        },
+        {
+          "field": "hazard_statements",
+          "severity": "warning",
+          "owner": "Legal"
+        },
+        {
+          "field": "precautionary_statements",
+          "severity": "warning",
+          "owner": "Legal"
+        }
+      ]
+    },
+    {
+      "id": "US-FHSA/firstaid",
+      "section": "Other Pack Copy",
+      "text": "First aid instructions are shown where the product is hazardous.",
+      "keywords": [
+        "first aid"
+      ],
+      "source": {
+        "name": "US Federal Hazardous Substances Act, 16 CFR 1500.121",
+        "url": "https://www.ecfr.gov/current/title-16/chapter-II/subchapter-C/part-1500",
+        "note": "Draft paraphrase. Check against the source before relying on it."
+      },
+      "requires": [
+        {
+          "field": "first_aid",
+          "severity": "warning",
+          "owner": "Legal"
+        }
+      ]
+    }
+  ]
+}

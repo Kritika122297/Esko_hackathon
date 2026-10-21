@@ -28,7 +28,14 @@ class Settings:
     LLM_API_KEY: str = os.getenv("LLM_API_KEY", "") or os.getenv("GEMINI_API_KEY", "")
     LLM_MODEL: str = os.getenv("LLM_MODEL", "")
     LLM_BASE_URL: str = os.getenv("LLM_BASE_URL", "")
+    LLM_MAX_TOKENS: int = int(os.getenv("LLM_MAX_TOKENS", "4096"))
     LLM_TIMEOUT_S: float = float(os.getenv("LLM_TIMEOUT_S", "90"))
+
+    # OCR for images and scanned PDF pages: auto | tesseract | llm | none
+    OCR_ENGINE: str = os.getenv("OCR_ENGINE", "auto").strip().lower()
+    TESSERACT_CMD: str = os.getenv("TESSERACT_CMD", "")
+    OCR_LANG: str = os.getenv("OCR_LANG", "eng")
+    OCR_MIN_CONFIDENCE: float = float(os.getenv("OCR_MIN_CONFIDENCE", "0.6"))
 
     UPLOAD_DIR: Path = Path(os.getenv("UPLOAD_DIR", str(BASE_DIR / "uploads"))).resolve()
     EXPORT_DIR: Path = Path(os.getenv("EXPORT_DIR", str(BASE_DIR / "exports"))).resolve()

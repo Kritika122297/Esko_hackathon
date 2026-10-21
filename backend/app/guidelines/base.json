@@ -1,0 +1,72 @@
+{
+  "standard": "base",
+  "name": "Core brief requirements",
+  "status": "draft",
+  "version": "0.1",
+  "ui_markets": [],
+  "applies_to": {
+    "markets": [
+      "*"
+    ],
+    "categories": [
+      "*"
+    ]
+  },
+  "clauses": [
+    {
+      "id": "BASE/identity",
+      "section": "Product",
+      "text": "A pack brief must name the brand and the product so the agency knows what is being designed.",
+      "keywords": [
+        "brand",
+        "product name"
+      ],
+      "requires": [
+        {
+          "field": "brand",
+          "severity": "blocking",
+          "owner": "Brand"
+        },
+        {
+          "field": "product_name",
+          "severity": "blocking",
+          "owner": "Brand"
+        }
+      ]
+    },
+    {
+      "id": "BASE/market",
+      "section": "Project",
+      "text": "The target market decides which label rules apply, so it must be stated.",
+      "keywords": [
+        "market",
+        "country"
+      ],
+      "requires": [
+        {
+          "field": "market",
+          "severity": "blocking",
+          "owner": "Brand"
+        }
+      ]
+    },
+    {
+      "id": "BASE/barcode",
+      "section": "Other Pack Copy",
+      "text": "Retail packs carry a registered barcode (GTIN). The agency must be given the number to place.",
+      "keywords": [
+        "barcode",
+        "upc",
+        "gtin",
+        "ean"
+      ],
+      "requires": [
+        {
+          "field": "barcode",
+          "severity": "blocking",
+          "owner": "Supply Chain"
+        }
+      ]
+    }
+  ]
+}

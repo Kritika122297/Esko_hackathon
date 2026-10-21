@@ -61,7 +61,7 @@ export default function ReviewPage() {
             >
               {k === "fields" ? "Brief fields" : "Findings"}{" "}
               <b className="figure ml-0.5 text-[16px]">
-                {k === "fields" ? s.readiness?.fields_needs_review ?? 0 : s.issues.filter((i) => i.state === "open").length}
+                {k === "fields" ? s.readiness?.fields_needs_review ?? 0 : s.issues.filter((i) => i.state === "open" && i.detected_by !== "ai").length}
               </b>
             </button>
           ))}

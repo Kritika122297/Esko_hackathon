@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Check, ChevronDown, History, Loader2, Pencil, Radar, X } from "lucide-react";
+import { Ban, Check, ChevronDown, History, Loader2, Pencil, Radar, Undo2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api";
-import { BriefField, FieldStatus, ImpactPreview } from "@/lib/types";
+import { Absence, BriefField, FieldStatus, ImpactPreview, Origin } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useBriefStore } from "@/store/briefStore";
 import { StatusFlag } from "@/components/shared/badges";
@@ -15,7 +15,7 @@ const SECTION_ORDER = ["Product", "Legal & Identity", "Ingredients & Allergens",
 type Filter = "needs_review" | "missing" | "confirmed" | "all";
 
 export function BriefEditor({ fields }: { fields: BriefField[] }) {
-  const relevant = useMemo(() => fields.filter((f) => f.value || f.mandatory), [fields]);
+  const relevant = useMemo(() => fields.filter((f) => f.value || f.mandatory || f.not_applicable), [fields]);
   const counts = useMemo(
     () => ({
       needs_review: relevant.filter((f) => f.status === "needs_review").length,
@@ -89,6 +89,13 @@ export function BriefEditor({ fields }: { fields: BriefField[] }) {
   );
 }
 
+const ABSENCE_TEXT: Record<Absence, string> = {
+  not_provided: "Not provided in any file",
+  not_detected: "Looked for on the artwork, not detected",
+  not_applicable: "Marked not applicable",
+};
+const ORIGIN_TEXT: Record<Origin, string> = { human: "Person", rule: "Code rule", ai: "AI suggestion", source: "Source file" };
+
 const FIGURE_RE = /^\s*(\d+(?:\.\d+)?)\s*(mcg|mg|g|kg|oz|%|kcal)?\s*$/i;
 
 function Figure({ value, big }: { value: string; big: boolean }) {
@@ -159,8 +166,23 @@ function Ticket({ f }: { f: BriefField }) {
     }
   };
 
+  const markNA = () => {
+    const reason = window.prompt(`Why does "${f.label}" not apply to this product?`);
+    if (reason && reason.trim()) run("Saving", (s) => api.markNotApplicable(s, f.key, reason.trim()), "Marked not applicable");
+  };
+
   const actions = !finalized && !editing && (
     <div className="flex flex-wrap items-center gap-2">
+      {f.history.length > 0 && (
+        <Button size="sm" variant="ghost" disabled={!!busy} onClick={() => run("Undoing", (s) => api.undoField(s, f.key), "Last change undone")}>
+          <Undo2 className="h-3.5 w-3.5" /> Undo
+        </Button>
+      )}
+      {!f.value && !f.not_applicable && (
+        <Button size="sm" variant="ghost" disabled={!!busy} onClick={markNA}>
+          <Ban className="h-3.5 w-3.5" /> Not applicable
+        </Button>
+      )}
       {f.status !== "confirmed" && f.value && (
         <Button size="sm" disabled={!!busy} onClick={() => run("Confirming", (s) => api.confirmField(s, f.key), "Confirmed")}>
           <Check className="h-3.5 w-3.5" /> Confirm
@@ -236,7 +258,7 @@ function Ticket({ f }: { f: BriefField }) {
                     : "text-[19px] font-semibold leading-snug text-ink"
               )}
             >
-              {f.value ?? "Not found in any file"}
+              {f.value ?? (f.absence ? ABSENCE_TEXT[f.absence] : "Not found in any file")}
             </p>
             <div className="space-y-2" onClick={(e) => e.stopPropagation()}>
               <Alternatives alternatives={alternatives} finalized={finalized} save={save} />
@@ -266,7 +288,7 @@ function Ticket({ f }: { f: BriefField }) {
               ))}
               {f.history.map((h, i) => (
                 <p key={`h${i}`} className="text-xs tabular-nums text-ink-muted">
-                  {h.at.slice(0, 16).replace("T", " ")} · {h.by}: “{h.old ?? "empty"}” → “{h.new ?? "empty"}”{h.reason ? ` · ${h.reason}` : ""}
+                  {h.at.slice(0, 16).replace("T", " ")} · {h.by} ({ORIGIN_TEXT[h.origin ?? "human"]}): “{h.old ?? "empty"}” → “{h.new ?? "empty"}”{h.reason ? ` · ${h.reason}` : ""}
                 </p>
               ))}
             </div>

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Iterable, List, Optional
+from typing import Dict, Iterable, List, Optional
 
 from pydantic import BaseModel
 
@@ -19,6 +19,7 @@ class CheckContext(BaseModel):
     sheet: SheetFacts = SheetFacts()
     nutrition_column: Optional[str] = None
     ai_issues: List[Issue] = []
+    question_text: Dict[str, Dict[str, str]] = {}  # AI rewording per question id
 
 
 class Ctx:

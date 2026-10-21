@@ -293,6 +293,28 @@ def _merge_letter_spans(spans: List[dict]) -> List[dict]:
     return unique
 
 
+def _ocr_fragments(ex: Extraction, render_path: Path, file_name: str, page_no: int, id_prefix: str,
+                   start: int, scale: float, panels: List[Panel]) -> int:
+    """Reads a page that has no text layer. `scale` turns image pixels into the page's units (PDF points)."""
+    from app.services.ocr import read_image
+
+    lines, engine, problem = read_image(render_path)
+    if problem:
+        ex.notes.append(f"{file_name} p{page_no}: no text layer and {problem}. The page is shown but its text was not read.")
+        return 0
+    n = start
+    for ln in lines:
+        n += 1
+        bbox = [round(v * scale, 1) for v in ln.bbox] if ln.bbox else None
+        ex.fragments.append(Fragment(
+            id=f"{id_prefix}{n}", file=file_name, kind="pdf", text=ln.text, page=page_no, bbox=bbox,
+            panel=_panel_for(bbox, panels, page_no) if bbox else None, ocr=engine, ocr_conf=round(ln.conf, 2)))
+    low = sum(1 for ln in lines if ln.conf < settings.OCR_MIN_CONFIDENCE)
+    ex.notes.append(f"{file_name} p{page_no}: text read by OCR ({engine}), {len(lines)} lines"
+                    + (f", {low} with low confidence" if low else "") + ". Check OCR values before relying on them.")
+    return len(lines)
+
+
 def parse_pdf(path: Path, file_name: str, session_dir: Path, id_prefix: str) -> Extraction:
     import pymupdf
 
@@ -358,6 +380,10 @@ def parse_pdf(path: Path, file_name: str, session_dir: Path, id_prefix: str) -> 
                     is_guide=(s["color"], s["font"]) in guide_styles,
                     is_hidden=is_hidden(s["text"], s["bbox"]),
                 ))
+
+            if not spans:  # scanned page: nothing to read in the PDF itself
+                n += _ocr_fragments(ex, render_dir / image_name, file_name, page_no, id_prefix, n,
+                                    72.0 / settings.RENDER_DPI, panels)
 
             guides = sum(1 for s in spans if (s["color"], s["font"]) in guide_styles)
             if guides:
@@ -560,7 +586,7 @@ def parse_text(path: Path, file_name: str, id_prefix: str) -> Extraction:
     return ex
 
 
-def parse_image(path: Path, file_name: str, session_dir: Path) -> Extraction:
+def parse_image(path: Path, file_name: str, session_dir: Path, id_prefix: str = "f0_") -> Extraction:
     from PIL import Image
 
     ex = Extraction()
@@ -570,7 +596,8 @@ def parse_image(path: Path, file_name: str, session_dir: Path) -> Extraction:
         image_name = f"{Path(file_name).stem}_p1.png"
         img.convert("RGB").save(str(render_dir / image_name), format="PNG")
         ex.pages.append(PageInfo(file=file_name, page=1, width=float(img.width), height=float(img.height), image=image_name))
-    ex.notes.append(f"{file_name}: image file has no text layer; values can only be read by the AI vision step.")
+    if not _ocr_fragments(ex, render_dir / image_name, file_name, 1, id_prefix, 0, 1.0, []):
+        ex.notes.append(f"{file_name}: image file has no text layer; values can only be read by the AI vision step.")
     return ex
 
 
@@ -586,7 +613,7 @@ def parse_file(path: Path, file_name: str, session_dir: Path, file_index: int) -
     if ext in ("txt", "md"):
         return parse_text(path, file_name, prefix)
     if ext in ("png", "jpg", "jpeg"):
-        return parse_image(path, file_name, session_dir)
+        return parse_image(path, file_name, session_dir, prefix)
     ex = Extraction()
     ex.notes.append(f"{file_name}: unsupported file type '.{ext}' was not read.")
     return ex

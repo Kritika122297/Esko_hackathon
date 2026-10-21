@@ -1,0 +1,187 @@
+{
+  "standard": "eu_cosmetics",
+  "name": "EU cosmetic products (Regulation 1223/2009, Art. 19)",
+  "status": "draft",
+  "version": "0.1",
+  "ui_markets": [],
+  "applies_to": {
+    "markets": [
+      "EU",
+      "EUROPE",
+      "FR",
+      "FRANCE",
+      "DE",
+      "GERMANY",
+      "ES",
+      "SPAIN",
+      "IT",
+      "ITALY",
+      "NL",
+      "NETHERLANDS"
+    ],
+    "categories": [
+      "cosmetics"
+    ]
+  },
+  "clauses": [
+    {
+      "id": "EU-COSM/Art19-1a",
+      "section": "Legal & Identity",
+      "text": "The name or registered name and address of the responsible person are stated. For imports, the country of origin is stated.",
+      "keywords": [
+        "responsible person",
+        "address",
+        "importer"
+      ],
+      "source": {
+        "name": "EU Regulation (EC) 1223/2009 Art. 19",
+        "url": "https://eur-lex.europa.eu/eli/reg/2009/1223/oj",
+        "note": "Draft paraphrase. Check against the source before relying on it."
+      },
+      "requires": [
+        {
+          "field": "responsible_person",
+          "severity": "blocking",
+          "owner": "Legal"
+        },
+        {
+          "field": "country_of_origin",
+          "severity": "warning",
+          "owner": "Legal"
+        }
+      ]
+    },
+    {
+      "id": "EU-COSM/Art19-1b",
+      "section": "Quantity",
+      "text": "The nominal content at the time of packaging is given by weight or volume.",
+      "keywords": [
+        "nominal content",
+        "net content",
+        "ml",
+        "g e"
+      ],
+      "source": {
+        "name": "EU Regulation (EC) 1223/2009 Art. 19",
+        "url": "https://eur-lex.europa.eu/eli/reg/2009/1223/oj",
+        "note": "Draft paraphrase. Check against the source before relying on it."
+      },
+      "requires": [
+        {
+          "field": "net_weight",
+          "severity": "blocking",
+          "owner": "Supply Chain"
+        }
+      ]
+    },
+    {
+      "id": "EU-COSM/Art19-1c",
+      "section": "Other Pack Copy",
+      "text": "A date of minimum durability is shown, or the period-after-opening (PAO) symbol where durability is over 30 months.",
+      "keywords": [
+        "best before",
+        "pao",
+        "period after opening"
+      ],
+      "source": {
+        "name": "EU Regulation (EC) 1223/2009 Art. 19",
+        "url": "https://eur-lex.europa.eu/eli/reg/2009/1223/oj",
+        "note": "Draft paraphrase. Check against the source before relying on it."
+      },
+      "requires": [
+        {
+          "field": "expiry_date",
+          "severity": "blocking",
+          "owner": "Supply Chain",
+          "any_of": [
+            "pao_symbol"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "EU-COSM/Art19-1d",
+      "section": "Other Pack Copy",
+      "text": "Particular precautions for use, including those required by the Annexes, are shown.",
+      "keywords": [
+        "precautions",
+        "warning"
+      ],
+      "source": {
+        "name": "EU Regulation (EC) 1223/2009 Art. 19",
+        "url": "https://eur-lex.europa.eu/eli/reg/2009/1223/oj",
+        "note": "Draft paraphrase. Check against the source before relying on it."
+      },
+      "requires": [
+        {
+          "field": "warnings",
+          "severity": "warning",
+          "owner": "Legal"
+        }
+      ]
+    },
+    {
+      "id": "EU-COSM/Art19-1e",
+      "section": "Other Pack Copy",
+      "text": "The batch number or reference allowing identification of the batch is shown.",
+      "keywords": [
+        "batch",
+        "lot"
+      ],
+      "source": {
+        "name": "EU Regulation (EC) 1223/2009 Art. 19",
+        "url": "https://eur-lex.europa.eu/eli/reg/2009/1223/oj",
+        "note": "Draft paraphrase. Check against the source before relying on it."
+      },
+      "requires": [
+        {
+          "field": "batch_lot",
+          "severity": "blocking",
+          "owner": "Supply Chain"
+        }
+      ]
+    },
+    {
+      "id": "EU-COSM/Art19-1g",
+      "section": "Ingredients & Allergens",
+      "text": "The list of ingredients is shown, preceded by the word 'Ingredients', using the common (INCI) ingredient names.",
+      "keywords": [
+        "ingredients",
+        "inci"
+      ],
+      "source": {
+        "name": "EU Regulation (EC) 1223/2009 Art. 19",
+        "url": "https://eur-lex.europa.eu/eli/reg/2009/1223/oj",
+        "note": "Draft paraphrase. Check against the source before relying on it."
+      },
+      "requires": [
+        {
+          "field": "inci_ingredients",
+          "severity": "blocking",
+          "owner": "R&D"
+        }
+      ]
+    },
+    {
+      "id": "EU-COSM/Art19-3",
+      "section": "Other Pack Copy",
+      "text": "The function of the product is stated unless clear from its presentation.",
+      "keywords": [
+        "function",
+        "use"
+      ],
+      "source": {
+        "name": "EU Regulation (EC) 1223/2009 Art. 19",
+        "url": "https://eur-lex.europa.eu/eli/reg/2009/1223/oj",
+        "note": "Draft paraphrase. Check against the source before relying on it."
+      },
+      "requires": [
+        {
+          "field": "directions",
+          "severity": "info",
+          "owner": "R&D"
+        }
+      ]
+    }
+  ]
+}

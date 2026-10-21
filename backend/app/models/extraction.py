@@ -21,6 +21,8 @@ class Fragment(BaseModel):
     font: Optional[str] = None
     size: Optional[float] = None
     is_guide: bool = Field(False, description="Dieline / printing-guide text, not product copy")
+    ocr: Optional[str] = Field(None, description="OCR engine that read this text (tesseract | llm); None = real text layer")
+    ocr_conf: Optional[float] = Field(None, description="OCR confidence 0-1")
     is_hidden: bool = Field(False, description="Present in the file but covered by later artwork")
 
 

@@ -21,6 +21,30 @@ function Count({ n, label }: { n: number; label: string }) {
   );
 }
 
+/** What the AI did on this brief, and what it could not do, in plain words. */
+function AiStatus({ ai }: { ai: { enabled: boolean; used_for: string[]; notes: string[] } }) {
+  const steps = ai.used_for.length;
+  const problems = ai.notes.filter((n) => /did not run|switched off/i.test(n)).length;
+  return (
+    <details className="mx-auto w-full max-w-[1600px] px-4 pb-2 text-xs text-ink-muted md:px-6">
+      <summary className="cursor-pointer select-none">
+        <span className="font-semibold text-ink">AI {ai.enabled ? "on" : "off"}</span>
+        {ai.enabled && ` · ${steps} step${steps === 1 ? "" : "s"} ran`}
+        {problems > 0 && <span className="font-semibold text-stop"> · {problems} did not run</span>}
+        <span className="ml-2 text-ink-faint">AI suggests, code checks, a person decides</span>
+      </summary>
+      <ul className="mt-1.5 space-y-0.5 pl-4">
+        {ai.used_for.map((t, i) => (
+          <li key={`u${i}`}>✓ {t}</li>
+        ))}
+        {ai.notes.map((t, i) => (
+          <li key={`n${i}`}>• {t}</li>
+        ))}
+      </ul>
+    </details>
+  );
+}
+
 /** Product context for every screen: which brief, which market, how far along. */
 export function ContextBar() {
   const view = useBriefStore((s) => s.view);
@@ -57,6 +81,7 @@ export function ContextBar() {
           </div>
         )}
       </div>
+      <AiStatus ai={s.ai} />
     </div>
   );
 }

@@ -1,0 +1,10 @@
+{
+  "food": "Food & beverage",
+  "pet_food": "Pet food",
+  "cosmetics": "Cosmetics & personal care",
+  "pharma": "Pharmaceuticals",
+  "medical_device": "Medical devices",
+  "household": "Household & cleaning products",
+  "retail": "Retail & e-commerce goods",
+  "industrial": "Industrial & commercial"
+}

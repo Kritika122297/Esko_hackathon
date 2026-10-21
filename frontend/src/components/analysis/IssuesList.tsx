@@ -11,7 +11,10 @@ import { SourceLine } from "@/components/shared/SourceChip";
 
 type Filter = "decisions" | "design" | "info" | "acknowledged" | "all";
 
-export function IssuesList({ issues, editable = true }: { issues: Issue[]; editable?: boolean }) {
+export function IssuesList({ issues: allIssues, editable = true }: { issues: Issue[]; editable?: boolean }) {
+  // Code findings lead. AI points are kept apart so a reader sees what was calculated before what was suggested.
+  const issues = useMemo(() => allIssues.filter((i) => i.detected_by !== "ai"), [allIssues]);
+  const aiIssues = useMemo(() => allIssues.filter((i) => i.detected_by === "ai"), [allIssues]);
   const groups = useMemo(
     () => ({
       decisions: issues.filter((i) => i.state === "open" && i.resolution === "data" && i.severity !== "info"),
@@ -59,6 +62,21 @@ export function IssuesList({ issues, editable = true }: { issues: Issue[]; edita
         {shown.map((i, idx) => (
           <IssueCard key={i.id} issue={i} editable={editable} index={idx} />
         ))}
+        {aiIssues.length > 0 && (
+          <details className="rounded border border-dashed border-line-strong bg-ground/50 p-2">
+            <summary className="cursor-pointer select-none text-xs font-bold uppercase tracking-wider text-ink-2">
+              AI suggestions <b className="figure ml-1 text-[14px]">{aiIssues.length}</b>
+              <span className="ml-2 font-normal normal-case tracking-normal text-ink-muted">
+                Possible problems the AI noticed. Not calculated, never blocking, always needs a person.
+              </span>
+            </summary>
+            <div className="mt-2 space-y-2">
+              {aiIssues.map((i, idx) => (
+                <IssueCard key={i.id} issue={i} editable={editable} index={idx} />
+              ))}
+            </div>
+          </details>
+        )}
       </div>
     </div>
   );

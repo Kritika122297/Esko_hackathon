@@ -17,7 +17,7 @@ from pydantic import BaseModel, Field
 from app.models.brief import BriefField, BriefState, Issue
 from app.services.catalog import FIELD_BY_KEY, FIELDS
 from app.services.checks.base import src_label
-from app.services.llm import LLMError, llm
+from app.services.llm import LLMError, get_llm
 from app.services.values import plural
 
 logger = logging.getLogger(__name__)
@@ -205,7 +205,8 @@ def _context(state: BriefState) -> str:
 
 
 def answer(state: BriefState, question: str, history: List[ChatTurn]) -> ChatAnswer:
-    if llm.enabled:
+    model = get_llm("chat")
+    if model.enabled:
         try:
             convo = "\n".join(f"{t.role.upper()}: {t.text[:600]}" for t in history[-6:])
             prompt = (
@@ -215,7 +216,7 @@ def answer(state: BriefState, question: str, history: List[ChatTurn]) -> ChatAns
                 'Return JSON only: {"answer": "...", "fields": ["<field key>"], "findings": ["<finding id>"]}\n\n'
                 f"BRIEF:\n{_context(state)}\n\nCONVERSATION SO FAR:\n{convo}\n\nQUESTION: {question}"
             )
-            data = llm.json(prompt)
+            data = model.json(prompt)
             text = str((data or {}).get("answer") or "").strip()
             if text:
                 fkeys = {f.key: f for f in state.fields}

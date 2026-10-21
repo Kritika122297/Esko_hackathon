@@ -6,6 +6,7 @@ from typing import List
 
 from app.services.catalog import FIELD_BY_KEY, FIELDS, NUTRIENT_BY_KEY
 from app.services.checks.base import Ctx, src_label
+from app.services.guidelines import requirements
 from app.services.merge import group_candidates
 from app.services.values import ingredient_name, ingredient_percent, split_ingredients
 
@@ -42,7 +43,7 @@ def check_conflicts(ctx: Ctx) -> None:
             if diff:
                 desc += f" Differences ({src_label(reps[0].source)} vs {src_label(reps[1].source)}): {diff}."
         fd = FIELD_BY_KEY[f.key]
-        critical = fd.mandatory or f.key.endswith("_dv") or f.key in NUTRIENT_BY_KEY
+        critical = f.mandatory or f.key.endswith("_dv") or f.key in NUTRIENT_BY_KEY
         doc_groups = [g for g in groups if any(c.source.kind != "ai" for c in g)]
         if len(doc_groups) < 2:
             # Only the AI vision reading disagrees with the documents: a human must look.
@@ -74,12 +75,19 @@ def check_conflicts(ctx: Ctx) -> None:
 
 
 def check_missing(ctx: Ctx) -> None:
+    """A field is required when a guideline clause for the market and category says so."""
+    required = requirements(ctx.state.market, ctx.state.category, ctx.state.standards or None, ctx.state.company_clauses)
     for fd in FIELDS:
-        if not fd.mandatory:
-            continue
+        pairs = required.get(fd.key)
         f = ctx.f(fd.key)
-        if f is None or f.value:
+        if not pairs or f is None or f.value or f.not_applicable:
             continue
+        # A rule that accepts another field instead (expiry date or PAO symbol) is met when that one has a value.
+        pairs = [(c, r) for c, r in pairs if not any(ctx.v(a) for a in r.any_of)]
+        if not pairs:
+            continue
+        cited = [c.id for c, _ in pairs]
+        owner = pairs[0][1].owner
         note = next((n for n in f.notes), "")
         ctx.add(
             "missing", fd.key,
@@ -87,12 +95,15 @@ def check_missing(ctx: Ctx) -> None:
             kind="definite",
             category="missing",
             title=f"Missing: {fd.label}",
-            description=f"No source provides {fd.label.lower()}, and it must appear on the pack."
+            description=(f"{fd.label} was not found on the artwork or in the other files" if f.absence == "not_detected"
+                         else f"No source provides {fd.label.lower()}") + ", and it must appear on the pack ("
+                        + "; ".join(f"{c.id}: {c.text}" for c, _ in pairs[:2]) + ")."
                         + (f" {note}" if note else ""),
             suggestion="Provide the value. The system does not fill it in.",
             fields=[fd.key],
             evidence=[ctx.sheet.empty_with_note[fd.key]] if fd.key in ctx.sheet.empty_with_note else [],
-            owner=fd.owner,
+            owner=owner,
+            clauses=cited,
             design_action="unknown",
         )
 

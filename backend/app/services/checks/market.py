@@ -66,7 +66,7 @@ def check_us_rules(ctx: Ctx) -> None:
     net = ctx.v("net_weight")
     g = amount_in(net, "g") if net else None
     if net and g and "oz" not in net.lower():
-        ctx.add("us.net_weight_oz", severity="blocking", kind="definite", category="market_rule",
+        ctx.add("us.net_weight_oz", clauses=["US-FDA/21CFR101.105"], severity="blocking", kind="definite", category="market_rule",
                 title="Net weight is missing ounces",
                 description=f"The net weight reads '{net}'. US labels must state it in both US customary and metric "
                             f"units (21 CFR 101.105), e.g. '{us_net_weight_text(g)}'.",
@@ -79,7 +79,7 @@ def check_us_rules(ctx: Ctx) -> None:
     front = ctx.art.front_panel_id
     if ctx.has_artwork() and front and ctx.art.net_weight_panels and front not in ctx.art.net_weight_panels:
         panels = ", ".join(sorted({p.replace("_", " ") for p in ctx.art.net_weight_panels if p}))
-        ctx.add("us.net_weight_pdp", severity="blocking", kind="definite", category="market_rule",
+        ctx.add("us.net_weight_pdp", clauses=["US-FDA/21CFR101.105"], severity="blocking", kind="definite", category="market_rule",
                 title="Net weight is not on the front panel",
                 description=f"The net weight appears only on the {panels} panel. US rules require it on the principal "
                             "display panel, in the bottom 30% of the panel.",
@@ -88,8 +88,8 @@ def check_us_rules(ctx: Ctx) -> None:
                 design_action="add", resolution="design")
 
     ss = ctx.v("serving_size")
-    if ss and not re.search(r"\d\s*(g|ml)\b", ss.lower()):
-        ctx.add("us.serving_size_format", severity="blocking", kind="definite", category="market_rule",
+    if ctx.state.category == "food" and ss and not re.search(r"\d\s*(g|ml)\b", ss.lower()):
+        ctx.add("us.serving_size_format", clauses=["US-FDA/21CFR101.9-servings"], severity="blocking", kind="definite", category="market_rule",
                 title="Serving size has no unit",
                 description=f"The serving size reads '{ss}'. US Nutrition Facts state a household measure and the "
                             "metric amount, e.g. '2/3 cup (60g)'.",
@@ -98,17 +98,17 @@ def check_us_rules(ctx: Ctx) -> None:
 
     producer = ctx.v("producer")
     if producer and not re.search(r"\b\d{5}\b|,\s*[A-Z]{2}\b", producer):
-        ctx.add("us.producer_address", severity="blocking", kind="definite", category="market_rule",
+        ctx.add("us.producer_address", clauses=["US-FDA/21CFR101.5"], severity="blocking", kind="definite", category="market_rule",
                 title="Producer statement has no address",
                 description=f"'{producer}' gives a name only. US labels must show the name and place of business "
                             "(city, state and ZIP code) of the manufacturer, packer or distributor (21 CFR 101.5).",
                 suggestion="Legal to supply the full producer statement, e.g. 'Produced by ... , City, ST 00000'.",
                 fields=["producer"], evidence=ctx.ev("producer"), owner="Legal", design_action="change")
 
-    if ctx.has_artwork():
+    if ctx.has_artwork() and ctx.state.category == "food":
         missing = [n.label for n in NUTRIENTS if not any(c.source.kind == "pdf" for c in (ctx.f(n.key).candidates if ctx.f(n.key) else []))]
         if missing and len(missing) < len(NUTRIENTS):
-            ctx.add("us.nutrition_lines", severity="blocking", kind="definite", category="market_rule",
+            ctx.add("us.nutrition_lines", clauses=["US-FDA/21CFR101.9-nutrients"], severity="blocking", kind="definite", category="market_rule",
                     title="Nutrition Facts lines missing on the artwork",
                     description="Not found on the Nutrition Facts panel: " + ", ".join(missing) + ".",
                     fields=[n.key for n in NUTRIENTS if n.label in missing], owner="Legal", design_action="add",
