@@ -1,0 +1,128 @@
+{
+  "standard": "us_device",
+  "name": "US medical device labeling (21 CFR 801)",
+  "status": "draft",
+  "version": "0.1",
+  "ui_markets": [],
+  "applies_to": {
+    "markets": [
+      "US",
+      "USA",
+      "UNITED STATES"
+    ],
+    "categories": [
+      "medical_device"
+    ]
+  },
+  "clauses": [
+    {
+      "id": "US-DEV/801.1",
+      "section": "Legal & Identity",
+      "text": "The label shows the name and place of business of the manufacturer, packer or distributor.",
+      "keywords": [
+        "manufacturer",
+        "distributor"
+      ],
+      "source": {
+        "name": "US 21 CFR Part 801 (medical device labeling)",
+        "url": "https://www.ecfr.gov/current/title-21/chapter-I/subchapter-H/part-801",
+        "note": "Draft paraphrase. Check against the source before relying on it."
+      },
+      "requires": [
+        {
+          "field": "producer",
+          "severity": "blocking",
+          "owner": "Legal"
+        }
+      ]
+    },
+    {
+      "id": "US-DEV/801.5",
+      "section": "Other Pack Copy",
+      "text": "Adequate directions for use are provided (or an exemption applies).",
+      "keywords": [
+        "directions",
+        "instructions for use"
+      ],
+      "source": {
+        "name": "US 21 CFR Part 801 (medical device labeling)",
+        "url": "https://www.ecfr.gov/current/title-21/chapter-I/subchapter-H/part-801",
+        "note": "Draft paraphrase. Check against the source before relying on it."
+      },
+      "requires": [
+        {
+          "field": "directions",
+          "severity": "blocking",
+          "owner": "R&D"
+        }
+      ]
+    },
+    {
+      "id": "US-DEV/801.20",
+      "section": "Legal & Identity",
+      "text": "The label carries a Unique Device Identifier (UDI).",
+      "keywords": [
+        "udi"
+      ],
+      "source": {
+        "name": "US 21 CFR Part 801 (medical device labeling)",
+        "url": "https://www.ecfr.gov/current/title-21/chapter-I/subchapter-H/part-801",
+        "note": "Draft paraphrase. Check against the source before relying on it."
+      },
+      "requires": [
+        {
+          "field": "udi",
+          "severity": "blocking",
+          "owner": "Supply Chain"
+        }
+      ]
+    },
+    {
+      "id": "US-DEV/801.109",
+      "section": "Other Pack Copy",
+      "text": "Prescription devices carry the statement that federal law restricts sale by or on the order of a practitioner.",
+      "keywords": [
+        "rx only",
+        "federal law restricts"
+      ],
+      "source": {
+        "name": "US 21 CFR Part 801 (medical device labeling)",
+        "url": "https://www.ecfr.gov/current/title-21/chapter-I/subchapter-H/part-801",
+        "note": "Draft paraphrase. Check against the source before relying on it."
+      },
+      "requires": [
+        {
+          "field": "warnings",
+          "severity": "warning",
+          "owner": "Legal"
+        }
+      ]
+    },
+    {
+      "id": "US-DEV/lot",
+      "section": "Other Pack Copy",
+      "text": "A lot or batch number and, where applicable, an expiry date are shown.",
+      "keywords": [
+        "lot",
+        "exp"
+      ],
+      "source": {
+        "name": "US 21 CFR Part 801 (medical device labeling)",
+        "url": "https://www.ecfr.gov/current/title-21/chapter-I/subchapter-H/part-801",
+        "note": "Draft paraphrase. Check against the source before relying on it."
+      },
+      "requires": [
+        {
+          "field": "batch_lot",
+          "severity": "warning",
+          "owner": "Supply Chain"
+        },
+        {
+          "field": "expiry_date",
+          "severity": "warning",
+          "owner": "Supply Chain"
+        }
+      ]
+    }
+  ]
+}

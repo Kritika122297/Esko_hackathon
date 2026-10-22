@@ -1,0 +1,31 @@
+{
+  "status": "draft",
+  "verified": false,
+  "note": "How each market expects certain elements to be presented, for the market gap preview. Short paraphrases written by people, not by the AI, and not yet checked against the source texts. A clause_id must name a clause in the rule packs; an unknown id is ignored when the file is loaded. Use null when no rule-pack clause covers the element.",
+  "markets": {
+    "US": {
+      "language": {"text": "English", "codes": ["en"], "clause_id": null, "categories": ["*"]},
+      "net_quantity": {"text": "Dual units, US customary (oz, lb, fl oz) and metric, in the bottom 30% of the principal display panel", "clause_id": "US-FDA/21CFR101.7", "categories": ["food"]},
+      "allergens": {"text": "A 'Contains:' statement (or the names in the ingredient list) for the major food allergens, tree nuts named one by one", "clause_id": "US-FDA/FALCPA-403w", "categories": ["food"]},
+      "nutrition": {"text": "Nutrition Facts panel per serving with % Daily Value, in the FDA format", "clause_id": "US-FDA/21CFR101.9-nutrients", "categories": ["food"]}
+    },
+    "EU": {
+      "language": {"text": "An official language of every country where the pack is sold", "codes": ["en", "fr", "de", "es", "it", "nl"], "clause_id": null, "categories": ["*"]},
+      "net_quantity": {"text": "Metric units only (g, kg, ml, l)", "clause_id": "EU-1169/Art23", "categories": ["food"]},
+      "allergens": {"text": "Allergens emphasised (for example in bold) within the ingredient list", "clause_id": "EU-1169/Art21", "categories": ["food"]},
+      "nutrition": {"text": "Nutrition declaration per 100 g or 100 ml, energy in kJ and kcal", "clause_id": "EU-1169/Art30", "categories": ["food"]}
+    },
+    "FR": {"inherits": "EU", "language": {"text": "French", "codes": ["fr"], "clause_id": null, "categories": ["*"]}},
+    "DE": {"inherits": "EU", "language": {"text": "German", "codes": ["de"], "clause_id": null, "categories": ["*"]}},
+    "ES": {"inherits": "EU", "language": {"text": "Spanish", "codes": ["es"], "clause_id": null, "categories": ["*"]}},
+    "IT": {"inherits": "EU", "language": {"text": "Italian", "codes": ["it"], "clause_id": null, "categories": ["*"]}},
+    "NL": {"inherits": "EU", "language": {"text": "Dutch", "codes": ["nl"], "clause_id": null, "categories": ["*"]}},
+    "IN": {
+      "language": {"text": "English or Hindi (Devanagari script)", "codes": ["en", "hi"], "clause_id": null, "categories": ["*"]},
+      "net_quantity": {"text": "Net quantity in metric units, with the manufacturer, packer or importer declarations", "clause_id": "IN-LM/declarations", "categories": ["*"]},
+      "allergens": {"text": "Food allergens present are declared", "clause_id": "IN-FSSAI/allergens", "categories": ["food"]},
+      "nutrition": {"text": "Per 100 g or 100 ml (and per serve), energy in kcal", "clause_id": "IN-FSSAI/nutrition", "categories": ["food"]},
+      "marks": {"text": "Green dot (vegetarian) or brown triangle (non-vegetarian) mark", "clause_id": "IN-FSSAI/veg", "categories": ["food"]}
+    }
+  }
+}

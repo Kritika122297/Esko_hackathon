@@ -1,0 +1,256 @@
+{
+  "standard": "in_fssai",
+  "name": "India food labelling (FSSAI Labelling and Display Regulations 2020)",
+  "status": "draft",
+  "version": "0.1",
+  "ui_markets": [],
+  "applies_to": {
+    "markets": [
+      "IN",
+      "INDIA"
+    ],
+    "categories": [
+      "food"
+    ]
+  },
+  "clauses": [
+    {
+      "id": "IN-FSSAI/name",
+      "section": "Legal & Identity",
+      "text": "The name of the food is stated on the label.",
+      "keywords": [
+        "name of the food"
+      ],
+      "source": {
+        "name": "FSSAI Food Safety and Standards (Labelling and Display) Regulations, 2020",
+        "url": "https://www.fssai.gov.in/",
+        "note": "Draft paraphrase. Check against the source before relying on it."
+      },
+      "requires": [
+        {
+          "field": "statement_of_identity",
+          "severity": "blocking",
+          "owner": "Legal"
+        }
+      ]
+    },
+    {
+      "id": "IN-FSSAI/ingredients",
+      "section": "Ingredients & Allergens",
+      "text": "The list of ingredients is given in descending order of composition by weight or volume.",
+      "keywords": [
+        "ingredients",
+        "descending order"
+      ],
+      "source": {
+        "name": "FSSAI Food Safety and Standards (Labelling and Display) Regulations, 2020",
+        "url": "https://www.fssai.gov.in/",
+        "note": "Draft paraphrase. Check against the source before relying on it."
+      },
+      "requires": [
+        {
+          "field": "ingredients",
+          "severity": "blocking",
+          "owner": "R&D"
+        }
+      ]
+    },
+    {
+      "id": "IN-FSSAI/allergens",
+      "section": "Ingredients & Allergens",
+      "text": "Food allergens present are declared.",
+      "keywords": [
+        "allergen",
+        "contains"
+      ],
+      "source": {
+        "name": "FSSAI Food Safety and Standards (Labelling and Display) Regulations, 2020",
+        "url": "https://www.fssai.gov.in/",
+        "note": "Draft paraphrase. Check against the source before relying on it."
+      },
+      "requires": [
+        {
+          "field": "allergen_statement",
+          "severity": "blocking",
+          "owner": "Legal"
+        }
+      ]
+    },
+    {
+      "id": "IN-FSSAI/nutrition",
+      "section": "Nutrition",
+      "text": "Nutritional information is given per 100 g or 100 ml (and per serve): energy, protein, carbohydrate, total and added sugars, total fat, saturated fat and trans fat.",
+      "keywords": [
+        "nutritional information",
+        "energy",
+        "per 100"
+      ],
+      "source": {
+        "name": "FSSAI Food Safety and Standards (Labelling and Display) Regulations, 2020",
+        "url": "https://www.fssai.gov.in/",
+        "note": "Draft paraphrase. Check against the source before relying on it."
+      },
+      "requires": [
+        {
+          "field": "calories",
+          "severity": "blocking",
+          "owner": "R&D"
+        },
+        {
+          "field": "protein",
+          "severity": "blocking",
+          "owner": "R&D"
+        },
+        {
+          "field": "total_carbohydrate",
+          "severity": "blocking",
+          "owner": "R&D"
+        },
+        {
+          "field": "total_sugars",
+          "severity": "blocking",
+          "owner": "R&D"
+        },
+        {
+          "field": "added_sugars",
+          "severity": "blocking",
+          "owner": "R&D"
+        },
+        {
+          "field": "total_fat",
+          "severity": "blocking",
+          "owner": "R&D"
+        },
+        {
+          "field": "saturated_fat",
+          "severity": "blocking",
+          "owner": "R&D"
+        },
+        {
+          "field": "trans_fat",
+          "severity": "blocking",
+          "owner": "R&D"
+        }
+      ]
+    },
+    {
+      "id": "IN-FSSAI/veg",
+      "section": "Legal & Identity",
+      "text": "The vegetarian (green dot) or non-vegetarian (brown triangle) mark is shown.",
+      "keywords": [
+        "veg",
+        "non-veg",
+        "green dot"
+      ],
+      "source": {
+        "name": "FSSAI Food Safety and Standards (Labelling and Display) Regulations, 2020",
+        "url": "https://www.fssai.gov.in/",
+        "note": "Draft paraphrase. Check against the source before relying on it."
+      },
+      "requires": [
+        {
+          "field": "veg_logo",
+          "severity": "blocking",
+          "owner": "Legal"
+        }
+      ]
+    },
+    {
+      "id": "IN-FSSAI/fbo",
+      "section": "Legal & Identity",
+      "text": "The name and address of the food business operator and the FSSAI licence number are shown.",
+      "keywords": [
+        "fssai",
+        "licence",
+        "address",
+        "manufacturer"
+      ],
+      "source": {
+        "name": "FSSAI Food Safety and Standards (Labelling and Display) Regulations, 2020",
+        "url": "https://www.fssai.gov.in/",
+        "note": "Draft paraphrase. Check against the source before relying on it."
+      },
+      "requires": [
+        {
+          "field": "producer",
+          "severity": "blocking",
+          "owner": "Legal"
+        },
+        {
+          "field": "licence_number",
+          "severity": "blocking",
+          "owner": "Legal"
+        }
+      ]
+    },
+    {
+      "id": "IN-FSSAI/quantity",
+      "section": "Quantity",
+      "text": "The net quantity is stated.",
+      "keywords": [
+        "net quantity",
+        "net weight"
+      ],
+      "source": {
+        "name": "FSSAI Food Safety and Standards (Labelling and Display) Regulations, 2020",
+        "url": "https://www.fssai.gov.in/",
+        "note": "Draft paraphrase. Check against the source before relying on it."
+      },
+      "requires": [
+        {
+          "field": "net_weight",
+          "severity": "blocking",
+          "owner": "Supply Chain"
+        }
+      ]
+    },
+    {
+      "id": "IN-FSSAI/batch",
+      "section": "Other Pack Copy",
+      "text": "The batch or lot number and the date marking (manufacture, best before or expiry) are shown.",
+      "keywords": [
+        "batch",
+        "best before",
+        "expiry"
+      ],
+      "source": {
+        "name": "FSSAI Food Safety and Standards (Labelling and Display) Regulations, 2020",
+        "url": "https://www.fssai.gov.in/",
+        "note": "Draft paraphrase. Check against the source before relying on it."
+      },
+      "requires": [
+        {
+          "field": "batch_lot",
+          "severity": "blocking",
+          "owner": "Supply Chain"
+        },
+        {
+          "field": "expiry_date",
+          "severity": "blocking",
+          "owner": "Supply Chain"
+        }
+      ]
+    },
+    {
+      "id": "IN-FSSAI/origin",
+      "section": "Legal & Identity",
+      "text": "For imported food, the country of origin is stated.",
+      "keywords": [
+        "country of origin",
+        "imported"
+      ],
+      "source": {
+        "name": "FSSAI Food Safety and Standards (Labelling and Display) Regulations, 2020",
+        "url": "https://www.fssai.gov.in/",
+        "note": "Draft paraphrase. Check against the source before relying on it."
+      },
+      "requires": [
+        {
+          "field": "country_of_origin",
+          "severity": "warning",
+          "owner": "Legal"
+        }
+      ]
+    }
+  ]
+}

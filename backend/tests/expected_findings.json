@@ -1,0 +1,41 @@
+{
+  "_about": "Errors planted in the Esko sample pack (Dancing Fish Granola, US) and the check that must catch each. Used by test_sample_pack.py and the seeded-error report.",
+  "expected": [
+    {"finding": "Total sugars (18g) more than total carbohydrate (15g)", "issue": "math.sugars_gt_carbs"},
+    {"finding": "8 servings x 85g = 680g but pack says 480g", "issue": "math.servings"},
+    {"finding": "Calories 166 vs about 330 from fat, carbs, protein", "issue": "math.calories"},
+    {"finding": "Cholesterol 45mg in a vegan product", "issue": "claim.vegan_cholesterol"},
+    {"finding": "Trans fat 8g higher than saturated fat", "issue": "plausibility.trans_fat"},
+    {"finding": "Protein 34g in an 85g serving", "issue": "plausibility.protein"},
+    {"finding": "%DV values do not match the amounts", "issue": "math.dv"},
+    {"finding": "'No Added Sugar' claim with honey and coconut sugar", "issue": "claim.no_added_sugar"},
+    {"finding": "'May contain' almonds and pecans that are ingredients", "issue": "allergen.may_contain_present"},
+    {"finding": "'Cereals containing gluten' is EU wording", "issue": "allergen.eu_wording"},
+    {"finding": "Sunflower seeds listed twice", "issue": "ingredients.duplicate:excel"},
+    {"finding": "'Suitable for vegetarians' vs 'vegan'", "issue": "claim.vegetarian_vs_vegan"},
+    {"finding": "Weight only in grams, US needs ounces", "issue": "us.net_weight_oz"},
+    {"finding": "Serving size unclear / no unit", "issue": "us.serving_size_format"},
+    {"finding": "Label ID guessed from FR pattern", "issue": "assumption:label_id"},
+    {"finding": "BPN guessed", "issue": "assumption:bpn"},
+    {"finding": "Last edited / published dates and registration not provided", "issue": "missing.project_details"}
+  ],
+  "beyond_the_brief": [
+    {"finding": "Honey in ingredients contradicts the vegan claim", "issue": "claim.vegan_animal"},
+    {"finding": "Artwork prints carbohydrate 66g, content sheet says 15g", "issue": "conflict:total_carbohydrate"},
+    {"finding": "Artwork prints sodium 23mg, content sheet says 25mg", "issue": "conflict:sodium"},
+    {"finding": "Ingredient lists differ (walnuts, flax, strawberries; honey 1% vs 9%)", "issue": "conflict:ingredients"},
+    {"finding": "Honey at 9% makes the ingredient order impossible", "issue": "ingredients.percent_order:excel"},
+    {"finding": "Hidden EU 'per 100g' nutrition table in the artwork file", "issue": "artwork.hidden_text:0"},
+    {"finding": "EU reference-intake icons on a US pack", "issue": "us.eu_reference_intakes"},
+    {"finding": "Net weight not on the principal display panel", "issue": "us.net_weight_pdp"},
+    {"finding": "Producer statement has no address", "issue": "us.producer_address"},
+    {"finding": "Content-sheet nutrition columns scaled by pack size", "issue": "sheet.scaled_columns"}
+  ],
+  "must_not_flag": [
+    {"finding": "Barcode check digit is valid", "issue": "barcode.check_digit"},
+    {"finding": "Fat breakdown adds up", "issue": "math.fat_parts"},
+    {"finding": "Statement of identity agrees across files", "issue": "conflict:statement_of_identity"},
+    {"finding": "Net weight agrees across files", "issue": "conflict:net_weight"},
+    {"finding": "Storage text agrees across files", "issue": "conflict:storage"}
+  ]
+}

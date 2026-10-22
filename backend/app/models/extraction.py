@@ -1,25 +1,80 @@
-"""Data models for raw document extractions."""
+"""Raw extraction models: what the parsers read from each uploaded file."""
 
-from typing import Optional, List, Dict, Any
+from typing import Dict, List, Optional
+
 from pydantic import BaseModel, Field
 
 
-class ExtractedText(BaseModel):
-    """A granular block of text extracted from a source document."""
+class Fragment(BaseModel):
+    """One piece of text read from a document, with its exact location."""
 
-    text: str = Field(..., description="Raw text snippet")
-    source_file: str = Field(..., description="File from which text was extracted")
-    location: str = Field("unknown", description="'front panel', 'back panel', 'cell B12', etc.")
-    confidence: float = Field(1.0, description="Confidence score between 0.0 and 1.0")
-    page_number: Optional[int] = Field(None, description="Page number if extracted from a paged document")
-    bbox: Optional[List[float]] = Field(None, description="Bounding box [x0, y0, x1, y1] if available")
+    id: str
+    file: str
+    kind: str = Field(..., description="pdf | excel | word | text")
+    text: str
+    page: Optional[int] = None
+    bbox: Optional[List[float]] = Field(None, description="PDF points [x0, y0, x1, y1]")
+    panel: Optional[str] = None
+    cell: Optional[str] = None
+    sheet: Optional[str] = None
+    color: Optional[str] = None
+    font: Optional[str] = None
+    size: Optional[float] = None
+    is_guide: bool = Field(False, description="Dieline / printing-guide text, not product copy")
+    ocr: Optional[str] = Field(None, description="OCR engine that read this text (tesseract | llm); None = real text layer")
+    ocr_conf: Optional[float] = Field(None, description="OCR confidence 0-1")
+    is_hidden: bool = Field(False, description="Present in the file but covered by later artwork")
 
 
-class ExtractedData(BaseModel):
-    """Aggregate raw data extracted across all uploaded files for a session."""
+class ExcelRow(BaseModel):
+    """A label/value pair read from a content sheet, with its notes and highlight state."""
 
-    session_id: str = Field(..., description="Associated session id")
-    texts: List[ExtractedText] = Field(default_factory=list, description="All extracted text fragments")
-    images: List[str] = Field(default_factory=list, description="File paths to rendered/extracted images")
-    tables: List[Dict[str, Any]] = Field(default_factory=list, description="Extracted tables or spreadsheets")
-    metadata: Dict[str, Any] = Field(default_factory=dict, description="Metadata on source files (names, sizes, types)")
+    sheet: str
+    section: Optional[str] = None
+    label: str
+    label_cell: str
+    value: Optional[str] = None
+    value_cell: Optional[str] = None
+    note: Optional[str] = None
+    note_cell: Optional[str] = None
+    highlighted: bool = Field(False, description="Value cell carries a review highlight fill")
+    extra: Dict[str, str] = Field(default_factory=dict, description="Additional columns, e.g. %DV")
+
+
+class ExcelTable(BaseModel):
+    """A column table such as nutrition values per pack size."""
+
+    sheet: str
+    title: str
+    header_cell: str
+    columns: List[str]
+    rows: List[Dict[str, Optional[str]]]
+    cells: List[Dict[str, Optional[str]]] = Field(default_factory=list)
+
+
+class PageInfo(BaseModel):
+    file: str
+    page: int
+    width: float
+    height: float
+    image: str = Field(..., description="Render file name inside the session folder")
+
+
+class Panel(BaseModel):
+    id: str
+    label: str
+    file: str
+    page: int
+    bbox: List[float]
+    is_main: bool = False
+
+
+class Extraction(BaseModel):
+    """Everything read from a session's files."""
+
+    fragments: List[Fragment] = Field(default_factory=list)
+    excel_rows: List[ExcelRow] = Field(default_factory=list)
+    excel_tables: List[ExcelTable] = Field(default_factory=list)
+    pages: List[PageInfo] = Field(default_factory=list)
+    panels: List[Panel] = Field(default_factory=list)
+    notes: List[str] = Field(default_factory=list, description="What the readers could not read well")

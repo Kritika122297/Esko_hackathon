@@ -1,0 +1,248 @@
+{
+  "standard": "eu_medicines",
+  "name": "EU medicinal products (Directive 2001/83/EC, Art. 54)",
+  "status": "draft",
+  "version": "0.1",
+  "ui_markets": [],
+  "applies_to": {
+    "markets": [
+      "EU",
+      "EUROPE",
+      "FR",
+      "FRANCE",
+      "DE",
+      "GERMANY",
+      "ES",
+      "SPAIN",
+      "IT",
+      "ITALY",
+      "NL",
+      "NETHERLANDS"
+    ],
+    "categories": [
+      "pharma"
+    ]
+  },
+  "clauses": [
+    {
+      "id": "EU-MED/Art54-a",
+      "section": "Legal & Identity",
+      "text": "The name of the medicinal product is stated, with its strength and pharmaceutical form.",
+      "keywords": [
+        "name",
+        "strength",
+        "pharmaceutical form"
+      ],
+      "source": {
+        "name": "EU Directive 2001/83/EC Art. 54 (outer packaging)",
+        "url": "https://eur-lex.europa.eu/eli/dir/2001/83/oj",
+        "note": "Draft paraphrase. Check against the source before relying on it."
+      },
+      "requires": [
+        {
+          "field": "product_name",
+          "severity": "blocking",
+          "owner": "Legal"
+        },
+        {
+          "field": "strength",
+          "severity": "blocking",
+          "owner": "R&D"
+        },
+        {
+          "field": "dosage_form",
+          "severity": "blocking",
+          "owner": "R&D"
+        }
+      ]
+    },
+    {
+      "id": "EU-MED/Art54-b",
+      "section": "Ingredients & Allergens",
+      "text": "The active substances are stated qualitatively and quantitatively.",
+      "keywords": [
+        "active substance",
+        "per tablet"
+      ],
+      "source": {
+        "name": "EU Directive 2001/83/EC Art. 54 (outer packaging)",
+        "url": "https://eur-lex.europa.eu/eli/dir/2001/83/oj",
+        "note": "Draft paraphrase. Check against the source before relying on it."
+      },
+      "requires": [
+        {
+          "field": "active_ingredients",
+          "severity": "blocking",
+          "owner": "R&D"
+        }
+      ]
+    },
+    {
+      "id": "EU-MED/Art54-c",
+      "section": "Ingredients & Allergens",
+      "text": "Excipients with a known effect are listed.",
+      "keywords": [
+        "excipients"
+      ],
+      "source": {
+        "name": "EU Directive 2001/83/EC Art. 54 (outer packaging)",
+        "url": "https://eur-lex.europa.eu/eli/dir/2001/83/oj",
+        "note": "Draft paraphrase. Check against the source before relying on it."
+      },
+      "requires": [
+        {
+          "field": "excipients",
+          "severity": "warning",
+          "owner": "R&D"
+        }
+      ]
+    },
+    {
+      "id": "EU-MED/Art54-d",
+      "section": "Other Pack Copy",
+      "text": "The method and route of administration are stated.",
+      "keywords": [
+        "administration",
+        "oral",
+        "route"
+      ],
+      "source": {
+        "name": "EU Directive 2001/83/EC Art. 54 (outer packaging)",
+        "url": "https://eur-lex.europa.eu/eli/dir/2001/83/oj",
+        "note": "Draft paraphrase. Check against the source before relying on it."
+      },
+      "requires": [
+        {
+          "field": "directions",
+          "severity": "blocking",
+          "owner": "R&D"
+        }
+      ]
+    },
+    {
+      "id": "EU-MED/Art54-e",
+      "section": "Other Pack Copy",
+      "text": "The special warning that the product must be kept out of the sight and reach of children is shown.",
+      "keywords": [
+        "out of the sight and reach of children"
+      ],
+      "source": {
+        "name": "EU Directive 2001/83/EC Art. 54 (outer packaging)",
+        "url": "https://eur-lex.europa.eu/eli/dir/2001/83/oj",
+        "note": "Draft paraphrase. Check against the source before relying on it."
+      },
+      "requires": [
+        {
+          "field": "warnings",
+          "severity": "blocking",
+          "owner": "Legal"
+        }
+      ]
+    },
+    {
+      "id": "EU-MED/Art54-f",
+      "section": "Other Pack Copy",
+      "text": "The expiry date is shown in clear terms (month and year).",
+      "keywords": [
+        "exp",
+        "expiry"
+      ],
+      "source": {
+        "name": "EU Directive 2001/83/EC Art. 54 (outer packaging)",
+        "url": "https://eur-lex.europa.eu/eli/dir/2001/83/oj",
+        "note": "Draft paraphrase. Check against the source before relying on it."
+      },
+      "requires": [
+        {
+          "field": "expiry_date",
+          "severity": "blocking",
+          "owner": "Supply Chain"
+        }
+      ]
+    },
+    {
+      "id": "EU-MED/Art54-g",
+      "section": "Other Pack Copy",
+      "text": "Special storage precautions are shown where they apply.",
+      "keywords": [
+        "store",
+        "storage"
+      ],
+      "source": {
+        "name": "EU Directive 2001/83/EC Art. 54 (outer packaging)",
+        "url": "https://eur-lex.europa.eu/eli/dir/2001/83/oj",
+        "note": "Draft paraphrase. Check against the source before relying on it."
+      },
+      "requires": [
+        {
+          "field": "storage",
+          "severity": "warning",
+          "owner": "R&D"
+        }
+      ]
+    },
+    {
+      "id": "EU-MED/Art54-h",
+      "section": "Legal & Identity",
+      "text": "The name and address of the marketing authorisation holder are stated.",
+      "keywords": [
+        "marketing authorisation holder",
+        "address"
+      ],
+      "source": {
+        "name": "EU Directive 2001/83/EC Art. 54 (outer packaging)",
+        "url": "https://eur-lex.europa.eu/eli/dir/2001/83/oj",
+        "note": "Draft paraphrase. Check against the source before relying on it."
+      },
+      "requires": [
+        {
+          "field": "responsible_person",
+          "severity": "blocking",
+          "owner": "Legal"
+        }
+      ]
+    },
+    {
+      "id": "EU-MED/Art54-i",
+      "section": "Legal & Identity",
+      "text": "The marketing authorisation number is shown.",
+      "keywords": [
+        "marketing authorisation number",
+        "eu/"
+      ],
+      "source": {
+        "name": "EU Directive 2001/83/EC Art. 54 (outer packaging)",
+        "url": "https://eur-lex.europa.eu/eli/dir/2001/83/oj",
+        "note": "Draft paraphrase. Check against the source before relying on it."
+      },
+      "requires": [
+        {
+          "field": "registration",
+          "severity": "blocking",
+          "owner": "Legal"
+        }
+      ]
+    },
+    {
+      "id": "EU-MED/Art54-j",
+      "section": "Other Pack Copy",
+      "text": "The manufacturer's batch number is shown.",
+      "keywords": [
+        "batch",
+        "lot"
+      ],
+      "source": {
+        "name": "EU Directive 2001/83/EC Art. 54 (outer packaging)",
+        "url": "https://eur-lex.europa.eu/eli/dir/2001/83/oj",
+        "note": "Draft paraphrase. Check against the source before relying on it."
+      },
+      "requires": [
+        {
+          "field": "batch_lot",
+          "severity": "blocking",
+          "owner": "Supply Chain"
+        }
+      ]
+    }
+  ]
+}

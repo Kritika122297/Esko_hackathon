@@ -1,0 +1,269 @@
+{
+  "standard": "us_fda",
+  "name": "US FDA food labeling",
+  "status": "draft",
+  "version": "0.1",
+  "ui_markets": [
+    {
+      "code": "US",
+      "label": "United States"
+    }
+  ],
+  "applies_to": {
+    "markets": [
+      "US",
+      "USA",
+      "UNITED STATES",
+      "UNITED STATES OF AMERICA"
+    ],
+    "categories": [
+      "food"
+    ]
+  },
+  "clauses": [
+    {
+      "id": "US-FDA/21CFR101.3",
+      "section": "Legal & Identity",
+      "text": "The principal display panel must carry the statement of identity: the common or usual name of the food.",
+      "keywords": [
+        "statement of identity",
+        "common name",
+        "legal name"
+      ],
+      "requires": [
+        {
+          "field": "statement_of_identity",
+          "severity": "blocking",
+          "owner": "Legal"
+        }
+      ],
+      "source": {
+        "name": "US 21 CFR Part 101 (food labeling)",
+        "url": "https://www.ecfr.gov/current/title-21/chapter-I/subchapter-B/part-101",
+        "note": "Draft paraphrase. Check against the source before relying on it."
+      }
+    },
+    {
+      "id": "US-FDA/21CFR101.4",
+      "section": "Ingredients & Allergens",
+      "text": "Ingredients must be listed by their common names in descending order of predominance by weight.",
+      "keywords": [
+        "ingredient",
+        "descending order",
+        "predominance"
+      ],
+      "requires": [
+        {
+          "field": "ingredients",
+          "severity": "blocking",
+          "owner": "R&D"
+        }
+      ],
+      "source": {
+        "name": "US 21 CFR Part 101 (food labeling)",
+        "url": "https://www.ecfr.gov/current/title-21/chapter-I/subchapter-B/part-101",
+        "note": "Draft paraphrase. Check against the source before relying on it."
+      }
+    },
+    {
+      "id": "US-FDA/FALCPA-403w",
+      "section": "Ingredients & Allergens",
+      "text": "Major food allergens (milk, egg, fish, shellfish, tree nuts, peanuts, wheat, soybeans, sesame) must be declared in a 'Contains' statement or in the ingredient list.",
+      "keywords": [
+        "allergen",
+        "contains",
+        "tree nut",
+        "peanut",
+        "wheat",
+        "soy",
+        "sesame"
+      ],
+      "requires": [
+        {
+          "field": "allergen_statement",
+          "severity": "blocking",
+          "owner": "Legal"
+        }
+      ],
+      "source": {
+        "name": "US FD&C Act s.403(w) / FALCPA",
+        "url": "https://www.fda.gov/food/food-allergies/food-allergen-labeling-and-consumer-protection-act-2004-falcpa",
+        "note": "Draft paraphrase. Check against the source before relying on it."
+      }
+    },
+    {
+      "id": "US-FDA/21CFR101.5",
+      "section": "Legal & Identity",
+      "text": "The label must show the name and place of business (city, state, ZIP code) of the manufacturer, packer or distributor.",
+      "keywords": [
+        "manufacturer",
+        "packer",
+        "distributor",
+        "place of business",
+        "address"
+      ],
+      "requires": [
+        {
+          "field": "producer",
+          "severity": "blocking",
+          "owner": "Legal"
+        }
+      ],
+      "source": {
+        "name": "US 21 CFR Part 101 (food labeling)",
+        "url": "https://www.ecfr.gov/current/title-21/chapter-I/subchapter-B/part-101",
+        "note": "Draft paraphrase. Check against the source before relying on it."
+      }
+    },
+    {
+      "id": "US-FDA/21CFR101.7",
+      "section": "Quantity",
+      "text": "Net quantity of contents must be stated on the principal display panel, in the bottom 30% of the panel, in both US customary (ounces) and metric (grams) units.",
+      "keywords": [
+        "net quantity",
+        "net weight",
+        "net wt",
+        "ounce",
+        "oz",
+        "dual units",
+        "principal display panel"
+      ],
+      "requires": [
+        {
+          "field": "net_weight",
+          "severity": "blocking",
+          "owner": "Supply Chain"
+        }
+      ],
+      "source": {
+        "name": "US 21 CFR Part 101 (food labeling)",
+        "url": "https://www.ecfr.gov/current/title-21/chapter-I/subchapter-B/part-101",
+        "note": "Draft paraphrase. Check against the source before relying on it."
+      }
+    },
+    {
+      "id": "US-FDA/21CFR101.9-servings",
+      "section": "Quantity",
+      "text": "The Nutrition Facts panel states the serving size (household measure and grams) and the number of servings per container.",
+      "keywords": [
+        "serving size",
+        "servings per container",
+        "household measure"
+      ],
+      "requires": [
+        {
+          "field": "serving_size",
+          "severity": "blocking",
+          "owner": "R&D"
+        },
+        {
+          "field": "servings_per_package",
+          "severity": "blocking",
+          "owner": "R&D"
+        }
+      ],
+      "source": {
+        "name": "US 21 CFR Part 101 (food labeling)",
+        "url": "https://www.ecfr.gov/current/title-21/chapter-I/subchapter-B/part-101",
+        "note": "Draft paraphrase. Check against the source before relying on it."
+      }
+    },
+    {
+      "id": "US-FDA/21CFR101.9-nutrients",
+      "section": "Nutrition",
+      "text": "Nutrition Facts must list calories, total fat, saturated fat, trans fat, cholesterol, sodium, total carbohydrate, dietary fiber, total sugars, added sugars, protein, vitamin D, calcium, iron and potassium.",
+      "keywords": [
+        "nutrition facts",
+        "calories",
+        "total fat",
+        "sodium",
+        "carbohydrate",
+        "protein",
+        "vitamin d",
+        "potassium"
+      ],
+      "requires": [
+        {
+          "field": "calories",
+          "severity": "blocking",
+          "owner": "R&D"
+        },
+        {
+          "field": "total_fat",
+          "severity": "blocking",
+          "owner": "R&D"
+        },
+        {
+          "field": "saturated_fat",
+          "severity": "blocking",
+          "owner": "R&D"
+        },
+        {
+          "field": "trans_fat",
+          "severity": "blocking",
+          "owner": "R&D"
+        },
+        {
+          "field": "cholesterol",
+          "severity": "blocking",
+          "owner": "R&D"
+        },
+        {
+          "field": "sodium",
+          "severity": "blocking",
+          "owner": "R&D"
+        },
+        {
+          "field": "total_carbohydrate",
+          "severity": "blocking",
+          "owner": "R&D"
+        },
+        {
+          "field": "dietary_fiber",
+          "severity": "blocking",
+          "owner": "R&D"
+        },
+        {
+          "field": "total_sugars",
+          "severity": "blocking",
+          "owner": "R&D"
+        },
+        {
+          "field": "added_sugars",
+          "severity": "blocking",
+          "owner": "R&D"
+        },
+        {
+          "field": "protein",
+          "severity": "blocking",
+          "owner": "R&D"
+        },
+        {
+          "field": "vitamin_d",
+          "severity": "blocking",
+          "owner": "R&D"
+        },
+        {
+          "field": "calcium",
+          "severity": "blocking",
+          "owner": "R&D"
+        },
+        {
+          "field": "iron",
+          "severity": "blocking",
+          "owner": "R&D"
+        },
+        {
+          "field": "potassium",
+          "severity": "blocking",
+          "owner": "R&D"
+        }
+      ],
+      "source": {
+        "name": "US 21 CFR Part 101 (food labeling)",
+        "url": "https://www.ecfr.gov/current/title-21/chapter-I/subchapter-B/part-101",
+        "note": "Draft paraphrase. Check against the source before relying on it."
+      }
+    }
+  ]
+}

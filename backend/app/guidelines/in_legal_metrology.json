@@ -1,0 +1,89 @@
+{
+  "standard": "in_legal_metrology",
+  "name": "India packaged goods (Legal Metrology, all categories)",
+  "status": "draft",
+  "version": "0.1",
+  "ui_markets": [],
+  "applies_to": {
+    "markets": [
+      "IN",
+      "INDIA"
+    ],
+    "categories": [
+      "*"
+    ]
+  },
+  "clauses": [
+    {
+      "id": "IN-LM/declarations",
+      "section": "Legal & Identity",
+      "text": "Packaged goods declare the manufacturer, packer or importer name and address, and the net quantity.",
+      "keywords": [
+        "manufacturer",
+        "packer",
+        "importer",
+        "net quantity"
+      ],
+      "source": {
+        "name": "India Legal Metrology (Packaged Commodities) Rules, 2011",
+        "url": "https://consumeraffairs.nic.in/",
+        "note": "Draft paraphrase. Check against the source before relying on it."
+      },
+      "requires": [
+        {
+          "field": "producer",
+          "severity": "blocking",
+          "owner": "Legal"
+        },
+        {
+          "field": "net_weight",
+          "severity": "blocking",
+          "owner": "Supply Chain"
+        }
+      ]
+    },
+    {
+      "id": "IN-LM/mrp",
+      "section": "Legal & Identity",
+      "text": "The maximum retail price (MRP, inclusive of all taxes) is declared.",
+      "keywords": [
+        "mrp",
+        "maximum retail price"
+      ],
+      "source": {
+        "name": "India Legal Metrology (Packaged Commodities) Rules, 2011",
+        "url": "https://consumeraffairs.nic.in/",
+        "note": "Draft paraphrase. Check against the source before relying on it."
+      },
+      "requires": [
+        {
+          "field": "mrp",
+          "severity": "blocking",
+          "owner": "Supply Chain"
+        }
+      ]
+    },
+    {
+      "id": "IN-LM/date",
+      "section": "Other Pack Copy",
+      "text": "The month and year of manufacture or packing are declared.",
+      "keywords": [
+        "month and year",
+        "manufacture",
+        "packed"
+      ],
+      "source": {
+        "name": "India Legal Metrology (Packaged Commodities) Rules, 2011",
+        "url": "https://consumeraffairs.nic.in/",
+        "note": "Draft paraphrase. Check against the source before relying on it."
+      },
+      "requires": [
+        {
+          "field": "manufacture_date",
+          "severity": "warning",
+          "owner": "Supply Chain"
+        }
+      ]
+    }
+  ]
+}

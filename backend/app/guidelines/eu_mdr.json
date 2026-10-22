@@ -1,0 +1,185 @@
+{
+  "standard": "eu_mdr",
+  "name": "EU medical device labelling (MDR 2017/745, Annex I)",
+  "status": "draft",
+  "version": "0.1",
+  "ui_markets": [],
+  "applies_to": {
+    "markets": [
+      "EU",
+      "EUROPE",
+      "FR",
+      "FRANCE",
+      "DE",
+      "GERMANY",
+      "ES",
+      "SPAIN",
+      "IT",
+      "ITALY",
+      "NL",
+      "NETHERLANDS"
+    ],
+    "categories": [
+      "medical_device"
+    ]
+  },
+  "clauses": [
+    {
+      "id": "EU-MDR/AnnexI-23.2a",
+      "section": "Legal & Identity",
+      "text": "The device name or trade name is shown.",
+      "keywords": [
+        "device",
+        "trade name"
+      ],
+      "source": {
+        "name": "EU Regulation (EU) 2017/745 (MDR), Annex I Chapter III",
+        "url": "https://eur-lex.europa.eu/eli/reg/2017/745/oj",
+        "note": "Draft paraphrase. Check against the source before relying on it."
+      },
+      "requires": [
+        {
+          "field": "product_name",
+          "severity": "blocking",
+          "owner": "Legal"
+        }
+      ]
+    },
+    {
+      "id": "EU-MDR/AnnexI-23.2b",
+      "section": "Legal & Identity",
+      "text": "The manufacturer's name and address are shown (and the authorised representative where the manufacturer is outside the EU).",
+      "keywords": [
+        "manufacturer",
+        "authorised representative"
+      ],
+      "source": {
+        "name": "EU Regulation (EU) 2017/745 (MDR), Annex I Chapter III",
+        "url": "https://eur-lex.europa.eu/eli/reg/2017/745/oj",
+        "note": "Draft paraphrase. Check against the source before relying on it."
+      },
+      "requires": [
+        {
+          "field": "producer",
+          "severity": "blocking",
+          "owner": "Legal"
+        },
+        {
+          "field": "responsible_person",
+          "severity": "warning",
+          "owner": "Legal"
+        }
+      ]
+    },
+    {
+      "id": "EU-MDR/UDI",
+      "section": "Legal & Identity",
+      "text": "The Unique Device Identifier (UDI) carrier is shown.",
+      "keywords": [
+        "udi"
+      ],
+      "source": {
+        "name": "EU Regulation (EU) 2017/745 (MDR), Annex I Chapter III",
+        "url": "https://eur-lex.europa.eu/eli/reg/2017/745/oj",
+        "note": "Draft paraphrase. Check against the source before relying on it."
+      },
+      "requires": [
+        {
+          "field": "udi",
+          "severity": "blocking",
+          "owner": "Supply Chain"
+        }
+      ]
+    },
+    {
+      "id": "EU-MDR/AnnexI-23.2d",
+      "section": "Other Pack Copy",
+      "text": "The batch code or serial number is shown.",
+      "keywords": [
+        "lot",
+        "batch",
+        "sn"
+      ],
+      "source": {
+        "name": "EU Regulation (EU) 2017/745 (MDR), Annex I Chapter III",
+        "url": "https://eur-lex.europa.eu/eli/reg/2017/745/oj",
+        "note": "Draft paraphrase. Check against the source before relying on it."
+      },
+      "requires": [
+        {
+          "field": "batch_lot",
+          "severity": "blocking",
+          "owner": "Supply Chain"
+        }
+      ]
+    },
+    {
+      "id": "EU-MDR/AnnexI-23.2e",
+      "section": "Other Pack Copy",
+      "text": "The expiry date (or manufacture date) is shown where relevant.",
+      "keywords": [
+        "expiry",
+        "use by"
+      ],
+      "source": {
+        "name": "EU Regulation (EU) 2017/745 (MDR), Annex I Chapter III",
+        "url": "https://eur-lex.europa.eu/eli/reg/2017/745/oj",
+        "note": "Draft paraphrase. Check against the source before relying on it."
+      },
+      "requires": [
+        {
+          "field": "expiry_date",
+          "severity": "warning",
+          "owner": "Supply Chain"
+        }
+      ]
+    },
+    {
+      "id": "EU-MDR/CE",
+      "section": "Legal & Identity",
+      "text": "The CE marking is shown.",
+      "keywords": [
+        "ce"
+      ],
+      "source": {
+        "name": "EU Regulation (EU) 2017/745 (MDR), Annex I Chapter III",
+        "url": "https://eur-lex.europa.eu/eli/reg/2017/745/oj",
+        "note": "Draft paraphrase. Check against the source before relying on it."
+      },
+      "requires": [
+        {
+          "field": "ce_marking",
+          "severity": "blocking",
+          "owner": "Legal"
+        }
+      ]
+    },
+    {
+      "id": "EU-MDR/AnnexI-23.2",
+      "section": "Other Pack Copy",
+      "text": "Storage and handling conditions, warnings and precautions are shown.",
+      "keywords": [
+        "storage",
+        "warning",
+        "sterile"
+      ],
+      "source": {
+        "name": "EU Regulation (EU) 2017/745 (MDR), Annex I Chapter III",
+        "url": "https://eur-lex.europa.eu/eli/reg/2017/745/oj",
+        "note": "Draft paraphrase. Check against the source before relying on it."
+      },
+      "requires": [
+        {
+          "field": "storage",
+          "severity": "warning",
+          "owner": "R&D"
+        },
+        {
+          "field": "warnings",
+          "severity": "warning",
+          "owner": "Legal"
+        }
+      ]
+    }
+  ]
+}

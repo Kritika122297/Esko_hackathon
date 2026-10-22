@@ -1,0 +1,163 @@
+{
+  "status": "draft",
+  "verified": false,
+  "note": "Layout rules for the designer blueprint and the agency simulator. Values were written from knowledge of the regulation texts and have NOT been checked against the official sources (eCFR, EUR-Lex, GS1). Every entry stays verified: false until a person checks it and records the date. US and EU values are separate entries and must never be merged into one threshold. clause_id names a clause in the rule packs where one exists; citation is the legal reference shown to people.",
+  "rules": [
+    {
+      "id": "us_food.net_quantity_zone",
+      "kind": "placement_zone",
+      "title": "Net quantity in the bottom 30% of the principal display panel",
+      "markets": ["US"], "categories": ["food"],
+      "clause_id": "US-FDA/21CFR101.7", "citation": "21 CFR 101.7(f) (formerly numbered 101.105)",
+      "value": 0.30, "unit": "fraction of PDP height, from the bottom",
+      "exempt_max_area": 5, "exempt_unit": "sq in",
+      "exemption": "Not required on packages whose principal display panel is 5 square inches or less.",
+      "verified": false
+    },
+    {
+      "id": "us_food.net_quantity_type",
+      "kind": "type_table",
+      "title": "Minimum height of the net quantity declaration",
+      "markets": ["US"], "categories": ["food"],
+      "clause_id": "US-FDA/21CFR101.7", "citation": "21 CFR 101.7(i)",
+      "unit": "in", "area_unit": "sq in",
+      "table": [
+        {"max_area": 5, "min_height": 0.0625, "label": "1/16 in"},
+        {"max_area": 25, "min_height": 0.125, "label": "1/8 in"},
+        {"max_area": 100, "min_height": 0.1875, "label": "3/16 in"},
+        {"max_area": 400, "min_height": 0.25, "label": "1/4 in"},
+        {"max_area": null, "min_height": 0.5, "label": "1/2 in"}
+      ],
+      "verified": false
+    },
+    {
+      "id": "us_food.info_panel_group",
+      "kind": "contiguity",
+      "title": "Information panel: required copy together, without intervening material",
+      "markets": ["US"], "categories": ["food"],
+      "clause_id": null, "citation": "21 CFR 101.2(e)",
+      "fields": ["nutrition", "ingredients", "allergen_statement", "producer"],
+      "note": "The information panel is the panel immediately to the right of the principal display panel (21 CFR 101.2(a)).",
+      "verified": false
+    },
+    {
+      "id": "us_food.info_panel_type",
+      "kind": "type_min",
+      "title": "Minimum type size on the information panel",
+      "markets": ["US"], "categories": ["food"],
+      "clause_id": null, "citation": "21 CFR 101.2(c)",
+      "value": 0.0625, "unit": "in", "label": "1/16 in (lower-case o)",
+      "verified": false
+    },
+    {
+      "id": "us_food.pdp_area",
+      "kind": "area_method",
+      "title": "How the principal display panel area is measured",
+      "markets": ["US"], "categories": ["food", "cosmetics", "pharma", "medical_device"],
+      "clause_id": null, "citation": "21 CFR 101.1",
+      "note": "Rectangular package: the whole side, height x width. Cylindrical package: 40% of height x circumference.",
+      "verified": false
+    },
+    {
+      "id": "us_cosmetics.net_quantity",
+      "kind": "type_table",
+      "title": "Net quantity on cosmetics: placement and minimum height",
+      "markets": ["US"], "categories": ["cosmetics"],
+      "clause_id": null, "citation": "21 CFR 701.13",
+      "unit": "in", "area_unit": "sq in",
+      "table": [
+        {"max_area": 5, "min_height": 0.0625, "label": "1/16 in"},
+        {"max_area": 25, "min_height": 0.125, "label": "1/8 in"},
+        {"max_area": 100, "min_height": 0.1875, "label": "3/16 in"},
+        {"max_area": 400, "min_height": 0.25, "label": "1/4 in"},
+        {"max_area": null, "min_height": 0.5, "label": "1/2 in"}
+      ],
+      "zone_fraction": 0.30, "exempt_max_area": 5,
+      "verified": false
+    },
+    {
+      "id": "us_drug.net_quantity",
+      "kind": "type_table",
+      "title": "Net quantity on OTC drugs: placement and minimum height",
+      "markets": ["US"], "categories": ["pharma"],
+      "clause_id": null, "citation": "21 CFR 201.62",
+      "unit": "in", "area_unit": "sq in",
+      "table": [
+        {"max_area": 5, "min_height": 0.0625, "label": "1/16 in"},
+        {"max_area": 25, "min_height": 0.125, "label": "1/8 in"},
+        {"max_area": 100, "min_height": 0.1875, "label": "3/16 in"},
+        {"max_area": 400, "min_height": 0.25, "label": "1/4 in"},
+        {"max_area": null, "min_height": 0.5, "label": "1/2 in"}
+      ],
+      "zone_fraction": 0.30, "exempt_max_area": 5,
+      "verified": false
+    },
+    {
+      "id": "us_device.net_quantity",
+      "kind": "type_table",
+      "title": "Net quantity on OTC devices: placement and minimum height",
+      "markets": ["US"], "categories": ["medical_device"],
+      "clause_id": null, "citation": "21 CFR 801.62",
+      "unit": "in", "area_unit": "sq in",
+      "table": [
+        {"max_area": 5, "min_height": 0.0625, "label": "1/16 in"},
+        {"max_area": 25, "min_height": 0.125, "label": "1/8 in"},
+        {"max_area": 100, "min_height": 0.1875, "label": "3/16 in"},
+        {"max_area": 400, "min_height": 0.25, "label": "1/4 in"},
+        {"max_area": null, "min_height": 0.5, "label": "1/2 in"}
+      ],
+      "zone_fraction": 0.30, "exempt_max_area": 5,
+      "verified": false
+    },
+    {
+      "id": "eu_food.x_height",
+      "kind": "x_height",
+      "title": "Minimum x-height of the mandatory particulars",
+      "markets": ["EU", "FR", "DE", "ES", "IT", "NL"], "categories": ["food"],
+      "clause_id": null, "citation": "Regulation (EU) 1169/2011, Art. 13(2) and (3), Annex IV",
+      "value": 1.2, "unit": "mm",
+      "small_value": 0.9, "small_max_area": 80, "small_area_unit": "cm2",
+      "small_note": "0.9 mm when the largest surface of the package is less than 80 cm2.",
+      "verified": false
+    },
+    {
+      "id": "eu_food.allergen_emphasis",
+      "kind": "emphasis",
+      "title": "Allergens emphasised in the ingredient list",
+      "markets": ["EU", "FR", "DE", "ES", "IT", "NL"], "categories": ["food"],
+      "clause_id": "EU-1169/Art21", "citation": "Regulation (EU) 1169/2011, Art. 21(1)",
+      "note": "Set allergens apart from the other ingredients by font, style or background colour (for example bold).",
+      "verified": false
+    },
+    {
+      "id": "eu_food.net_quantity_type",
+      "kind": "type_table",
+      "title": "Minimum height of the net quantity figures (EU)",
+      "markets": ["EU", "FR", "DE", "ES", "IT", "NL"], "categories": ["food"],
+      "clause_id": "EU-1169/Art23", "citation": "Directive 76/211/EEC, Annex I, point 3.1",
+      "unit": "mm", "basis": "nominal quantity", "basis_unit": "g or ml",
+      "table": [
+        {"max_quantity": 50, "min_height": 2, "label": "2 mm"},
+        {"max_quantity": 200, "min_height": 3, "label": "3 mm"},
+        {"max_quantity": 1000, "min_height": 4, "label": "4 mm"},
+        {"max_quantity": null, "min_height": 6, "label": "6 mm"}
+      ],
+      "verified": false
+    },
+    {
+      "id": "gs1.quiet_zone",
+      "kind": "quiet_zone",
+      "title": "Barcode quiet zones (light margins)",
+      "markets": ["*"], "categories": ["*"],
+      "clause_id": null, "citation": "GS1 General Specifications, EAN/UPC symbols",
+      "symbologies": {
+        "UPC-A": {"left": 9, "right": 9},
+        "EAN-13": {"left": 11, "right": 7},
+        "EAN-8": {"left": 7, "right": 7}
+      },
+      "unit": "modules (X)", "nominal_x": 0.33, "nominal_x_unit": "mm",
+      "note": "Module width X is set by the printer's magnification; 0.33 mm is the 100% nominal size.",
+      "verified": false
+    }
+  ]
+}

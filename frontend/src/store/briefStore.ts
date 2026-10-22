@@ -1,187 +1,161 @@
 import { create } from "zustand";
-import {
-  BriefField,
-  ExtractionData,
-  Issue,
-  PackagingBrief,
-  SmartQuestion,
-  UploadResponse,
-  WorkflowStep,
-} from "@/lib/types";
+import { persist } from "zustand/middleware";
+import { api, ApiError } from "@/lib/api";
+import { ChatAction, ChatCitation, ChatScope, SessionView, SourceRef } from "@/lib/types";
+
+interface Highlight {
+  label: string;
+  sources: SourceRef[];
+}
+
+/** Result of a load: "stale" means a newer load or action superseded it, so its response was ignored. */
+export type LoadResult = "ok" | "failed" | "stale";
+
+export interface ChatMessage {
+  role: "user" | "assistant";
+  text: string;
+  scope?: ChatScope;
+  citations?: ChatCitation[];
+  suggestions?: string[];
+  actions?: ChatAction[];
+}
 
 interface BriefStore {
-  // Workflow
-  currentStep: WorkflowStep;
-  completedSteps: WorkflowStep[];
-  setStep: (step: WorkflowStep) => void;
-  completeStep: (step: WorkflowStep) => void;
-
-  // Session
   sessionId: string | null;
-  setSessionId: (id: string) => void;
+  view: SessionView | null;
+  highlight: Highlight | null;
+  busy: string | null;
+  busySince: number | null;
+  notice: string | null;
+  error: string | null;
+  errorDetail: unknown;
+  /** HTTP status of the last failed request (0 when the backend could not be reached). */
+  errorStatus: number | null;
+  /** Set when opening a brief failed for a reason other than "not found", so pages can offer a retry. */
+  loadError: { id: string; message: string } | null;
 
-  // Upload
-  uploadedFiles: File[];
-  setUploadedFiles: (files: File[]) => void;
-  addUploadedFiles: (files: File[]) => void;
-  removeUploadedFile: (index: number) => void;
-  uploadResponse: UploadResponse | null;
-  setUploadResponse: (r: UploadResponse) => void;
+  chatOpen: boolean;
+  chats: Record<string, ChatMessage[]>;
+  setChatOpen: (open: boolean) => void;
+  addChat: (sid: string, m: ChatMessage) => void;
+  setChat: (sid: string, messages: ChatMessage[]) => void;
 
-  // Extraction
-  extractionData: ExtractionData | null;
-  setExtractionData: (data: ExtractionData) => void;
-
-  // Brief
-  brief: PackagingBrief | null;
-  setBrief: (b: PackagingBrief) => void;
-  updateBriefField: (
-    sectionName: string,
-    fieldName: string,
-    newValue: any
-  ) => void;
-
-  // Issues
-  issues: Issue[];
-  setIssues: (issues: Issue[]) => void;
-  resolveIssue: (issueId: string) => void;
-
-  // Questions
-  questions: SmartQuestion[];
-  setQuestions: (q: SmartQuestion[]) => void;
-  answers: Record<string, string>;
-  setAnswer: (id: string, answer: string) => void;
-
-  // Loading states
-  isUploading: boolean;
-  isAnalyzing: boolean;
-  isExporting: boolean;
-  setLoading: (key: "isUploading" | "isAnalyzing" | "isExporting" | string, value: boolean) => void;
-
-  // Reset
+  setHighlight: (h: Highlight | null) => void;
+  clearError: () => void;
+  clearNotice: () => void;
+  load: (sid?: string) => Promise<LoadResult>;
+  run: (label: string, fn: (sid: string) => Promise<SessionView>, done?: string) => Promise<boolean>;
+  start: (fn: () => Promise<SessionView>, label: string) => Promise<boolean>;
   reset: () => void;
 }
 
-const initialStep: WorkflowStep = "upload";
+// Every response that replaces the view bumps this counter; a load whose number is no longer current is stale.
+let viewSeq = 0;
+// One mutating action (run/start) at a time; a second call while one is in flight is refused.
+let inFlight = false;
 
-export const useBriefStore = create<BriefStore>((set, get) => ({
-  // Workflow
-  currentStep: initialStep,
-  completedSteps: [],
-  setStep: (step) => set({ currentStep: step }),
-  completeStep: (step) => {
-    const currentCompleted = get().completedSteps;
-    if (!currentCompleted.includes(step)) {
-      set({ completedSteps: [...currentCompleted, step] });
-    }
-  },
+const CLEAR_ERROR = { error: null, errorDetail: null, errorStatus: null } as const;
 
-  // Session
-  sessionId: null,
-  setSessionId: (id) => set({ sessionId: id }),
-
-  // Upload
-  uploadedFiles: [],
-  setUploadedFiles: (files) => set({ uploadedFiles: files }),
-  addUploadedFiles: (files) =>
-    set((state) => ({ uploadedFiles: [...state.uploadedFiles, ...files] })),
-  removeUploadedFile: (index) =>
-    set((state) => ({
-      uploadedFiles: state.uploadedFiles.filter((_, i) => i !== index),
-    })),
-  uploadResponse: null,
-  setUploadResponse: (r) => set({ uploadResponse: r }),
-
-  // Extraction
-  extractionData: null,
-  setExtractionData: (data) => set({ extractionData: data }),
-
-  // Brief
-  brief: null,
-  setBrief: (brief) => set({ brief }),
-  updateBriefField: (sectionName, fieldName, newValue) => {
-    const currentBrief = get().brief;
-    if (!currentBrief) return;
-
-    const newSections = currentBrief.sections.map((sec) => {
-      if (sec.section_name !== sectionName) return sec;
-      return {
-        ...sec,
-        fields: sec.fields.map((fld) => {
-          if (fld.field_name !== fieldName) return fld;
-          return {
-            ...fld,
-            value: newValue,
-            user_override: newValue,
-            status: "confirmed" as const,
-            issues: [],
-          };
-        }),
-      };
-    });
-
-    // Recount remaining issues from fields
-    let crit = 0;
-    let warn = 0;
-    let inf = 0;
-    newSections.forEach((s) => {
-      s.fields.forEach((f) => {
-        if (f.status === "conflicting") crit++;
-        else if (f.status === "flagged") warn++;
-      });
-    });
-
-    set({
-      brief: {
-        ...currentBrief,
-        sections: newSections,
-        issues_summary: {
-          critical: crit,
-          warning: warn,
-          info: inf,
-        },
-      },
-    });
-  },
-
-  // Issues
-  issues: [],
-  setIssues: (issues) => set({ issues }),
-  resolveIssue: (issueId) =>
-    set((state) => ({
-      issues: state.issues.filter((i) => i.id !== issueId),
-    })),
-
-  // Questions
-  questions: [],
-  setQuestions: (questions) => set({ questions }),
-  answers: {},
-  setAnswer: (id, answer) =>
-    set((state) => ({
-      answers: { ...state.answers, [id]: answer },
-    })),
-
-  // Loading states
-  isUploading: false,
-  isAnalyzing: false,
-  isExporting: false,
-  setLoading: (key, value) => set({ [key]: value }),
-
-  // Reset
-  reset: () =>
-    set({
-      currentStep: "upload",
-      completedSteps: [],
+export const useBriefStore = create<BriefStore>()(
+  persist(
+    (set, get) => ({
       sessionId: null,
-      uploadedFiles: [],
-      uploadResponse: null,
-      extractionData: null,
-      brief: null,
-      issues: [],
-      questions: [],
-      answers: {},
-      isUploading: false,
-      isAnalyzing: false,
-      isExporting: false,
+      view: null,
+      highlight: null,
+      busy: null,
+      busySince: null,
+      notice: null,
+      error: null,
+      errorDetail: null,
+      errorStatus: null,
+      loadError: null,
+
+      chatOpen: false,
+      chats: {},
+      setChatOpen: (chatOpen) => set({ chatOpen }),
+      addChat: (sid, m) => set((st) => ({ chats: { ...st.chats, [sid]: [...(st.chats[sid] ?? []), m] } })),
+      setChat: (sid, messages) => set((st) => ({ chats: { ...st.chats, [sid]: messages } })),
+
+      setHighlight: (highlight) => set({ highlight }),
+      clearError: () => set({ ...CLEAR_ERROR }),
+      clearNotice: () => set({ notice: null }),
+
+      load: async (sid) => {
+        const id = sid ?? get().sessionId;
+        if (!id) return "failed";
+        const seq = ++viewSeq;
+        // Switching to another brief drops the previous brief's artwork highlight.
+        if (id !== get().view?.state.session_id) set({ highlight: null });
+        // A running action keeps its own busy label; the load does not take it over.
+        const ownsBusy = !inFlight;
+        set({ ...CLEAR_ERROR, loadError: null, ...(ownsBusy ? { busy: "Loading brief", busySince: Date.now() } : {}) });
+        const idle = () => (ownsBusy && !inFlight ? { busy: null, busySince: null } : {});
+        try {
+          const view = await api.get(id);
+          if (seq !== viewSeq) return "stale";
+          set({ view, sessionId: id, ...idle() });
+          return "ok";
+        } catch (e) {
+          if (seq !== viewSeq) return "stale";
+          const err = e as ApiError;
+          const gone = err.status === 404;
+          const st = get();
+          set({
+            ...idle(),
+            error: err.message,
+            errorDetail: err.detail,
+            errorStatus: err.status ?? null,
+            // A brief that no longer exists is forgotten (pages then show "No brief open"); other failures can be retried.
+            ...(gone
+              ? { sessionId: st.sessionId === id ? null : st.sessionId, view: st.view?.state.session_id === id ? null : st.view }
+              : { loadError: { id, message: err.message } }),
+          });
+          return "failed";
+        }
+      },
+
+      start: async (fn, label) => {
+        if (inFlight) return false;
+        inFlight = true;
+        set({ busy: label, busySince: Date.now(), ...CLEAR_ERROR, loadError: null, highlight: null, notice: null });
+        try {
+          const view = await fn();
+          viewSeq += 1; // a load still in flight must not replace the new brief
+          set({ view, sessionId: view.state.session_id, busy: null, busySince: null, notice: "Brief ready" });
+          return true;
+        } catch (e) {
+          const err = e as ApiError;
+          set({ busy: null, busySince: null, error: err.message, errorDetail: err.detail, errorStatus: err.status ?? null });
+          return false;
+        } finally {
+          inFlight = false;
+        }
+      },
+
+      run: async (label, fn, done = "Saved and re-checked") => {
+        const sid = get().sessionId;
+        if (!sid || inFlight) return false;
+        inFlight = true;
+        set({ busy: label, busySince: Date.now(), ...CLEAR_ERROR, notice: null });
+        try {
+          const view = await fn(sid);
+          viewSeq += 1; // a load still in flight holds an older view
+          set({ view, busy: null, busySince: null, notice: done });
+          return true;
+        } catch (e) {
+          const err = e as ApiError;
+          set({ busy: null, busySince: null, error: err.message, errorDetail: err.detail, errorStatus: err.status ?? null });
+          return false;
+        } finally {
+          inFlight = false;
+        }
+      },
+
+      reset: () => {
+        viewSeq += 1;
+        set({ sessionId: null, view: null, highlight: null, ...CLEAR_ERROR, loadError: null, busy: null, busySince: null, notice: null, chatOpen: false });
+      },
     }),
-}));
+    { name: "packproofai-session", partialize: (s) => ({ sessionId: s.sessionId }) }
+  )
+);

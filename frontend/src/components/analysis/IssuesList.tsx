@@ -1,214 +1,230 @@
 "use client";
 
-import React from "react";
-import {
-  AlertCircle,
-  AlertTriangle,
-  Info,
-  CheckCircle2,
-  Lightbulb,
-  FileSearch,
-} from "lucide-react";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Issue, IssueSeverity } from "@/lib/types";
+import { useId, useMemo, useState } from "react";
+import { ChevronDown, Crosshair, Lightbulb, RotateCcw, Send, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { api } from "@/lib/api";
+import { Issue } from "@/lib/types";
+import { useBriefStore } from "@/store/briefStore";
+import { KindLabel, OwnerTag, SeverityStamp, Stamp } from "@/components/shared/badges";
+import { SourceLine } from "@/components/shared/SourceChip";
+import { SearchBox, matchesQuery } from "@/components/shared/SearchBox";
+import { Segmented } from "@/components/ui/Segmented";
 
-interface IssuesListProps {
-  issues: Issue[];
-}
+type Filter = "decisions" | "design" | "info" | "acknowledged" | "all";
 
-export function IssuesList({ issues }: IssuesListProps) {
-  const criticalIssues = issues.filter((i) => i.severity === "critical");
-  const warningIssues = issues.filter((i) => i.severity === "warning");
-  const infoIssues = issues.filter((i) => i.severity === "info");
-
-  const getSeverityMeta = (sev: IssueSeverity) => {
-    switch (sev) {
-      case "critical":
-        return {
-          icon: AlertCircle,
-          badgeVariant: "destructive" as const,
-          color: "text-red-700 bg-red-50 border-red-200",
-          label: "Critical Error",
-        };
-      case "warning":
-        return {
-          icon: AlertTriangle,
-          badgeVariant: "warning" as const,
-          color: "text-amber-700 bg-amber-50 border-amber-200",
-          label: "Warning",
-        };
-      case "info":
-        return {
-          icon: Info,
-          badgeVariant: "info" as const,
-          color: "text-blue-700 bg-blue-50 border-blue-200",
-          label: "Info Notice",
-        };
-    }
-  };
-
-  const renderIssueGroup = (
-    title: string,
-    groupIssues: Issue[],
-    severity: IssueSeverity
-  ) => {
-    if (groupIssues.length === 0) return null;
-    const meta = getSeverityMeta(severity);
-    const Icon = meta.icon;
-
-    return (
-      <div className="space-y-2">
-        <div className="flex items-center justify-between px-1">
-          <div className="flex items-center gap-2">
-            <Icon
-              className={cn(
-                "h-4 w-4",
-                severity === "critical"
-                  ? "text-red-600"
-                  : severity === "warning"
-                  ? "text-amber-600"
-                  : "text-blue-600"
-              )}
-            />
-            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700">
-              {title}
-            </h4>
-          </div>
-          <Badge variant={meta.badgeVariant} className="text-[11px] font-semibold">
-            {groupIssues.length}
-          </Badge>
-        </div>
-
-        <Accordion type="multiple" className="space-y-2 border-none">
-          {groupIssues.map((issue) => (
-            <AccordionItem
-              key={issue.id}
-              value={issue.id}
-              className={cn(
-                "rounded-xl border px-3.5 py-1 transition-all bg-white shadow-2xs hover:shadow-xs",
-                severity === "critical"
-                  ? "border-red-200/80 hover:border-red-300"
-                  : severity === "warning"
-                  ? "border-amber-200/80 hover:border-amber-300"
-                  : "border-blue-200/80 hover:border-blue-300"
-              )}
-            >
-              <AccordionTrigger className="hover:no-underline py-2.5">
-                <div className="flex items-start gap-2.5 text-left min-w-0 pr-2">
-                  <span
-                    className={cn(
-                      "mt-0.5 inline-block h-2 w-2 rounded-full shrink-0",
-                      severity === "critical"
-                        ? "bg-red-500"
-                        : severity === "warning"
-                        ? "bg-amber-500"
-                        : "bg-blue-500"
-                    )}
-                  />
-                  <div>
-                    <h5 className="text-xs font-semibold text-slate-900 leading-snug">
-                      {issue.title}
-                    </h5>
-                    {issue.field_name && (
-                      <span className="text-[10px] font-medium text-slate-500 font-mono">
-                        Target Field: {issue.field_name}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </AccordionTrigger>
-
-              <AccordionContent className="pt-1 pb-3 text-xs space-y-3">
-                <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100 text-slate-700 leading-relaxed">
-                  {issue.description}
-                </div>
-
-                {issue.suggestion && (
-                  <div className="flex items-start gap-2 p-2.5 rounded-lg bg-emerald-50/70 border border-emerald-200/70 text-emerald-800 text-[11.5px]">
-                    <Lightbulb className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
-                    <div>
-                      <span className="font-semibold text-emerald-900 block mb-0.5">
-                        AI Suggested Fix:
-                      </span>
-                      {issue.suggestion}
-                    </div>
-                  </div>
-                )}
-
-                <div className="flex items-center justify-between text-[10px] text-slate-500 pt-1 border-t border-slate-100">
-                  <span className="flex items-center gap-1 font-mono">
-                    <FileSearch className="h-3 w-3" />
-                    Source: {issue.source}
-                  </span>
-                  <Badge variant="outline" className="text-[10px] uppercase font-mono">
-                    {issue.category.replace("_", " ")}
-                  </Badge>
-                </div>
-              </AccordionContent>
-            </AccordionItem>
-          ))}
-        </Accordion>
-      </div>
-    );
-  };
+export function IssuesList({ issues: allIssues, editable = true }: { issues: Issue[]; editable?: boolean }) {
+  // Keeps the search field id unique if more than one list is on the page.
+  const idBase = useId().replace(/:/g, "");
+  // Code findings lead. AI points are kept apart so a reader sees what was calculated before what was suggested.
+  const issues = useMemo(() => allIssues.filter((i) => i.detected_by !== "ai"), [allIssues]);
+  const aiIssues = useMemo(() => allIssues.filter((i) => i.detected_by === "ai"), [allIssues]);
+  const groups = useMemo(
+    () => ({
+      decisions: issues.filter((i) => i.state === "open" && i.resolution === "data" && i.severity !== "info"),
+      design: issues.filter((i) => i.resolution === "design"),
+      info: issues.filter((i) => i.state === "open" && i.resolution === "data" && i.severity === "info"),
+      acknowledged: issues.filter((i) => i.state === "acknowledged"),
+      all: issues,
+    }),
+    [issues]
+  );
+  const [filter, setFilter] = useState<Filter>(groups.decisions.length ? "decisions" : "all");
+  const [query, setQuery] = useState("");
+  const [aiOpen, setAiOpen] = useState(false);
+  const fields = useBriefStore((s) => s.view?.state.fields);
+  const labelOf = useMemo(() => new Map((fields ?? []).map((f) => [f.key, f.label])), [fields]);
+  const hit = (i: Issue) => matchesQuery(query, i.title, i.description, i.owner, ...i.fields.map((k) => labelOf.get(k) ?? k.replace(/_/g, " ")));
+  const searching = query.trim().length > 0;
+  const shown = groups[filter].filter(hit);
+  const aiShown = aiIssues.filter(hit);
+  const tabs: [Filter, string][] = [
+    ["decisions", "Decide"],
+    ["design", "Designer tasks"],
+    ["info", "For info"],
+    ["acknowledged", "Passed on"],
+    ["all", "All"],
+  ];
 
   return (
-    <Card className="h-full flex flex-col border-slate-200 shadow-sm bg-white overflow-hidden">
-      <CardHeader className="p-4 border-b border-slate-100 bg-slate-50/50 flex flex-row items-center justify-between">
-        <div>
-          <div className="flex items-center gap-2">
-            <AlertCircle className="h-4 w-4 text-red-600" />
-            <CardTitle className="text-base font-semibold text-slate-900">
-              Audit & Rule Violations
-            </CardTitle>
-          </div>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Deterministic math verification and AI contradiction analysis
+    <div className="flex h-full min-h-0 flex-col">
+      <Segmented
+        label="Filter findings"
+        size="sm"
+        value={filter}
+        onChange={setFilter}
+        items={tabs.map(([k, label]) => ({ id: k, label, count: groups[k].length }))}
+        wrapRows
+        className="w-full"
+      />
+      <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1">
+        <SearchBox
+          id={`finding-search-${idBase}`}
+          label="Search findings"
+          value={query}
+          onChange={setQuery}
+          placeholder="Search title, description, field or owner"
+          count={shown.length + aiShown.length}
+          noun={["finding", "findings"]}
+          size="sm"
+          className="min-w-0 flex-1"
+        />
+        {searching && (
+          <p className="text-[12px] text-ink-muted" aria-hidden>
+            Showing {shown.length} of {groups[filter].length}
           </p>
-        </div>
-        <div className="flex items-center gap-1.5">
-          {criticalIssues.length > 0 && (
-            <Badge variant="destructive" className="text-xs font-semibold">
-              {criticalIssues.length} Critical
-            </Badge>
-          )}
-          {warningIssues.length > 0 && (
-            <Badge variant="warning" className="text-xs font-semibold">
-              {warningIssues.length} Warning
-            </Badge>
-          )}
-        </div>
-      </CardHeader>
-
-      <CardContent className="p-4 flex-1 overflow-y-auto space-y-6">
-        {issues.length === 0 ? (
-          <div className="h-full flex flex-col items-center justify-center text-center p-8 text-slate-500">
-            <div className="h-12 w-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mb-3">
-              <CheckCircle2 className="h-6 w-6" />
-            </div>
-            <h4 className="font-semibold text-sm text-slate-900">
-              No Violations Found!
-            </h4>
-            <p className="text-xs text-slate-500 mt-1 max-w-xs">
-              All mathematical formulas, panel texts, and regulatory rules matched cleanly.
-            </p>
-          </div>
-        ) : (
-          <>
-            {renderIssueGroup("Critical Math & Legal Blockers", criticalIssues, "critical")}
-            {renderIssueGroup("Warnings & Discrepancies", warningIssues, "warning")}
-            {renderIssueGroup("Informational Notes & ERP Sync", infoIssues, "info")}
-          </>
         )}
-      </CardContent>
-    </Card>
+      </div>
+      <div className="-mx-1 mt-3 min-h-0 flex-1 space-y-2.5 overflow-y-auto px-1 pb-1">
+        {shown.length === 0 && (
+          <div className="rounded-lg border border-dashed border-line-strong px-5 py-8 text-center">
+            <p className="text-[14px] font-semibold text-ink">
+              {searching ? `No finding in this view matches “${query.trim()}”.` : filter === "decisions" ? "No open decisions." : "Nothing in this view."}
+            </p>
+            {!searching && filter === "decisions" && <p className="mt-1 text-[13px] text-ink-muted">Everything is resolved or passed on.</p>}
+          </div>
+        )}
+        {shown.map((i, idx) => (
+          <IssueCard key={i.id} issue={i} editable={editable} index={idx} />
+        ))}
+        {aiShown.length > 0 && (
+          <section className="rounded-lg border border-dashed border-line-strong bg-desk/50">
+            <button
+              type="button"
+              onClick={() => setAiOpen((v) => !v)}
+              aria-expanded={aiOpen}
+              aria-controls={`ai-findings-${idBase}`}
+              className="flex w-full items-start justify-between gap-3 px-3.5 py-3 text-left"
+            >
+              <span className="min-w-0">
+                <span className="flex items-center gap-1.5 text-[13.5px] font-semibold text-ink">
+                  <Sparkles className="h-3.5 w-3.5 text-ink-muted" aria-hidden /> AI suggestions <span className="figure text-[16px]">{aiShown.length}</span>
+                </span>
+                <span className="mt-0.5 block text-[12.5px] leading-snug text-ink-muted">Possible problems the AI noticed. Not calculated, never blocking, always needs a person.</span>
+              </span>
+              <ChevronDown className={cn("mt-0.5 h-4 w-4 shrink-0 text-ink-faint transition-transform duration-200 ease-out", aiOpen && "rotate-180")} aria-hidden />
+            </button>
+            <div id={`ai-findings-${idBase}`} className="disclosure" data-open={aiOpen} aria-hidden={!aiOpen}>
+              <div>
+                <div className="space-y-2.5 px-2.5 pb-2.5">
+                  {aiShown.map((i, idx) => (
+                    <IssueCard key={i.id} issue={i} editable={editable} index={idx} />
+                  ))}
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function IssueCard({ issue, editable, index }: { issue: Issue; editable: boolean; index: number }) {
+  const [open, setOpen] = useState(index === 0 && issue.state === "open" && issue.severity === "blocking");
+  const [note, setNote] = useState("");
+  const { run, setHighlight, highlight, view, busy } = useBriefStore();
+  const finalized = view?.state.status === "finalized";
+  const locatable = issue.evidence.filter((e) => e.bbox);
+  const selected = highlight?.label === issue.title;
+  const bodyId = `issue-${issue.id.replace(/[^a-z0-9]/gi, "-")}`;
+  const passed = issue.state === "acknowledged";
+
+  return (
+    <article className={cn("sheet overflow-hidden transition-[border-color,box-shadow] duration-200", passed && "bg-desk/40", selected && "border-ink shadow-selected")}>
+      {/* Fixed furniture: severity, kind, owner always in the same place */}
+      <div className="flex items-center gap-2 px-3.5 pt-3">
+        <SeverityStamp severity={issue.severity} />
+        <span className="min-w-0 flex-1 truncate">
+          <KindLabel kind={issue.kind} ai={issue.detected_by === "ai"} />
+        </span>
+        <OwnerTag owner={issue.owner} />
+      </div>
+      <button className="flex w-full items-start justify-between gap-3 px-3.5 pb-3 pt-2 text-left" onClick={() => setOpen((v) => !v)} aria-expanded={open} aria-controls={bodyId}>
+        <span className={cn("text-[14.5px] font-semibold leading-snug", passed ? "text-ink-2" : "text-ink")}>{issue.title}</span>
+        <ChevronDown className={cn("mt-0.5 h-4 w-4 shrink-0 text-ink-faint transition-transform duration-200 ease-out", open && "rotate-180")} />
+      </button>
+      {(issue.resolution === "design" || passed) && (
+        <div className="flex flex-wrap gap-1.5 px-3.5 pb-3">
+          {issue.resolution === "design" && <Stamp tone="muted">Designer task</Stamp>}
+          {passed && (
+            <Stamp tone="sky" landed={issue.state}>
+              <Send className="h-3 w-3" aria-hidden /> Passed to agency
+            </Stamp>
+          )}
+        </div>
+      )}
+
+      <div id={bodyId} className="disclosure" data-open={open} aria-hidden={!open}>
+        <div>
+          <div className="space-y-3 border-t border-line px-3.5 py-3.5 text-[13px]">
+            <p className="leading-relaxed text-ink-2">{issue.description}</p>
+            {issue.suggestion && (
+              <div className="flex items-start gap-2.5 rounded-md bg-mint-soft px-3 py-2.5">
+                <Lightbulb className="mt-0.5 h-4 w-4 shrink-0 text-mint-deep" aria-hidden />
+                <p className="leading-relaxed text-ink">
+                  <span className="sr-only">Suggested fix: </span>
+                  {issue.suggestion}
+                </p>
+              </div>
+            )}
+            {issue.evidence.length > 0 && (
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-[12px] font-semibold text-ink-muted">Evidence</span>
+                  {locatable.length > 0 && (
+                    <button
+                      className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[12.5px] font-semibold text-ink underline decoration-ink/30 underline-offset-2 hover:bg-canary-soft hover:decoration-ink"
+                      onClick={() => setHighlight({ label: issue.title, sources: locatable })}
+                    >
+                      <Crosshair className="h-3.5 w-3.5" /> Show on artwork
+                    </button>
+                  )}
+                </div>
+                <SourceLine sources={issue.evidence} label={issue.title} />
+              </div>
+            )}
+            {passed && (
+              <p className="rounded-md bg-sky-soft px-3 py-2 text-ink-2">
+                Passed to the agency: <i>{issue.acknowledgement}</i>
+              </p>
+            )}
+            {editable && !finalized && issue.resolution === "data" && (
+              <div className="pt-0.5">
+                {issue.state === "open" ? (
+                  <div className="flex flex-col gap-2 sm:flex-row">
+                    <label htmlFor={`${bodyId}-note`} className="sr-only">
+                      Note for the agency
+                    </label>
+                    <input
+                      id={`${bodyId}-note`}
+                      value={note}
+                      onChange={(e) => setNote(e.target.value)}
+                      placeholder="Note for the agency (optional)"
+                      className="h-9 min-w-0 flex-1 rounded-md border border-line-strong bg-paper px-2.5 text-[13px] focus:border-ink"
+                    />
+                    <button
+                      className="pressable inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-md border border-ink bg-paper px-3 text-[13px] font-semibold text-ink transition-colors hover:bg-sky-soft disabled:pointer-events-none disabled:opacity-50"
+                      disabled={!!busy}
+                      onClick={() => run("Passing to agency", (sid) => api.acknowledge(sid, issue.id, note || "Passed to the agency as an open question."), "Passed to the agency")}
+                    >
+                      <Send className="h-3.5 w-3.5" /> Pass to agency
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    className="pressable inline-flex h-9 items-center gap-1.5 rounded-md border border-line-strong bg-paper px-3 text-[13px] font-semibold text-ink transition-colors hover:border-ink disabled:pointer-events-none disabled:opacity-50"
+                    disabled={!!busy}
+                    onClick={() => run("Reopening", (sid) => api.reopenIssue(sid, issue.id), "Reopened")}
+                  >
+                    <RotateCcw className="h-3.5 w-3.5" /> Reopen
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </article>
   );
 }

@@ -1,0 +1,149 @@
+{
+  "standard": "us_cosmetics",
+  "name": "US cosmetics labeling (FD&C Act, 21 CFR 701, MoCRA)",
+  "status": "draft",
+  "version": "0.1",
+  "ui_markets": [],
+  "applies_to": {
+    "markets": [
+      "US",
+      "USA",
+      "UNITED STATES"
+    ],
+    "categories": [
+      "cosmetics"
+    ]
+  },
+  "clauses": [
+    {
+      "id": "US-COSM/701.11",
+      "section": "Legal & Identity",
+      "text": "The label states the identity of the cosmetic (common or usual name, or a descriptive statement of its nature or use).",
+      "keywords": [
+        "identity",
+        "product name"
+      ],
+      "source": {
+        "name": "US 21 CFR Part 701 (cosmetic labeling)",
+        "url": "https://www.ecfr.gov/current/title-21/chapter-I/subchapter-G/part-701",
+        "note": "Draft paraphrase. Check against the source before relying on it."
+      },
+      "requires": [
+        {
+          "field": "statement_of_identity",
+          "severity": "blocking",
+          "owner": "Legal"
+        }
+      ]
+    },
+    {
+      "id": "US-COSM/701.12",
+      "section": "Legal & Identity",
+      "text": "The label shows the name and place of business of the manufacturer, packer or distributor.",
+      "keywords": [
+        "manufacturer",
+        "distributor",
+        "address"
+      ],
+      "source": {
+        "name": "US 21 CFR Part 701 (cosmetic labeling)",
+        "url": "https://www.ecfr.gov/current/title-21/chapter-I/subchapter-G/part-701",
+        "note": "Draft paraphrase. Check against the source before relying on it."
+      },
+      "requires": [
+        {
+          "field": "producer",
+          "severity": "blocking",
+          "owner": "Legal"
+        }
+      ]
+    },
+    {
+      "id": "US-COSM/701.13",
+      "section": "Quantity",
+      "text": "The net quantity of contents is stated on the principal display panel in both US customary and metric units.",
+      "keywords": [
+        "net quantity",
+        "net wt",
+        "fl oz",
+        "ounce"
+      ],
+      "source": {
+        "name": "US 21 CFR Part 701 (cosmetic labeling)",
+        "url": "https://www.ecfr.gov/current/title-21/chapter-I/subchapter-G/part-701",
+        "note": "Draft paraphrase. Check against the source before relying on it."
+      },
+      "requires": [
+        {
+          "field": "net_weight",
+          "severity": "blocking",
+          "owner": "Supply Chain"
+        }
+      ]
+    },
+    {
+      "id": "US-COSM/701.3",
+      "section": "Ingredients & Allergens",
+      "text": "Ingredients are declared in descending order of predominance using the standard (INCI-style) names.",
+      "keywords": [
+        "ingredients",
+        "inci"
+      ],
+      "source": {
+        "name": "US 21 CFR Part 701 (cosmetic labeling)",
+        "url": "https://www.ecfr.gov/current/title-21/chapter-I/subchapter-G/part-701",
+        "note": "Draft paraphrase. Check against the source before relying on it."
+      },
+      "requires": [
+        {
+          "field": "inci_ingredients",
+          "severity": "blocking",
+          "owner": "R&D"
+        }
+      ]
+    },
+    {
+      "id": "US-COSM/740",
+      "section": "Other Pack Copy",
+      "text": "Required warning statements appear where the product or its safety substantiation calls for them.",
+      "keywords": [
+        "warning",
+        "caution"
+      ],
+      "source": {
+        "name": "US 21 CFR Part 740 (cosmetic warning statements)",
+        "url": "https://www.ecfr.gov/current/title-21/chapter-I/subchapter-G/part-740",
+        "note": "Draft paraphrase. Check against the source before relying on it."
+      },
+      "requires": [
+        {
+          "field": "warnings",
+          "severity": "warning",
+          "owner": "Legal"
+        }
+      ]
+    },
+    {
+      "id": "US-COSM/609",
+      "section": "Legal & Identity",
+      "text": "The label carries a domestic address, phone number or electronic contact for reporting adverse events.",
+      "keywords": [
+        "adverse event",
+        "contact",
+        "phone"
+      ],
+      "source": {
+        "name": "US FD&C Act s.609 / MoCRA 2022",
+        "url": "https://www.fda.gov/cosmetics/cosmetics-laws-regulations/modernization-cosmetics-regulation-act-2022-mocra",
+        "note": "Draft paraphrase. Check against the source before relying on it."
+      },
+      "requires": [
+        {
+          "field": "responsible_person",
+          "severity": "blocking",
+          "owner": "Legal"
+        }
+      ]
+    }
+  ]
+}
