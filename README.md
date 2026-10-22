@@ -153,12 +153,6 @@ frontend/src/
 samples/                      Esko sample files
 ```
 
-## Documents
-
-- `PackProofAI_Judges_Guide.docx`: how it works, with the workflow, the AI guardrails, the key functions and a demo script.
-- `AUDIT_REPORT.md` and `AUDIT_PAGE_WISE.md`: a code audit with a prioritized fix list.
-- `DESIGN.md` and `PRODUCT.md`: design system and product notes.
-
 ## Known limits
 
 - The AI steps have not been measured against a live provider; the test suite runs with AI off.
