@@ -1,0 +1,29 @@
+# Local run of the same images Render builds: docker compose up --build
+# Web app: http://localhost:3100   API docs: http://localhost:8100/docs
+services:
+  api:
+    build: ./backend
+    env_file:
+      - path: ./backend/.env
+        required: false
+    environment:
+      PORT: "8000"
+    volumes:
+      - api-data:/app/uploads
+    ports:
+      - "8100:8000"
+
+  web:
+    build:
+      context: ./frontend
+      args:
+        BACKEND_URL: http://api:8000
+    environment:
+      PORT: "3000"
+    ports:
+      - "3100:3000"
+    depends_on:
+      - api
+
+volumes:
+  api-data:

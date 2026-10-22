@@ -1,0 +1,32 @@
+# Render Blueprint: the API and the web app as two Docker web services.
+# Dashboard -> New -> Blueprint -> pick this repository. Fill in the values marked sync: false when asked.
+services:
+  - type: web
+    name: packproofai-api
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    healthCheckPath: /api/health
+    buildFilter:
+      paths: ["backend/**"]
+    envVars:
+      - key: OCR_ENGINE
+        value: auto
+      - key: LLM_PROVIDER
+        sync: false
+      - key: LLM_API_KEY
+        sync: false
+      - key: LLM_MODEL
+        sync: false
+
+  - type: web
+    name: packproofai-web
+    runtime: docker
+    dockerfilePath: ./frontend/Dockerfile
+    dockerContext: ./frontend
+    buildFilter:
+      paths: ["frontend/**"]
+    envVars:
+      # Public URL of packproofai-api, e.g. https://packproofai-api.onrender.com (no trailing slash).
+      - key: BACKEND_URL
+        sync: false

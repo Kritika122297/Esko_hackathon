@@ -102,6 +102,20 @@ npm run dev                      # http://localhost:3000
 
 Open http://localhost:3000, click **New brief** and drop in the two files from `samples/`. API docs are at http://localhost:8000/api/docs.
 
+### Docker
+
+```bash
+docker compose up --build        # web app http://localhost:3100, API http://localhost:8100/docs
+```
+
+The backend image includes Tesseract for OCR. `backend/.env` is used when present.
+
+### Deploy on Render
+
+`render.yaml` defines both services. In Render choose **New > Blueprint**, pick this repository, and fill in the AI keys. Deploy `packproofai-api` first, then set `BACKEND_URL` on `packproofai-web` to its public URL (for example `https://packproofai-api.onrender.com`). `BACKEND_URL` is read when the web app builds, so redeploy the web app after changing it.
+
+Briefs are stored on the service's disk, which Render clears on every deploy. To keep them, add a persistent disk mounted at `/var/data` and set `UPLOAD_DIR=/var/data/uploads` and `EXPORT_DIR=/var/data/exports`.
+
 ### Tests
 
 ```bash
