@@ -11,7 +11,7 @@ import { SourceLine } from "@/components/shared/SourceChip";
 import { SearchBox, matchesQuery } from "@/components/shared/SearchBox";
 import { Segmented } from "@/components/ui/Segmented";
 
-type Filter = "decisions" | "design" | "info" | "acknowledged" | "all";
+type Filter = "decisions" | "design" | "other";
 
 export function IssuesList({ issues: allIssues, editable = true }: { issues: Issue[]; editable?: boolean }) {
   // Keeps the search field id unique if more than one list is on the page.
@@ -19,17 +19,15 @@ export function IssuesList({ issues: allIssues, editable = true }: { issues: Iss
   // Code findings lead. AI points are kept apart so a reader sees what was calculated before what was suggested.
   const issues = useMemo(() => allIssues.filter((i) => i.detected_by !== "ai"), [allIssues]);
   const aiIssues = useMemo(() => allIssues.filter((i) => i.detected_by === "ai"), [allIssues]);
-  const groups = useMemo(
-    () => ({
-      decisions: issues.filter((i) => i.state === "open" && i.resolution === "data" && i.severity !== "info"),
-      design: issues.filter((i) => i.resolution === "design"),
-      info: issues.filter((i) => i.state === "open" && i.resolution === "data" && i.severity === "info"),
-      acknowledged: issues.filter((i) => i.state === "acknowledged"),
-      all: issues,
-    }),
-    [issues]
-  );
-  const [filter, setFilter] = useState<Filter>(groups.decisions.length ? "decisions" : "all");
+  // Three views cover every finding: what needs a decision, what is the designer's, and everything else
+  // (for information, passed to the agency, or already resolved).
+  const groups = useMemo(() => {
+    const decisions = issues.filter((i) => i.state === "open" && i.resolution === "data" && i.severity !== "info");
+    const design = issues.filter((i) => i.resolution === "design");
+    const taken = new Set([...decisions, ...design].map((i) => i.id));
+    return { decisions, design, other: issues.filter((i) => !taken.has(i.id)) } as Record<Filter, Issue[]>;
+  }, [issues]);
+  const [filter, setFilter] = useState<Filter>(groups.decisions.length ? "decisions" : groups.design.length ? "design" : "other");
   const [query, setQuery] = useState("");
   const [aiOpen, setAiOpen] = useState(false);
   const fields = useBriefStore((s) => s.view?.state.fields);
@@ -41,9 +39,7 @@ export function IssuesList({ issues: allIssues, editable = true }: { issues: Iss
   const tabs: [Filter, string][] = [
     ["decisions", "Decide"],
     ["design", "Designer tasks"],
-    ["info", "For info"],
-    ["acknowledged", "Passed on"],
-    ["all", "All"],
+    ["other", "Info & passed on"],
   ];
 
   return (
@@ -54,27 +50,30 @@ export function IssuesList({ issues: allIssues, editable = true }: { issues: Iss
         value={filter}
         onChange={setFilter}
         items={tabs.map(([k, label]) => ({ id: k, label, count: groups[k].length }))}
-        wrapRows
+        stretch
         className="w-full"
       />
-      <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1">
-        <SearchBox
-          id={`finding-search-${idBase}`}
-          label="Search findings"
-          value={query}
-          onChange={setQuery}
-          placeholder="Search title, description, field or owner"
-          count={shown.length + aiShown.length}
-          noun={["finding", "findings"]}
-          size="sm"
-          className="min-w-0 flex-1"
-        />
-        {searching && (
-          <p className="text-[12px] text-ink-muted" aria-hidden>
-            Showing {shown.length} of {groups[filter].length}
-          </p>
-        )}
-      </div>
+      {/* Search only earns its space once the list is long enough to need it */}
+      {(allIssues.length > 8 || searching) && (
+        <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1">
+          <SearchBox
+            id={`finding-search-${idBase}`}
+            label="Search findings"
+            value={query}
+            onChange={setQuery}
+            placeholder="Search title, description, field or owner"
+            count={shown.length + aiShown.length}
+            noun={["finding", "findings"]}
+            size="sm"
+            className="min-w-0 flex-1"
+          />
+          {searching && (
+            <p className="text-[12px] text-ink-muted" aria-hidden>
+              Showing {shown.length} of {groups[filter].length}
+            </p>
+          )}
+        </div>
+      )}
       <div className="-mx-1 mt-3 min-h-0 flex-1 space-y-2.5 overflow-y-auto px-1 pb-1">
         {shown.length === 0 && (
           <div className="rounded-lg border border-dashed border-line-strong px-5 py-8 text-center">
@@ -132,16 +131,19 @@ function IssueCard({ issue, editable, index }: { issue: Issue; editable: boolean
 
   return (
     <article className={cn("sheet overflow-hidden transition-[border-color,box-shadow] duration-200", passed && "bg-desk/40", selected && "border-ink shadow-selected")}>
-      {/* Fixed furniture: severity, kind, owner always in the same place */}
-      <div className="flex items-center gap-2 px-3.5 pt-3">
+      {/* One row when closed: severity, title, owner. Opening a finding also shows it on the pack. */}
+      <button
+        className="flex w-full items-start gap-2.5 px-3.5 py-3 text-left"
+        onClick={() => {
+          if (!open && locatable.length > 0) setHighlight({ label: issue.title, sources: locatable });
+          setOpen((v) => !v);
+        }}
+        aria-expanded={open}
+        aria-controls={bodyId}
+      >
         <SeverityStamp severity={issue.severity} />
-        <span className="min-w-0 flex-1 truncate">
-          <KindLabel kind={issue.kind} ai={issue.detected_by === "ai"} />
-        </span>
+        <span className={cn("min-w-0 flex-1 text-[14.5px] font-semibold leading-snug", passed ? "text-ink-2" : "text-ink")}>{issue.title}</span>
         <OwnerTag owner={issue.owner} />
-      </div>
-      <button className="flex w-full items-start justify-between gap-3 px-3.5 pb-3 pt-2 text-left" onClick={() => setOpen((v) => !v)} aria-expanded={open} aria-controls={bodyId}>
-        <span className={cn("text-[14.5px] font-semibold leading-snug", passed ? "text-ink-2" : "text-ink")}>{issue.title}</span>
         <ChevronDown className={cn("mt-0.5 h-4 w-4 shrink-0 text-ink-faint transition-transform duration-200 ease-out", open && "rotate-180")} />
       </button>
       {(issue.resolution === "design" || passed) && (
@@ -154,10 +156,23 @@ function IssueCard({ issue, editable, index }: { issue: Issue; editable: boolean
           )}
         </div>
       )}
+      {/* The top finding shows its fix without opening, since the fix is what a person came for */}
+      {!open && index === 0 && issue.suggestion && !passed && (
+        <p className="mx-3.5 mb-3 flex items-start gap-2 rounded-md bg-mint-soft px-2.5 py-2 text-[12.5px] leading-snug text-ink">
+          <Lightbulb className="mt-0.5 h-3.5 w-3.5 shrink-0 text-mint-deep" aria-hidden />
+          <span className="line-clamp-2">
+            <span className="sr-only">Suggested fix: </span>
+            {issue.suggestion}
+          </span>
+        </p>
+      )}
 
       <div id={bodyId} className="disclosure" data-open={open} aria-hidden={!open}>
         <div>
           <div className="space-y-3 border-t border-line px-3.5 py-3.5 text-[13px]">
+            <p className="text-[12px] text-ink-muted">
+              <KindLabel kind={issue.kind} ai={issue.detected_by === "ai"} />
+            </p>
             <p className="leading-relaxed text-ink-2">{issue.description}</p>
             {issue.suggestion && (
               <div className="flex items-start gap-2.5 rounded-md bg-mint-soft px-3 py-2.5">
