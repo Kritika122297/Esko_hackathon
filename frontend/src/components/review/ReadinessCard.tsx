@@ -11,7 +11,7 @@ import { BriefState } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useBriefStore } from "@/store/briefStore";
 
-/** Brief readiness on the top sheet of the set, with the finalize gate. */
+/** Brief readiness as one strip across the page: the score, where the fields stand, and the finalize gate. */
 export function ReadinessCard({ state }: { state: BriefState }) {
   const { run, busy } = useBriefStore();
   const r = state.readiness;
@@ -21,71 +21,81 @@ export function ReadinessCard({ state }: { state: BriefState }) {
     new Set(state.issues.filter((i) => i.state === "open" && i.resolution === "data" && i.severity === "blocking").map((i) => i.owner))
   );
   const total = Math.max(r.fields_total, 1);
-  const tone = finalized || r.ready ? "[--copy-1:#DDF3E4] [--copy-2:#E0ECFF]" : "[--copy-1:#FFF5C2] [--copy-2:#FFE4E7]";
 
   return (
-    <section aria-label="Brief readiness" className={cn("sheet-set mb-2.5 mr-2.5 p-5", tone)}>
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0 pt-1">
-          <h2 className="heading text-[19px] text-ink">{finalized ? "Finalized" : r.ready ? "Ready for handoff" : "Not ready yet"}</h2>
-          <p className="mt-1 text-[12.5px] text-ink-muted">brief readiness</p>
-        </div>
-        <RollingNumber value={r.score} className="text-[68px] text-ink" suffix={<span className="ml-0.5 text-[30px] leading-none">%</span>} label={`Brief readiness ${r.score} percent`} />
-      </div>
-      <ReadinessBar className="mt-4 h-2" confirmed={r.fields_confirmed / total} review={r.fields_needs_review / total} />
-      <dl className="mt-3 flex flex-wrap items-baseline gap-x-4 gap-y-1">
-        {(
-          [
-            [r.fields_confirmed, "confirmed"],
-            [r.fields_needs_review, "to review"],
-            [r.fields_missing, "missing"],
-          ] as const
-        ).map(([n, label]) => (
-          <div key={label} className="flex items-baseline gap-1.5">
-            <dt className="sr-only">{label}</dt>
-            <dd className="figure text-[22px] text-ink">{n}</dd>
-            <dd className="text-[12.5px] text-ink-muted" aria-hidden>
-              {label}
-            </dd>
-          </div>
-        ))}
-      </dl>
-      <p className="mt-4 text-[13.5px] leading-snug text-ink">{r.headline}</p>
-      {!r.ready && owners.length > 0 && <p className="mt-1.5 text-[13px] text-ink-muted">Waiting on {owners.join(", ")}.</p>}
-      {r.warnings_open > 0 && (
-        <p className="mt-1 text-[12.5px] text-ink-muted">
-          {r.warnings_open} {r.warnings_open === 1 ? "warning is" : "warnings are"} open; warnings do not block.
-        </p>
+    <section
+      aria-label="Brief readiness"
+      className={cn(
+        "sheet grid grid-cols-1 gap-x-8 gap-y-4 overflow-hidden border-l-[4px] px-5 py-4 lg:grid-cols-[auto_minmax(0,1fr)_minmax(250px,auto)] lg:items-center",
+        finalized || r.ready ? "border-l-mint-deep" : "border-l-canary-deep"
       )}
+    >
+      <div className="flex items-center gap-4">
+        <RollingNumber value={r.score} className="text-[56px] text-ink" suffix={<span className="ml-0.5 text-[26px] leading-none">%</span>} label={`Brief readiness ${r.score} percent`} />
+        <div className="min-w-0">
+          <h2 className="heading text-[18px] leading-tight text-ink">{finalized ? "Finalized" : r.ready ? "Ready for handoff" : "Not ready yet"}</h2>
+          <p className="mt-0.5 max-w-[34ch] text-[13px] leading-snug text-ink-muted">
+            {!r.ready && owners.length > 0 ? `Waiting on ${owners.join(", ")}.` : r.headline}
+          </p>
+        </div>
+      </div>
 
-      <div className="mt-5 space-y-2">
+      <div className="min-w-0">
+        <ReadinessBar className="h-2.5" confirmed={r.fields_confirmed / total} review={r.fields_needs_review / total} />
+        <dl className="mt-2.5 flex flex-wrap items-baseline gap-x-6 gap-y-1">
+          {(
+            [
+              [r.fields_confirmed, "confirmed"],
+              [r.fields_needs_review, "to review"],
+              [r.fields_missing, "missing"],
+            ] as const
+          ).map(([n, label]) => (
+            <div key={label} className="flex items-baseline gap-1.5">
+              <dt className="sr-only">{label}</dt>
+              <dd className="figure text-[24px] text-ink">{n}</dd>
+              <dd className="text-[13px] text-ink-muted" aria-hidden>
+                {label}
+              </dd>
+            </div>
+          ))}
+          {r.warnings_open > 0 && (
+            <div className="text-[12.5px] text-ink-muted" title="Warnings do not block">
+              {r.warnings_open} {r.warnings_open === 1 ? "warning" : "warnings"} open
+            </div>
+          )}
+        </dl>
+      </div>
+
+      <div className="space-y-2" title="Blocking items must be answered or passed to the agency as open questions. Designer tasks never block.">
         {finalized ? (
           <>
-            <div className="flex justify-center py-1">
-              <Stamp tone="ok" size="lg" tilt={-4} landed={state.status}>
-                Finalized
-              </Stamp>
-            </div>
             <Button asChild className="w-full" size="lg">
               <Link href="/export">
                 Open designer brief <ArrowRight className="h-4 w-4" />
               </Link>
             </Button>
-            <Button variant="outline" size="sm" className="w-full" disabled={!!busy} onClick={() => run("Reopening", (sid) => api.reopen(sid), "Brief reopened")}>
-              <LockOpen className="h-3.5 w-3.5" /> Reopen for edits
-            </Button>
+            <div className="flex items-center justify-between gap-2">
+              <Stamp tone="ok" tilt={-3} landed={state.status}>
+                Finalized
+              </Stamp>
+              <Button variant="ghost" size="sm" disabled={!!busy} onClick={() => run("Reopening", (sid) => api.reopen(sid), "Brief reopened")}>
+                <LockOpen className="h-3.5 w-3.5" /> Reopen for edits
+              </Button>
+            </div>
           </>
         ) : r.ready ? (
           <Button variant="canary" size="lg" className="w-full" disabled={!!busy} onClick={() => run("Finalizing", (sid) => api.finalize(sid), "Brief finalized")}>
             <Lock className="h-4 w-4" /> Finalize brief
           </Button>
         ) : (
-          <Button variant="soft" size="lg" className="w-full" disabled>
-            <Lock className="h-4 w-4" /> Finalize locked ({r.blocking_open} blocking)
-          </Button>
+          <>
+            <Button variant="soft" size="lg" className="w-full" disabled>
+              <Lock className="h-4 w-4" /> Finalize locked ({r.blocking_open} blocking)
+            </Button>
+            <p className="text-center text-[12px] text-ink-muted">Answer or pass on the blocking items to unlock.</p>
+          </>
         )}
       </div>
-      <p className="mt-3 text-[12px] leading-snug text-ink-muted">Blocking items must be answered or passed to the agency as open questions. Designer tasks never block.</p>
     </section>
   );
 }

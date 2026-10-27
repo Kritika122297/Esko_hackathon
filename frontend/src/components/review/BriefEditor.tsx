@@ -16,6 +16,7 @@ import { ImpactPanel } from "./ImpactPanel";
 
 const SECTION_ORDER = ["Product", "Legal & Identity", "Ingredients & Allergens", "Claims & Certifications", "Quantity", "Nutrition", "Other Pack Copy", "Production specs", "Project"];
 type Filter = "needs_review" | "missing" | "confirmed" | "all";
+const slug = (n: string) => n.toLowerCase().replace(/[^a-z]+/g, "-");
 
 export function BriefEditor({ fields }: { fields: BriefField[] }) {
   // Production specs are always listed, even when empty: the agency simulator asks for them.
@@ -71,6 +72,30 @@ export function BriefEditor({ fields }: { fields: BriefField[] }) {
           </p>
         )}
       </div>
+      {/* Jump to a section; each chip says how many of its fields still need a person */}
+      {sections.length > 1 && (
+        <nav
+          aria-label="Jump to a section"
+          className="sticky top-[calc(var(--stick-top,_120px)_-_14px)] z-20 -mx-2 mt-3 flex gap-1.5 overflow-x-auto bg-desk/95 px-2 py-2 backdrop-blur-[2px] [scrollbar-width:thin]"
+        >
+          {sections.map((sec) => {
+            const todo = sec.fields.filter((f) => f.status !== "confirmed").length;
+            return (
+              <button
+                key={sec.name}
+                type="button"
+                onClick={() => document.getElementById(`sec-${slug(sec.name)}`)?.scrollIntoView({ block: "start", behavior: "smooth" })}
+                className="inline-flex h-8 shrink-0 items-center gap-2 rounded-md border border-line bg-paper px-3 text-[13px] font-semibold text-ink-2 transition-colors hover:border-ink hover:text-ink"
+              >
+                {sec.name}
+                <span className={cn("figure text-[15px]", todo ? "text-ink" : "text-mint-deep")}>
+                  {todo || <Check className="inline h-3.5 w-3.5" strokeWidth={3.5} aria-label="all confirmed" />}
+                </span>
+              </button>
+            );
+          })}
+        </nav>
+      )}
 
       {sections.length === 0 ? (
         <div className="mt-5 rounded-lg border border-dashed border-line-strong px-6 py-10 text-center">
@@ -101,7 +126,7 @@ export function BriefEditor({ fields }: { fields: BriefField[] }) {
           {sections.map((s) => {
             const open = s.fields.filter((f) => f.status !== "confirmed").length;
             return (
-              <div key={s.name}>
+              <div key={s.name} id={`sec-${slug(s.name)}`} className="scroll-mt-[calc(var(--stick-top,_120px)_+_44px)]">
                 <div className="section-rule mb-3">
                   <h3 className="text-[15px] font-semibold text-ink">{s.name}</h3>
                   <span className={cn("text-[12.5px]", open ? "text-ink-muted" : "text-mint-deep")}>{open ? `${open} to resolve` : "All confirmed"}</span>
